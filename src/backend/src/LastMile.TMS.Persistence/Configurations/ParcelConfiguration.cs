@@ -49,10 +49,5 @@ public class ParcelConfiguration : IEntityTypeConfiguration<Parcel>
             .WithMany(a => a.RecipientParcels)
             .HasForeignKey(p => p.RecipientAddressId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(p => p.Zone)
-            .WithMany(z => z.Parcels)
-            .HasForeignKey(p => p.ZoneId)
-            .OnDelete(DeleteBehavior.SetNull);
     }
 }
