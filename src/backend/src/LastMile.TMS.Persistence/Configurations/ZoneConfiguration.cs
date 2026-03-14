@@ -1,8 +1,8 @@
+using LastMile.TMS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NetTopologySuite.Geometries;
 using NetTopologySuite;
-using LastMile.TMS.Domain.Entities;
+using NetTopologySuite.Geometries;
 
 namespace LastMile.TMS.Persistence.Configurations;
 
@@ -15,21 +15,22 @@ public class ZoneConfiguration : IEntityTypeConfiguration<Zone>
         builder.ToTable("Zones");
 
         builder.Property(z => z.Name)
-            .IsRequired()
-            .HasMaxLength(200);
+           .IsRequired()
+           .HasMaxLength(200);
 
         builder.Property(z => z.IsActive)
-            .IsRequired();
+           .IsRequired();
 
         builder.Property(z => z.BoundaryGeometry)
-            .HasColumnType("geometry (polygon)");
+           .IsRequired()
+           .HasColumnType("geometry (polygon)");
 
         builder.HasIndex(z => z.BoundaryGeometry)
-            .HasMethod("GIST");
+           .HasMethod("GIST");
 
         builder.HasOne(z => z.Depot)
-            .WithMany(d => d.Zones)
-            .HasForeignKey(z => z.DepotId)
-            .OnDelete(DeleteBehavior.Cascade);
+          .WithMany(d => d.Zones)
+          .HasForeignKey(z => z.DepotId)
+          .OnDelete(DeleteBehavior.Cascade);
     }
 }

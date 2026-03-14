@@ -1,13 +1,18 @@
-using NetTopologySuite.Geometries;
 using LastMile.TMS.Domain.Common;
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
+using Newtonsoft.Json;
 
 namespace LastMile.TMS.Domain.Entities;
 
 public class Zone : BaseAuditableEntity
 {
+    private static readonly GeometryFactory GeometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+
     public string Name { get; set; } = string.Empty;
 
-    public Geometry? BoundaryGeometry { get; set; }
+    public Geometry BoundaryGeometry { get; set; } = null!;
 
     public bool IsActive { get; set; } = true;
 
@@ -16,4 +21,19 @@ public class Zone : BaseAuditableEntity
 
     // Navigation properties
     public Depot Depot { get; set; } = null!;
+
+    public void SetBoundaryFromGeoJson(string geoJson)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(geoJson);
+
+        GeoJsonReader reader = new(GeometryFactory, new JsonSerializerSettings());
+        Geometry geometry = reader.Read<Geometry>(geoJson);
+
+        if (geometry is not Polygon polygon)
+        {
+            throw new ArgumentException("GeoJSON must represent a Polygon.", nameof(geoJson));
+        }
+
+        BoundaryGeometry = polygon;
+    }
 }
