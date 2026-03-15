@@ -20,7 +20,7 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
 
         // Capacity
         builder.Property(v => v.ParcelCapacity).HasDefaultValue(0);
-        builder.Property(v => v.WeightCapacity).HasPrecision(10, 2);
+        builder.Property(v => v.WeightCapacityKg).HasPrecision(10, 2);
 
         // Indexes
         builder.HasIndex(v => v.Status);

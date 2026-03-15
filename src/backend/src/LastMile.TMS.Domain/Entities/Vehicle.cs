@@ -8,7 +8,7 @@ public class Vehicle : BaseAuditableEntity
     public string RegistrationPlate { get; private set; } = string.Empty;
     public VehicleType Type { get; set; }
     public int ParcelCapacity { get; set; }
-    public decimal WeightCapacity { get; set; }
+    public decimal WeightCapacityKg { get; set; }
     public VehicleStatus Status { get; set; }
 
     // Depot assignment
@@ -20,7 +20,7 @@ public class Vehicle : BaseAuditableEntity
         string registrationPlate,
         VehicleType type,
         int parcelCapacity,
-        decimal weightCapacity)
+        decimal weightCapacityKg)
     {
         return new Vehicle
         {
@@ -28,7 +28,7 @@ public class Vehicle : BaseAuditableEntity
             RegistrationPlate = registrationPlate.ToUpperInvariant(),
             Type = type,
             ParcelCapacity = parcelCapacity,
-            WeightCapacity = weightCapacity,
+            WeightCapacityKg = weightCapacityKg,
             Status = VehicleStatus.Available
         };
     }
@@ -36,9 +36,6 @@ public class Vehicle : BaseAuditableEntity
     // Status transition validation
     public bool CanTransitionTo(VehicleStatus newStatus)
     {
-        // Same status is always allowed (idempotent)
-        if (newStatus == Status) return true;
-
         return newStatus switch
         {
             VehicleStatus.Available => Status == VehicleStatus.InUse || Status == VehicleStatus.Maintenance,

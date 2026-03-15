@@ -16,7 +16,7 @@ public class VehicleTests
         vehicle.RegistrationPlate.Should().Be("ABC123");
         vehicle.Type.Should().Be(VehicleType.Van);
         vehicle.ParcelCapacity.Should().Be(50);
-        vehicle.WeightCapacity.Should().Be(1000m);
+        vehicle.WeightCapacityKg.Should().Be(1000m);
         vehicle.Status.Should().Be(VehicleStatus.Available);
     }
 
@@ -43,7 +43,7 @@ public class VehicleTests
 
     [Theory]
     [InlineData(VehicleStatus.Available, true)]
-    [InlineData(VehicleStatus.InUse, true)]  // Same status allowed
+    [InlineData(VehicleStatus.InUse, false)]  // Same status not allowed
     [InlineData(VehicleStatus.Maintenance, true)]
     [InlineData(VehicleStatus.Retired, false)]
     public void CanTransitionFromInUse(VehicleStatus targetStatus, bool expected)
@@ -85,5 +85,24 @@ public class VehicleTests
         vehicle.CanTransitionTo(VehicleStatus.Available).Should().BeFalse();
         vehicle.CanTransitionTo(VehicleStatus.InUse).Should().BeFalse();
         vehicle.CanTransitionTo(VehicleStatus.Maintenance).Should().BeFalse();
+        vehicle.CanTransitionTo(VehicleStatus.Retired).Should().BeFalse(); // Same status not allowed
+    }
+
+    [Theory]
+    [InlineData(VehicleStatus.Available)]
+    [InlineData(VehicleStatus.InUse)]
+    [InlineData(VehicleStatus.Maintenance)]
+    [InlineData(VehicleStatus.Retired)]
+    public void CanTransitionTo_SameStatus_ShouldReturnFalse(VehicleStatus status)
+    {
+        // Arrange
+        var vehicle = Vehicle.Create("ABC123", VehicleType.Van, 50, 1000m);
+        vehicle.Status = status;
+
+        // Act
+        var result = vehicle.CanTransitionTo(status);
+
+        // Assert
+        result.Should().BeFalse();
     }
 }
