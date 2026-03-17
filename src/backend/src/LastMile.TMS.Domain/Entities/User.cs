@@ -1,16 +1,35 @@
 using LastMile.TMS.Domain.Common;
 using LastMile.TMS.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace LastMile.TMS.Domain.Entities;
 
-public class User : BaseAuditableEntity
+public class User : IdentityUser<Guid>, IBaseAuditableEntity
 {
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
-    public string? Phone { get; private set; }
-    public string? PasswordHash { get; private set; }
+
+    // Status (maps to IdentityUser's inherited properties for account state)
+    // IdentityUser already has: Email, EmailConfirmed, PhoneNumber, PhoneNumberConfirmed
+    // PasswordHash, SecurityStamp, LockoutEnd, LockoutEnabled, AccessFailedCount
+
     public UserStatus Status { get; private set; }
+
+    // Calculated property for easy filtering
+    public bool IsActive => Status == UserStatus.Active;
+
+    // Backwards compatibility alias for PhoneNumber
+    public string? Phone => PhoneNumber;
+
+    // IBaseAuditableEntity
+    public DateTimeOffset CreatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTimeOffset? LastModifiedAt { get; set; }
+    public string? LastModifiedBy { get; set; }
+
+    // Role assignment (1:1 relationship)
+    public Guid? RoleId { get; private set; }
+    public Role? Role { get; private set; }
 
     // Zone assignment (for drivers/dispatchers)
     public Guid? ZoneId { get; private set; }
@@ -19,9 +38,6 @@ public class User : BaseAuditableEntity
     // Depot assignment (for warehouse operators)
     public Guid? DepotId { get; private set; }
     public Depot? Depot { get; private set; }
-
-    // Navigation: User roles
-    public ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
     // Factory method
     public static User Create(
@@ -42,15 +58,18 @@ public class User : BaseAuditableEntity
         if (!IsValidEmail(email))
             throw new ArgumentException("Invalid email format", nameof(email));
 
-        return new User
+        var user = new User
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Email = email.ToLowerInvariant().Trim(),
-            Phone = phone?.Trim(),
-            Status = UserStatus.Active
+            PhoneNumber = phone?.Trim(),
+            Status = UserStatus.Active,
+            UserName = email.ToLowerInvariant().Trim() // Identity requires UserName
         };
+
+        return user;
     }
 
     private static bool IsValidEmail(string email)
@@ -94,6 +113,17 @@ public class User : BaseAuditableEntity
         ZoneId = null;
     }
 
+    public void AssignRole(Guid roleId)
+    {
+        RoleId = roleId;
+    }
+
+    public void RemoveRole()
+    {
+        RoleId = null;
+    }
+
+    // Set password hash (PasswordHash is inherited from IdentityUser but with protected setter)
     public void SetPasswordHash(string passwordHash)
     {
         PasswordHash = passwordHash;

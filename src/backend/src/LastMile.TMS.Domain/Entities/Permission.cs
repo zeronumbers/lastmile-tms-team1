@@ -1,5 +1,4 @@
 using LastMile.TMS.Domain.Common;
-using LastMile.TMS.Domain.Common;
 using LastMile.TMS.Domain.Enums;
 
 namespace LastMile.TMS.Domain.Entities;
@@ -31,7 +30,6 @@ public class Permission : BaseAuditableEntity
 
         return new Permission
         {
-            Id = Guid.NewGuid(),
             Code = code.Trim().ToLowerInvariant(),
             Name = name.Trim(),
             Description = description?.Trim(),

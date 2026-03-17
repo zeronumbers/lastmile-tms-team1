@@ -119,13 +119,13 @@ public class RoleTests
     }
 
     [Fact]
-    public void UserRoles_ShouldInitializeAsEmptyCollection()
+    public void Users_ShouldInitializeAsEmptyCollection()
     {
         // Act
         var role = Role.Create("Admin");
 
         // Assert
-        role.UserRoles.Should().BeEmpty();
+        role.Users.Should().BeEmpty();
     }
 
     [Fact]

@@ -7,8 +7,8 @@ public class Role : BaseAuditableEntity
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
 
-    // Navigation: User roles
-    public ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
+    // Navigation: Users with this role
+    public ICollection<User> Users { get; private set; } = new List<User>();
 
     // Navigation: Role permissions
     public ICollection<RolePermission> RolePermissions { get; private set; } = new List<RolePermission>();
@@ -31,7 +31,6 @@ public class Role : BaseAuditableEntity
 
         return new Role
         {
-            Id = Guid.NewGuid(),
             Name = name.Trim(),
             Description = description?.Trim()
         };

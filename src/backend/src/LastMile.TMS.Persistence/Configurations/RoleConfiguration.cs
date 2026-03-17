@@ -21,10 +21,10 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             .HasMaxLength(500);
 
         // Relationships
-        builder.HasMany(r => r.UserRoles)
-            .WithOne(ur => ur.Role)
-            .HasForeignKey(ur => ur.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(r => r.Users)
+            .WithOne(u => u.Role)
+            .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(r => r.RolePermissions)
             .WithOne(rp => rp.Role)

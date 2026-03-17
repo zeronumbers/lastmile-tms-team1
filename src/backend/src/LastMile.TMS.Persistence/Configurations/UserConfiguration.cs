@@ -25,12 +25,26 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(255);
         builder.HasIndex(u => u.Email).IsUnique();
 
-        // Phone - optional
-        builder.Property(u => u.Phone)
+        // Phone (PhoneNumber) - optional
+        builder.Property(u => u.PhoneNumber)
             .HasMaxLength(20);
+
+        // Username (required by Identity)
+        builder.Property(u => u.UserName)
+            .IsRequired()
+            .HasMaxLength(255);
+        builder.HasIndex(u => u.UserName).IsUnique();
 
         // Password hash
         builder.Property(u => u.PasswordHash)
+            .HasMaxLength(500);
+
+        // Security stamp for identity
+        builder.Property(u => u.SecurityStamp)
+            .HasMaxLength(500);
+
+        // Concurrency stamp
+        builder.Property(u => u.ConcurrencyStamp)
             .HasMaxLength(500);
 
         // Status
@@ -53,10 +67,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(u => u.DepotId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // UserRoles navigation
-        builder.HasMany(u => u.UserRoles)
-            .WithOne(ur => ur.User)
-            .HasForeignKey(ur => ur.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Role relationship (1:1)
+        builder.HasOne(u => u.Role)
+            .WithMany(r => r.Users)
+            .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(u => u.RoleId);
     }
 }

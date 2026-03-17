@@ -1,6 +1,6 @@
 namespace LastMile.TMS.Domain.Common;
 
-public abstract class BaseAuditableEntity : BaseEntity
+public abstract class BaseAuditableEntity : BaseEntity, IBaseAuditableEntity
 {
     public DateTimeOffset CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
