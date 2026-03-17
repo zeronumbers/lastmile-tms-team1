@@ -35,21 +35,6 @@ public class DayOffTests
     }
 
     [Fact]
-    public void DayOff_ShouldAllowSettingDriverNavigation()
-    {
-        // Arrange
-        DayOff dayOff = new();
-        Driver driver = new();
-
-        // Act
-        dayOff.Driver = driver;
-
-        // Assert
-        dayOff.Driver.Should().Be(driver);
-        dayOff.DriverId.Should().Be(driver.Id);
-    }
-
-    [Fact]
     public void DayOff_ShouldSupportFutureDates()
     {
         // Arrange

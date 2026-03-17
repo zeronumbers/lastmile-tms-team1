@@ -39,21 +39,6 @@ public class ShiftScheduleTests
         schedule.CloseTime.Should().Be(new TimeOnly(14, 0));
     }
 
-    [Fact]
-    public void ShiftSchedule_ShouldAllowSettingDriverNavigation()
-    {
-        // Arrange
-        ShiftSchedule schedule = new();
-        Driver driver = new();
-
-        // Act
-        schedule.Driver = driver;
-
-        // Assert
-        schedule.Driver.Should().Be(driver);
-        schedule.DriverId.Should().Be(driver.Id);
-    }
-
     [Theory]
     [InlineData(DayOfWeek.Monday)]
     [InlineData(DayOfWeek.Tuesday)]

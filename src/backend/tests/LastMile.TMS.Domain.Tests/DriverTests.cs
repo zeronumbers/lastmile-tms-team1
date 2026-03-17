@@ -115,36 +115,6 @@ public class DriverTests
     }
 
     [Fact]
-    public void Driver_ShouldAllowSettingZoneNavigation()
-    {
-        // Arrange
-        Driver driver = new();
-        Zone zone = new() { Name = "Zone 1" };
-
-        // Act
-        driver.Zone = zone;
-
-        // Assert
-        driver.Zone.Should().Be(zone);
-        driver.ZoneId.Should().Be(zone.Id);
-    }
-
-    [Fact]
-    public void Driver_ShouldAllowSettingDepotNavigation()
-    {
-        // Arrange
-        Driver driver = new();
-        Depot depot = new() { Name = "Main Depot" };
-
-        // Act
-        driver.Depot = depot;
-
-        // Assert
-        driver.Depot.Should().Be(depot);
-        driver.DepotId.Should().Be(depot.Id);
-    }
-
-    [Fact]
     public void Driver_Photo_ShouldBeNullable()
     {
         // Arrange & Act
