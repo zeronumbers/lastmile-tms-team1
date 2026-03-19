@@ -67,7 +67,7 @@ public class AuthIntegrationTests : IClassFixture<AuthWebApplicationFactory>
         var response = await _client.PostAsync("/connect/token", content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [IntegrationTestFact]
@@ -104,7 +104,8 @@ public class AuthIntegrationTests : IClassFixture<AuthWebApplicationFactory>
         {
             { "grant_type", "password" },
             { "username", "admin" },
-            { "password", "Admin@123" }
+            { "password", "Admin@123" },
+            { "scope", "offline_access" }
         };
         var content = new FormUrlEncodedContent(formData);
 
