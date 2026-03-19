@@ -5,6 +5,7 @@
 :80 {
 	# API backend
 	handle /api/* {
+		uri strip_prefix /api
 		reverse_proxy api:8080
 	}
 
