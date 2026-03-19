@@ -10,7 +10,7 @@ public class UserTests
     public void Create_ShouldInitializeUserWithCorrectDefaults()
     {
         // Act
-        var user = User.Create("John", "Doe", "john.doe@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john.doe@lastmile.com", phone: "+1234567890");
 
         // Assert
         user.FirstName.Should().Be("John");
@@ -24,8 +24,8 @@ public class UserTests
     public void Create_ShouldGenerateUniqueId()
     {
         // Act
-        var user1 = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
-        var user2 = User.Create("Jane", "Doe", "jane@lastmile.com", "+0987654321");
+        var user1 = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
+        var user2 = User.Create("Jane", "Doe", "jane@lastmile.com", phone: "+0987654321");
 
         // Assert
         user1.Id.Should().NotBeEmpty();
@@ -37,7 +37,7 @@ public class UserTests
     public void Activate_WhenInactive_ShouldSetStatusToActive()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
         user.Deactivate();
 
         // Act
@@ -51,7 +51,7 @@ public class UserTests
     public void Activate_WhenSuspended_ShouldSetStatusToActive()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
         user.Suspend();
 
         // Act
@@ -65,7 +65,7 @@ public class UserTests
     public void Deactivate_WhenActive_ShouldSetStatusToInactive()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
 
         // Act
         user.Deactivate();
@@ -78,7 +78,7 @@ public class UserTests
     public void AssignToZone_ShouldSetZoneId()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
         var zoneId = Guid.NewGuid();
 
         // Act
@@ -93,7 +93,7 @@ public class UserTests
     public void AssignToDepot_ShouldSetDepotId()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
         var depotId = Guid.NewGuid();
 
         // Act
@@ -108,7 +108,7 @@ public class UserTests
     public void SetPasswordHash_ShouldUpdatePasswordHash()
     {
         // Arrange
-        var user = User.Create("John", "Doe", "john@lastmile.com", "+1234567890");
+        var user = User.Create("John", "Doe", "john@lastmile.com", phone: "+1234567890");
         var passwordHash = "hashed_password_here";
 
         // Act
@@ -125,7 +125,7 @@ public class UserTests
     public void Create_WithInvalidFirstName_ShouldThrow(string? firstName)
     {
         // Act
-        var act = () => User.Create(firstName!, "Doe", "john@lastmile.com", "+1234567890");
+        var act = () => User.Create(firstName!, "Doe", "john@lastmile.com", phone: "+1234567890");
 
         // Assert
         act.Should().Throw<ArgumentException>();
@@ -138,7 +138,7 @@ public class UserTests
     public void Create_WithInvalidLastName_ShouldThrow(string? lastName)
     {
         // Act
-        var act = () => User.Create("John", lastName!, "john@lastmile.com", "+1234567890");
+        var act = () => User.Create("John", lastName!, "john@lastmile.com", phone: "+1234567890");
 
         // Assert
         act.Should().Throw<ArgumentException>();
