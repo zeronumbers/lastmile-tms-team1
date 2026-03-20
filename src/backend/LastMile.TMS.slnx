@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/LastMile.TMS.Api.Tests/LastMile.TMS.Api.Tests.csproj" />
+    <Project Path="tests/LastMile.TMS.Api.IntegrationTests/LastMile.TMS.Api.IntegrationTests.csproj" />
     <Project Path="tests/LastMile.TMS.Application.Tests/LastMile.TMS.Application.Tests.csproj" />
     <Project Path="tests/LastMile.TMS.Architecture.Tests/LastMile.TMS.Architecture.Tests.csproj" />
     <Project Path="tests/LastMile.TMS.Domain.Tests/LastMile.TMS.Domain.Tests.csproj" />
