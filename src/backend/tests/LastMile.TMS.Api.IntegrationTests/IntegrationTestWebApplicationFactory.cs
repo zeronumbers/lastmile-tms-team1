@@ -28,7 +28,7 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
         await using var dbContext = new AppDbContext(optionsBuilder.Options);
-        await dbContext.Database.MigrateAsync();
+        await dbContext.Database.EnsureCreatedAsync();
     }
 
     public new async Task DisposeAsync()
