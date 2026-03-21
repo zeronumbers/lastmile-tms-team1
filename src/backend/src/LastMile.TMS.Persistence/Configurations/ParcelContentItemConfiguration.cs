@@ -23,5 +23,10 @@ public class ParcelContentItemConfiguration : IEntityTypeConfiguration<ParcelCon
             .WithMany(p => p.ContentItems)
             .HasForeignKey(pci => pci.ParcelId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(pci => pci.IsDeleted).HasDefaultValue(false);
+        builder.Property(pci => pci.DeletedAt);
+        builder.Property(pci => pci.DeletedBy).HasMaxLength(256);
     }
 }

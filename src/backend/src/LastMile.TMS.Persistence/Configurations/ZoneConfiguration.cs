@@ -32,5 +32,10 @@ public class ZoneConfiguration : IEntityTypeConfiguration<Zone>
           .WithMany(d => d.Zones)
           .HasForeignKey(z => z.DepotId)
           .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(z => z.IsDeleted).HasDefaultValue(false);
+        builder.Property(z => z.DeletedAt);
+        builder.Property(z => z.DeletedBy).HasMaxLength(256);
     }
 }

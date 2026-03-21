@@ -1,3 +1,4 @@
+using LastMile.TMS.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,13 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
                 npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
             });
 
-        return new AppDbContext(optionsBuilder.Options);
+        // Design-time factory doesn't have access to DI, so we pass a null implementation
+        return new AppDbContext(optionsBuilder.Options, new DesignTimeCurrentUserService());
     }
+}
+
+internal class DesignTimeCurrentUserService : ICurrentUserService
+{
+    public string? UserId => null;
+    public string? UserName => null;
 }

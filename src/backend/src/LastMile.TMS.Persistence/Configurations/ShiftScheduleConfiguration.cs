@@ -26,5 +26,10 @@ public class ShiftScheduleConfiguration : IEntityTypeConfiguration<ShiftSchedule
             .WithMany(d => d.ShiftSchedules)
             .HasForeignKey(s => s.DriverId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(s => s.IsDeleted).HasDefaultValue(false);
+        builder.Property(s => s.DeletedAt);
+        builder.Property(s => s.DeletedBy).HasMaxLength(256);
     }
 }

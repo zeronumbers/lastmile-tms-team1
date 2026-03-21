@@ -55,5 +55,10 @@ public class ParcelConfiguration : IEntityTypeConfiguration<Parcel>
             .WithMany()
             .HasForeignKey(p => p.ZoneId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Soft delete
+        builder.Property(p => p.IsDeleted).HasDefaultValue(false);
+        builder.Property(p => p.DeletedAt);
+        builder.Property(p => p.DeletedBy).HasMaxLength(256);
     }
 }

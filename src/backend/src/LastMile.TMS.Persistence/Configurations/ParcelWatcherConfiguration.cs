@@ -17,5 +17,10 @@ public class ParcelWatcherConfiguration : IEntityTypeConfiguration<ParcelWatcher
         builder.HasMany(pw => pw.Parcels)
             .WithMany(p => p.ParcelWatchers)
             .UsingEntity("ParcelWatcherParcels");
+
+        // Soft delete
+        builder.Property(pw => pw.IsDeleted).HasDefaultValue(false);
+        builder.Property(pw => pw.DeletedAt);
+        builder.Property(pw => pw.DeletedBy).HasMaxLength(256);
     }
 }

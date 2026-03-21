@@ -26,5 +26,10 @@ public class AddressConfiguration : IEntityTypeConfiguration<Address>
 
         builder.HasIndex(a => a.PostalCode);
         builder.HasIndex(a => a.City);
+
+        // Soft delete
+        builder.Property(a => a.IsDeleted).HasDefaultValue(false);
+        builder.Property(a => a.DeletedAt);
+        builder.Property(a => a.DeletedBy).HasMaxLength(256);
     }
 }

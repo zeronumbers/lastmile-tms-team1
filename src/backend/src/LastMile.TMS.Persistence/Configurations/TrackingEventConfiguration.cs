@@ -23,5 +23,10 @@ public class TrackingEventConfiguration : IEntityTypeConfiguration<TrackingEvent
             .WithMany(p => p.TrackingEvents)
             .HasForeignKey(te => te.ParcelId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(te => te.IsDeleted).HasDefaultValue(false);
+        builder.Property(te => te.DeletedAt);
+        builder.Property(te => te.DeletedBy).HasMaxLength(256);
     }
 }

@@ -30,5 +30,10 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
             .WithMany()
             .HasForeignKey(v => v.DepotId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Soft delete
+        builder.Property(v => v.IsDeleted).HasDefaultValue(false);
+        builder.Property(v => v.DeletedAt);
+        builder.Property(v => v.DeletedBy).HasMaxLength(256);
     }
 }
