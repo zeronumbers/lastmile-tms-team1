@@ -8,15 +8,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LastMile.TMS.Api.IntegrationTests;
 
+[Collection("Integration")]
 public class AuthIntegrationTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainerFixture _postgreSqlFixture = new();
     private readonly IntegrationTestWebApplicationFactory _factory;
     private HttpClient _client = null!;
 
-    public AuthIntegrationTests()
+    public AuthIntegrationTests(PostgreSqlContainerFixture postgreSqlFixture)
     {
-        _factory = new IntegrationTestWebApplicationFactory(_postgreSqlFixture);
+        _factory = new IntegrationTestWebApplicationFactory(postgreSqlFixture);
     }
 
     public async Task InitializeAsync()
