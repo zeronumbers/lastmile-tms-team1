@@ -88,7 +88,7 @@ services:
       - .env
     environment:
       ACCEPT_EULA: "Y"
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_PASSWORD}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD}
     volumes:
       - seqdata:/data
 

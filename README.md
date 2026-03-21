@@ -75,6 +75,14 @@ For API-only changes (connection strings, secrets, etc.), you can restart just t
 docker compose restart api
 ```
 
+> **Note**: Some containers have init scripts that run only once (e.g., Seq sets its admin password on first run, PostgreSQL initializes data directory). For changes to affect these containers, you must delete their volumes and recreate:
+>
+> ```bash
+> docker compose down -v && docker compose up --build
+> ```
+>
+> The `-v` flag removes volumes (`pgdata`, `seqdata`). Use this when changing Seq password or resetting the database.
+
 ## Default Credentials
 
 After first startup, the API seeds an admin user:
