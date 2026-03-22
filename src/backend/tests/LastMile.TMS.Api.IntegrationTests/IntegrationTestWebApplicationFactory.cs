@@ -27,7 +27,8 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
             .UseNpgsql(connectionString, o => o.UseNetTopologySuite())
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
-        await using var dbContext = new AppDbContext(optionsBuilder.Options);
+        var currentUserService = new StubCurrentUserService();
+        await using var dbContext = new AppDbContext(optionsBuilder.Options, currentUserService);
         await dbContext.Database.MigrateAsync();
     }
 
@@ -41,6 +42,8 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.ConfigureServices(services =>
         {
+            services.AddSingleton<LastMile.TMS.Application.Common.Interfaces.ICurrentUserService, StubCurrentUserService>();
+
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
             if (descriptor != null)
             {
