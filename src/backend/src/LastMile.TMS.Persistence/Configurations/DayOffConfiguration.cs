@@ -19,5 +19,10 @@ public class DayOffConfiguration : IEntityTypeConfiguration<DayOff>
             .WithMany(d => d.DaysOff)
             .HasForeignKey(d => d.DriverId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(d => d.IsDeleted).HasDefaultValue(false);
+        builder.Property(d => d.DeletedAt);
+        builder.Property(d => d.DeletedBy).HasMaxLength(256);
     }
 }

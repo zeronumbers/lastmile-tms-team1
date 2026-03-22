@@ -30,5 +30,10 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             .WithOne(rp => rp.Role)
             .HasForeignKey(rp => rp.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(r => r.IsDeleted).HasDefaultValue(false);
+        builder.Property(r => r.DeletedAt);
+        builder.Property(r => r.DeletedBy).HasMaxLength(256);
     }
 }

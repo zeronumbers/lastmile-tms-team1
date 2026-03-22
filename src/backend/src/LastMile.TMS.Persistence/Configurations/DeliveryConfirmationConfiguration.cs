@@ -21,5 +21,10 @@ public class DeliveryConfirmationConfiguration : IEntityTypeConfiguration<Delive
             .WithOne(p => p.DeliveryConfirmation)
             .HasForeignKey<DeliveryConfirmation>(dc => dc.ParcelId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(dc => dc.IsDeleted).HasDefaultValue(false);
+        builder.Property(dc => dc.DeletedAt);
+        builder.Property(dc => dc.DeletedBy).HasMaxLength(256);
     }
 }

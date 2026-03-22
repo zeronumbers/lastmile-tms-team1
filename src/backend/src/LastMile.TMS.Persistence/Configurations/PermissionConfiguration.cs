@@ -42,5 +42,10 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             .WithOne(rp => rp.Permission)
             .HasForeignKey(rp => rp.PermissionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(p => p.IsDeleted).HasDefaultValue(false);
+        builder.Property(p => p.DeletedAt);
+        builder.Property(p => p.DeletedBy).HasMaxLength(256);
     }
 }

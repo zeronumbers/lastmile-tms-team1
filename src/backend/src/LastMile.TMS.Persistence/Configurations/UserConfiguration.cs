@@ -74,5 +74,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(u => u.RoleId);
+
+        // Soft delete
+        builder.Property(u => u.IsDeleted).HasDefaultValue(false);
+        builder.Property(u => u.DeletedAt);
+        builder.Property(u => u.DeletedBy).HasMaxLength(256);
     }
 }

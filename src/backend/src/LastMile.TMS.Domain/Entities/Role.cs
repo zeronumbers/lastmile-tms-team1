@@ -15,6 +15,9 @@ public class Role : IdentityRole<Guid>, IBaseAuditableEntity
     public string? CreatedBy { get; set; }
     public DateTimeOffset? LastModifiedAt { get; set; }
     public string? LastModifiedBy { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     // Navigation: Users with this role
     public ICollection<User> Users { get; private set; } = new List<User>();

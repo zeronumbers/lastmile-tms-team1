@@ -42,5 +42,10 @@ public class DepotConfiguration : IEntityTypeConfiguration<Depot>
            .WithOne(z => z.Depot)
            .HasForeignKey(z => z.DepotId)
            .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete
+        builder.Property(d => d.IsDeleted).HasDefaultValue(false);
+        builder.Property(d => d.DeletedAt);
+        builder.Property(d => d.DeletedBy).HasMaxLength(256);
     }
 }

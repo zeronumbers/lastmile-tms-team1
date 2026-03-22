@@ -29,6 +29,9 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public string? CreatedBy { get; set; }
     public DateTimeOffset? LastModifiedAt { get; set; }
     public string? LastModifiedBy { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     // Role assignment (1:1 relationship)
     public Guid? RoleId { get; private set; }
