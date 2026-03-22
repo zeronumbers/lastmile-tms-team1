@@ -82,8 +82,12 @@ services:
         condition: service_healthy
 
   # NOTE: WARN: this is for development only, on prod must be removed.
+  # This is done using profiles, and .env file variable: COMPOSE_PROFILES=dev to enable.
+  # On production remove this variable
   pgadmin:
     image: dpage/pgadmin4
+    profiles:
+      - dev
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
