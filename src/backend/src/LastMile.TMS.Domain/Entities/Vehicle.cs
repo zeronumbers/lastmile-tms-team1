@@ -58,4 +58,18 @@ public class Vehicle : BaseAuditableEntity
 
         Status = newStatus;
     }
+
+    public void Update(
+        string registrationPlate,
+        VehicleType type,
+        int parcelCapacity,
+        decimal weightCapacityKg,
+        Guid? depotId)
+    {
+        RegistrationPlate = registrationPlate.ToUpperInvariant();
+        Type = type;
+        ParcelCapacity = parcelCapacity;
+        WeightCapacityKg = weightCapacityKg;
+        DepotId = depotId;
+    }
 }
