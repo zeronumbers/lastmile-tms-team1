@@ -10,6 +10,8 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
+using LastMile.TMS.Api.GraphQL;
+using HotChocolate.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -104,6 +106,14 @@ try
     builder.Services.AddStackExchangeRedisCache(options =>
         options.Configuration = builder.Configuration.GetConnectionString("Redis"));
 
+    // GraphQL
+    builder.Services
+        .AddGraphQLServer()
+        .AddAuthorization()
+        .AddSpatialTypes()
+        .AddQueryType<Query>()
+        .AddMutationType<Mutation>();
+
     builder.Services.AddHangfire(config =>
         config.UsePostgreSqlStorage(options =>
             options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnection"))));
@@ -124,6 +134,13 @@ try
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.MapGraphQL().WithOptions(new GraphQLServerOptions
+    {
+      Tool =
+      {
+        Enable = app.Environment.IsDevelopment()
+      },
+    });
     app.MapControllers();
     app.UseHangfireDashboard("/hangfire");
 
