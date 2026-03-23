@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using LastMile.TMS.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LastMile.TMS.Api.IntegrationTests;
@@ -90,7 +89,7 @@ public class VehicleIntegrationTests : IAsyncLifetime
         data.GetProperty("registrationPlate").GetString().Should().Be("TEST001");
         data.GetProperty("type").GetString().Should().Be("VAN");
         data.GetProperty("parcelCapacity").GetInt32().Should().Be(100);
-        data.GetProperty("status").GetString().Should().Be("Available");
+        data.GetProperty("status").GetString().Should().Be("AVAILABLE");
     }
 
     [Fact]
@@ -139,27 +138,10 @@ public class VehicleIntegrationTests : IAsyncLifetime
         var createJson = await ReadJsonAsync(createResponse);
         var vehicleId = createJson.RootElement.GetProperty("data").GetProperty("createVehicle").GetProperty("id").GetString();
 
-        // Act - Transition to InUse (valid from Available)
-        var updateMutation = $@"
-            mutation {{
-                changeVehicleStatus(id: ""{vehicleId}"", newStatus: InUse) {{
-                    id
-                    status
-                }}
-            }}";
-
-        // This should fail because Available -> InUse is valid, but we're testing the TransitionTo logic
-        // Actually the Vehicle entity says InUse => Available is valid, not Available => InUse
-        // Let me check: CanTransitionTo returns true for InUse when Status == Available
-        // Wait, looking at Vehicle.CanTransitionTo:
-        // InUse => Status == Available (meaning InUse can transition TO Available, not from)
-        // Available => InUse is NOT valid
-        // So this should fail. Let me try Maintenance instead (Available -> Maintenance is valid)
-
         // Act - Transition to Maintenance (valid from Available)
         var maintenanceMutation = $@"
             mutation {{
-                changeVehicleStatus(id: ""{vehicleId}"", newStatus: Maintenance) {{
+                changeVehicleStatus(id: ""{vehicleId}"", newStatus: MAINTENANCE) {{
                     id
                     status
                 }}
@@ -172,7 +154,7 @@ public class VehicleIntegrationTests : IAsyncLifetime
         var maintenanceJson = await ReadJsonAsync(maintenanceResponse);
         maintenanceJson.RootElement.TryGetProperty("errors", out var errors).Should().BeFalse();
         var maintenanceData = maintenanceJson.RootElement.GetProperty("data").GetProperty("changeVehicleStatus");
-        maintenanceData.GetProperty("status").GetString().Should().Be("Maintenance");
+        maintenanceData.GetProperty("status").GetString().Should().Be("MAINTENANCE");
     }
 
     [Fact]
@@ -258,6 +240,7 @@ public class VehicleIntegrationTests : IAsyncLifetime
         var vehicle = json.RootElement.GetProperty("data").GetProperty("vehicle");
         vehicle.GetProperty("registrationPlate").GetString().Should().Be("GETBYID");
         vehicle.GetProperty("type").GetString().Should().Be("BIKE");
+        vehicle.GetProperty("status").GetString().Should().Be("AVAILABLE");
     }
 
     [Fact]

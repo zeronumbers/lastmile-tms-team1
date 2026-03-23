@@ -1,5 +1,6 @@
 using HotChocolate.Authorization;
 using LastMile.TMS.Application.Features.Vehicles;
+using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ namespace LastMile.TMS.Api.GraphQL;
 
 public class Query
 {
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<IReadOnlyList<VehicleSummaryDto>> GetVehicles(
         AppDbContext context,
         VehicleStatus? status = null,
@@ -34,7 +35,7 @@ public class Query
             .ToListAsync(cancellationToken);
     }
 
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleDto?> GetVehicle(
         AppDbContext context,
         Guid id,
@@ -58,7 +59,7 @@ public class Query
         };
     }
 
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleHistoryDto?> GetVehicleHistory(
         AppDbContext context,
         Guid id,

@@ -1,6 +1,7 @@
 using HotChocolate.Authorization;
 using LastMile.TMS.Application.Features.Vehicles;
 using LastMile.TMS.Application.Features.Vehicles.Commands;
+using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using MediatR;
 
@@ -8,7 +9,7 @@ namespace LastMile.TMS.Api.GraphQL;
 
 public class Mutation
 {
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleDto> CreateVehicle(
         [Service] IMediator mediator,
         string registrationPlate,
@@ -23,7 +24,7 @@ public class Mutation
             cancellationToken);
     }
 
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleDto> UpdateVehicle(
         [Service] IMediator mediator,
         Guid id,
@@ -39,7 +40,7 @@ public class Mutation
             cancellationToken);
     }
 
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<bool> DeleteVehicle(
         [Service] IMediator mediator,
         Guid id,
@@ -48,7 +49,7 @@ public class Mutation
         return await mediator.Send(new DeleteVehicleCommand(id), cancellationToken);
     }
 
-    [Authorize(Roles = ["Operations Manager"])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleDto> ChangeVehicleStatus(
         [Service] IMediator mediator,
         Guid id,
