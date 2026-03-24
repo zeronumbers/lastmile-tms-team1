@@ -14,12 +14,12 @@ export default function VehiclesPage() {
             Manage your fleet of vehicles
           </p>
         </div>
-        <Button asChild>
-          <Link href="/vehicles/new">
+        <Link href="/vehicles/new">
+          <Button>
             <Plus className="h-4 w-4 mr-2" />
             Add Vehicle
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <Suspense fallback={<div className="py-8 text-center text-muted-foreground">Loading...</div>}>

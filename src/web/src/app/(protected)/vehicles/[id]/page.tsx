@@ -75,12 +75,12 @@ export default function VehicleDetailPage() {
           <h1 className="text-3xl font-bold">{vehicle.registrationPlate}</h1>
           <p className="text-muted-foreground">Vehicle Details</p>
         </div>
-        <Button asChild>
-          <Link href={`/vehicles/${id}/edit`}>
+        <Link href={`/vehicles/${id}/edit`}>
+          <Button>
             <Pencil className="h-4 w-4 mr-2" />
             Edit
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
