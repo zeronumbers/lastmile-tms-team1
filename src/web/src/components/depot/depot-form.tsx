@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,29 @@ import {
 import { useGraphQuery, useGraphMutation } from "@/hooks/use-graphql";
 import { GET_DEPOT_QUERY } from "@/lib/graphql/queries/depot";
 import { CREATE_DEPOT_MUTATION, UPDATE_DEPOT_MUTATION } from "@/lib/graphql/mutations/depot";
-import type { DepotDto, CreateDepotInput, UpdateDepotInput, AddressInput } from "@/lib/graphql/types";
+import type { DepotDto, CreateDepotInput, UpdateDepotInput, AddressInput, DailyOperatingHoursInput } from "@/lib/graphql/types";
 import { toast } from "sonner";
+import { ChevronDown, ChevronRight, Clock } from "lucide-react";
 
 interface DepotResponse {
   depot: DepotDto;
 }
+
+const DAYS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
+const operatingHoursEntrySchema = z.object({
+  dayOfWeek: z.number(),
+  openTime: z.string().optional(),
+  closeTime: z.string().optional(),
+});
 
 const depotFormSchema = z.object({
   name: z.string().min(1, "Depot name is required"),
@@ -50,6 +67,7 @@ const depotFormSchema = z.object({
     phone: z.string().nullable().optional().transform((v) => v ?? ""),
     email: z.string().nullable().optional().transform((v) => v ?? ""),
   }).optional(),
+  operatingHours: z.array(operatingHoursEntrySchema).optional(),
 });
 
 type DepotFormValues = z.infer<typeof depotFormSchema>;
@@ -61,6 +79,8 @@ interface DepotFormProps {
 export function DepotForm({ depotId }: DepotFormProps) {
   const router = useRouter();
   const isEditing = !!depotId;
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [operatingHoursOpen, setOperatingHoursOpen] = useState(false);
 
   const { data, isLoading } = useGraphQuery<DepotResponse, { id: string }>({
     queryKey: ["depots", depotId ?? ""] as string[],
@@ -85,12 +105,31 @@ export function DepotForm({ depotId }: DepotFormProps) {
     defaultValues: {
       name: "",
       isActive: true,
+      operatingHours: DAYS.map((d) => ({ dayOfWeek: d.value, openTime: "", closeTime: "" })),
     },
+  });
+
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: "operatingHours",
   });
 
   useEffect(() => {
     if (data?.depot) {
       const depot = data.depot;
+      const existingHours = depot.operatingHours ?? [];
+
+      // Build operating hours array with all 7 days
+      const hoursMap = new Map(existingHours.map((h) => [h.dayOfWeek, h]));
+      const operatingHours = DAYS.map((d) => {
+        const existing = hoursMap.get(d.value);
+        return {
+          dayOfWeek: d.value,
+          openTime: existing?.openTime ?? "",
+          closeTime: existing?.closeTime ?? "",
+        };
+      });
+
       form.reset({
         name: depot.name,
         isActive: depot.isActive,
@@ -109,6 +148,7 @@ export function DepotForm({ depotId }: DepotFormProps) {
               email: depot.address.email ?? "",
             }
           : undefined,
+        operatingHours,
       });
     }
   }, [data, form]);
@@ -139,12 +179,22 @@ export function DepotForm({ depotId }: DepotFormProps) {
           } as AddressInput)
         : undefined;
 
+      // Only include operating hours that have both open and close times
+      const operatingHours: DailyOperatingHoursInput[] | undefined = values.operatingHours
+        ?.filter((h) => h.openTime && h.closeTime)
+        .map((h) => ({
+          dayOfWeek: h.dayOfWeek,
+          openTime: h.openTime!,
+          closeTime: h.closeTime!,
+        }));
+
       if (isEditing && depotId) {
         await updateMutation.mutateAsync({
           input: {
             id: depotId,
             name: values.name,
             address,
+            operatingHours,
             isActive: values.isActive,
           },
         });
@@ -154,6 +204,7 @@ export function DepotForm({ depotId }: DepotFormProps) {
           input: {
             name: values.name,
             address,
+            operatingHours,
             isActive: values.isActive,
           },
         });
@@ -317,9 +368,71 @@ export function DepotForm({ depotId }: DepotFormProps) {
                 />
               </div>
             </div>
+
+            <details
+              ref={detailsRef}
+              className="rounded-lg border group"
+              open={operatingHoursOpen}
+              onToggle={(e) => setOperatingHoursOpen((e.target as HTMLDetailsElement).open)}
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-medium text-sm hover:bg-muted/50 transition-colors select-none">
+                <span className="text-muted-foreground">
+                  {operatingHoursOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </span>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span>Operating Hours</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {operatingHoursOpen ? "Click to collapse" : "Click to expand"}
+                </span>
+              </summary>
+
+              <div className="border-t px-4 py-4 space-y-3">
+                <p className="text-xs text-muted-foreground mb-4">
+                  Set the operating hours for each day. Leave both fields empty for days when the depot is closed.
+                </p>
+                {fields.map((field, index) => {
+                  const dayLabel = DAYS.find((d) => d.value === field.dayOfWeek)?.label ?? "";
+                  return (
+                    <div key={field.id} className="grid grid-cols-[100px_1fr_1fr_1fr] items-center gap-3">
+                      <span className="text-sm font-medium">{dayLabel}</span>
+                      <FormField
+                        control={form.control}
+                        name={`operatingHours.${index}.openTime`}
+                        render={({ field: f }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">Opens</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...f} className="h-9" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`operatingHours.${index}.closeTime`}
+                        render={({ field: f }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">Closes</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...f} className="h-9" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" type="button" onClick={() => router.back()}>
+            <Button variant="outline" type="button" onClick={() => router.push("/depots")}>
               Cancel
             </Button>
             <Button

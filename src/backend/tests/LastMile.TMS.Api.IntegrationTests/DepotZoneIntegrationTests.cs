@@ -11,6 +11,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
 {
     private readonly IntegrationTestWebApplicationFactory _factory;
     private HttpClient _client = null!;
+    private string _accessToken = null!;
 
     public DepotZoneIntegrationTests(PostgreSqlContainerFixture postgreSqlFixture)
     {
@@ -25,12 +26,38 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var dbSeeder = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Application.Common.Interfaces.IDbSeeder>();
         await dbSeeder.SeedAsync();
+
+        // Login to get access token
+        var username = Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? "admin";
+        var password = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@123";
+
+        var tokenResponse = await _client.PostAsync("/connect/token", new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("grant_type", "password"),
+            new KeyValuePair<string, string>("username", username),
+            new KeyValuePair<string, string>("password", password)
+        }));
+
+        var tokenContent = await tokenResponse.Content.ReadAsStringAsync();
+        var tokenJson = JsonSerializer.Deserialize<JsonElement>(tokenContent);
+        _accessToken = tokenJson.GetProperty("access_token").GetString()!;
     }
 
     public async Task DisposeAsync()
     {
         _client.Dispose();
         await _factory.DisposeAsync();
+    }
+
+    private async Task<JsonElement> GraphQLRequestAsync(string query)
+    {
+        var content = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/graphql") { Content = content };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
+
+        var response = await _client.SendAsync(request);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<JsonElement>(responseContent);
     }
 
     [Fact]
@@ -50,15 +77,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         }";
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize(new { query = mutation }), Encoding.UTF8, "application/json");
-        var response = await _client.PostAsync("/graphql", content);
+        var jsonResponse = await GraphQLRequestAsync(mutation);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
         jsonResponse.GetProperty("data").GetProperty("createDepot").TryGetProperty("id", out var id).Should().BeTrue();
         jsonResponse.GetProperty("data").GetProperty("createDepot").GetProperty("name").GetString().Should().Be("Test Depot");
         jsonResponse.GetProperty("data").GetProperty("createDepot").GetProperty("isActive").GetBoolean().Should().BeTrue();
@@ -78,16 +99,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         }";
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize(new { query = mutation }), Encoding.UTF8, "application/json");
-        var response = await _client.PostAsync("/graphql", content);
+        var jsonResponse = await GraphQLRequestAsync(mutation);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
-        // Should have errors due to empty name
         jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue();
         errors.GetArrayLength().Should().BeGreaterThan(0);
     }
@@ -105,10 +119,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var createContent = new StringContent(JsonSerializer.Serialize(new { query = createMutation }), Encoding.UTF8, "application/json");
-        var createResponse = await _client.PostAsync("/graphql", createContent);
-        var createResponseContent = await createResponse.Content.ReadAsStringAsync();
-        var createJson = JsonSerializer.Deserialize<JsonElement>(createResponseContent);
+        var createJson = await GraphQLRequestAsync(createMutation);
         var depotId = createJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Act - Update the depot
@@ -124,15 +135,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var updateContent = new StringContent(JsonSerializer.Serialize(new { query = updateMutation }), Encoding.UTF8, "application/json");
-        var updateResponse = await _client.PostAsync("/graphql", updateContent);
+        var updateJson = await GraphQLRequestAsync(updateMutation);
 
         // Assert
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var updateResponseContent = await updateResponse.Content.ReadAsStringAsync();
-        var updateJson = JsonSerializer.Deserialize<JsonElement>(updateResponseContent);
-
         updateJson.GetProperty("data").GetProperty("updateDepot").GetProperty("name").GetString().Should().Be("Updated Depot");
         updateJson.GetProperty("data").GetProperty("updateDepot").GetProperty("isActive").GetBoolean().Should().BeFalse();
     }
@@ -147,10 +152,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var depotContent = new StringContent(JsonSerializer.Serialize(new { query = createDepotMutation }), Encoding.UTF8, "application/json");
-        var depotResponse = await _client.PostAsync("/graphql", depotContent);
-        var depotResponseContent = await depotResponse.Content.ReadAsStringAsync();
-        var depotJson = JsonSerializer.Deserialize<JsonElement>(depotResponseContent);
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
         var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Arrange - Create zone with valid GeoJSON polygon
@@ -170,15 +172,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         }}";
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize(new { query = mutation }), Encoding.UTF8, "application/json");
-        var response = await _client.PostAsync("/graphql", content);
+        var jsonResponse = await GraphQLRequestAsync(mutation);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
         jsonResponse.GetProperty("data").GetProperty("createZone").TryGetProperty("id", out var zoneId).Should().BeTrue();
         jsonResponse.GetProperty("data").GetProperty("createZone").GetProperty("name").GetString().Should().Be("Test Zone");
         jsonResponse.GetProperty("data").GetProperty("createZone").GetProperty("depotId").GetString().Should().Be(depotId);
@@ -194,10 +190,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var depotContent = new StringContent(JsonSerializer.Serialize(new { query = createDepotMutation }), Encoding.UTF8, "application/json");
-        var depotResponse = await _client.PostAsync("/graphql", depotContent);
-        var depotResponseContent = await depotResponse.Content.ReadAsStringAsync();
-        var depotJson = JsonSerializer.Deserialize<JsonElement>(depotResponseContent);
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
         var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Arrange - Create zone with invalid GeoJSON (point instead of polygon)
@@ -214,16 +207,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         }}";
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize(new { query = mutation }), Encoding.UTF8, "application/json");
-        var response = await _client.PostAsync("/graphql", content);
+        var jsonResponse = await GraphQLRequestAsync(mutation);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
-        // Should have errors due to invalid GeoJSON
         jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue();
         errors.GetArrayLength().Should().BeGreaterThan(0);
     }
@@ -239,10 +225,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var depotContent = new StringContent(JsonSerializer.Serialize(new { query = createDepotMutation }), Encoding.UTF8, "application/json");
-        var depotResponse = await _client.PostAsync("/graphql", depotContent);
-        var depotResponseContent = await depotResponse.Content.ReadAsStringAsync();
-        var depotJson = JsonSerializer.Deserialize<JsonElement>(depotResponseContent);
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
         var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Arrange - Create zone with GeoJSON polygon
@@ -259,13 +242,10 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var zoneContent = new StringContent(JsonSerializer.Serialize(new { query = createZoneMutation }), Encoding.UTF8, "application/json");
-        var zoneResponse = await _client.PostAsync("/graphql", zoneContent);
+        // Act
+        var zoneJson = await GraphQLRequestAsync(createZoneMutation);
 
         // Assert - Verify zone was created with correct depot link
-        zoneResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var zoneResponseContent = await zoneResponse.Content.ReadAsStringAsync();
-        var zoneJson = JsonSerializer.Deserialize<JsonElement>(zoneResponseContent);
         zoneJson.GetProperty("data").GetProperty("createZone").GetProperty("depotId").GetString().Should().Be(depotId);
     }
 
@@ -279,10 +259,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var depotContent = new StringContent(JsonSerializer.Serialize(new { query = createDepotMutation }), Encoding.UTF8, "application/json");
-        var depotResponse = await _client.PostAsync("/graphql", depotContent);
-        var depotResponseContent = await depotResponse.Content.ReadAsStringAsync();
-        var depotJson = JsonSerializer.Deserialize<JsonElement>(depotResponseContent);
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
         var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Arrange - Create zone
@@ -298,10 +275,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var zoneContent = new StringContent(JsonSerializer.Serialize(new { query = createZoneMutation }), Encoding.UTF8, "application/json");
-        var zoneResponse = await _client.PostAsync("/graphql", zoneContent);
-        var zoneResponseContent = await zoneResponse.Content.ReadAsStringAsync();
-        var zoneJson = JsonSerializer.Deserialize<JsonElement>(zoneResponseContent);
+        var zoneJson = await GraphQLRequestAsync(createZoneMutation);
         var zoneId = zoneJson.GetProperty("data").GetProperty("createZone").GetProperty("id").GetString();
 
         // Act - Update the zone
@@ -318,15 +292,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var updateContent = new StringContent(JsonSerializer.Serialize(new { query = updateMutation }), Encoding.UTF8, "application/json");
-        var updateResponse = await _client.PostAsync("/graphql", updateContent);
+        var updateJson = await GraphQLRequestAsync(updateMutation);
 
         // Assert
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var updateResponseContent = await updateResponse.Content.ReadAsStringAsync();
-        var updateJson = JsonSerializer.Deserialize<JsonElement>(updateResponseContent);
-
         updateJson.GetProperty("data").GetProperty("updateZone").GetProperty("name").GetString().Should().Be("Updated Zone");
         updateJson.GetProperty("data").GetProperty("updateZone").GetProperty("isActive").GetBoolean().Should().BeFalse();
     }
@@ -345,10 +313,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var createContent = new StringContent(JsonSerializer.Serialize(new { query = createMutation }), Encoding.UTF8, "application/json");
-        var createResponse = await _client.PostAsync("/graphql", createContent);
-        var createResponseContent = await createResponse.Content.ReadAsStringAsync();
-        var createJson = JsonSerializer.Deserialize<JsonElement>(createResponseContent);
+        var createJson = await GraphQLRequestAsync(createMutation);
         var depotId = createJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         // Act - Query the depot by ID
@@ -361,15 +326,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var queryContent = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
-        var queryResponse = await _client.PostAsync("/graphql", queryContent);
+        var queryJson = await GraphQLRequestAsync(query);
 
         // Assert
-        queryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var queryResponseContent = await queryResponse.Content.ReadAsStringAsync();
-        var queryJson = JsonSerializer.Deserialize<JsonElement>(queryResponseContent);
-
         queryJson.GetProperty("data").GetProperty("depot").GetProperty("name").GetString().Should().Be("Query Test Depot");
         queryJson.GetProperty("data").GetProperty("depot").GetProperty("isActive").GetBoolean().Should().BeTrue();
     }
@@ -384,10 +343,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var depotContent = new StringContent(JsonSerializer.Serialize(new { query = createDepotMutation }), Encoding.UTF8, "application/json");
-        var depotResponse = await _client.PostAsync("/graphql", depotContent);
-        var depotResponseContent = await depotResponse.Content.ReadAsStringAsync();
-        var depotJson = JsonSerializer.Deserialize<JsonElement>(depotResponseContent);
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
         var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
 
         var geoJson = @"{""type"":""Polygon"",""coordinates"":[[[-122.4194,37.7749],[-122.4094,37.7749],[-122.4094,37.7849],[-122.4194,37.7849],[-122.4194,37.7749]]]}";
@@ -401,8 +357,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }}
         }}";
 
-        var zoneContent = new StringContent(JsonSerializer.Serialize(new { query = createZoneMutation }), Encoding.UTF8, "application/json");
-        await _client.PostAsync("/graphql", zoneContent);
+        await GraphQLRequestAsync(createZoneMutation);
 
         // Act - Query all zones
         var query = @"query {
@@ -414,15 +369,9 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             }
         }";
 
-        var queryContent = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
-        var queryResponse = await _client.PostAsync("/graphql", queryContent);
+        var queryJson = await GraphQLRequestAsync(query);
 
         // Assert
-        queryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var queryResponseContent = await queryResponse.Content.ReadAsStringAsync();
-        var queryJson = JsonSerializer.Deserialize<JsonElement>(queryResponseContent);
-
         var zones = queryJson.GetProperty("data").GetProperty("zones");
         zones.GetArrayLength().Should().BeGreaterThan(0);
     }

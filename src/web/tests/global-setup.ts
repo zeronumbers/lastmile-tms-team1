@@ -3,8 +3,8 @@ import path from "path";
 
 async function globalSetup(config: FullConfig) {
   const baseURL = process.env.E2E_BASE_URL ?? "http://localhost";
-  const adminUsername = process.env.E2E_ADMIN_USERNAME ?? "admin";
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? "Admin@123";
+  const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123";
   const storageStatePath = path.join(__dirname, "fixtures", ".auth", "admin.json");
 
   const browser = await chromium.launch();

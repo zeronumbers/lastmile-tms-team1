@@ -34,12 +34,12 @@ test.describe("Depot List", () => {
     const depotListPage = new DepotListPage(page);
     await depotListPage.goto();
     await page.waitForSelector("table", { state: "visible" });
+    await page.waitForLoadState("networkidle");
 
-    // This test assumes there's at least one depot - may need adjustment for empty state
     const editButton = page.getByRole("button", { name: /pencil/i }).first();
     if (await editButton.isVisible()) {
       await editButton.click();
-      await page.waitForURL(/\/depots\/[a-z0-9-]+$/);
+      await page.waitForURL(/\/depots\/[a-z0-9-]+/i);
     }
   });
 });

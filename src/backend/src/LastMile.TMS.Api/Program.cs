@@ -1,5 +1,7 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using HotChocolate.AspNetCore;
+using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Application;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Infrastructure;
@@ -10,8 +12,6 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
-using LastMile.TMS.Api.GraphQL;
-using HotChocolate.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -143,7 +143,7 @@ try
     app.UseAuthorization();
     app.MapGraphQL().WithOptions(options =>
     {
-      options.Tool.Enable = app.Environment.IsDevelopment();
+        options.Tool.Enable = app.Environment.IsDevelopment();
     });
     app.MapControllers();
     app.UseHangfireDashboard("/hangfire");

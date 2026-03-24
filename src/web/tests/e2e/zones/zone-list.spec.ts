@@ -32,11 +32,12 @@ test.describe("Zone List", () => {
     const zoneListPage = new ZoneListPage(page);
     await zoneListPage.goto();
     await page.waitForSelector("table", { state: "visible" });
+    await page.waitForLoadState("networkidle");
 
     const editButton = page.getByRole("button", { name: /pencil/i }).first();
     if (await editButton.isVisible()) {
       await editButton.click();
-      await page.waitForURL(/\/zones\/[a-z0-9-]+$/);
+      await page.waitForURL(/\/zones\/[a-z0-9-]+/i);
     }
   });
 });

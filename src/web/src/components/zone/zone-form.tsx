@@ -242,7 +242,7 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" type="button" onClick={() => router.back()}>
+            <Button variant="outline" type="button" onClick={() => router.push("/zones")}>
               Cancel
             </Button>
             <Button

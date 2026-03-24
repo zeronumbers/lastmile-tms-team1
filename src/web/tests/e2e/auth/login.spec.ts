@@ -23,8 +23,8 @@ test.describe("Authentication", () => {
   });
 
   test("should redirect to dashboard on successful login", async ({ page }) => {
-    const adminUsername = process.env.E2E_ADMIN_USERNAME ?? "admin";
-    const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? "Admin@123";
+    const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
+    const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123";
 
     await page.goto("/login");
 

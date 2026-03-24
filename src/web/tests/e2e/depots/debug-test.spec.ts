@@ -9,9 +9,12 @@ test("debug depot create", async ({ page }) => {
   });
   
   // Login
+  const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123";
+
   await page.goto("/login");
-  await page.getByPlaceholder("Enter your username").fill("admin");
-  await page.getByPlaceholder("Enter your password").fill("Admin@123");
+  await page.getByPlaceholder("Enter your username").fill(adminUsername);
+  await page.getByPlaceholder("Enter your password").fill(adminPassword);
   await page.getByRole("button", { name: "Sign In" }).click();
   await page.waitForURL("/dashboard");
 

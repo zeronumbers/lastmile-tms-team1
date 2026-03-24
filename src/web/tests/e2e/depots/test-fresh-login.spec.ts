@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Depot Form Fresh Login", () => {
   test("should create depot with minimal data (fresh login)", async ({ page }) => {
-    const adminUsername = "admin";
-    const adminPassword = "Admin@123";
+    const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
+    const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123";
 
     // Login first
     await page.goto("/login");
