@@ -90,9 +90,11 @@ export function VehicleForm({
                 onValueChange={(value) => field.onChange(value as VehicleType)}
                 value={field.value as string}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vehicle type" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
                   <SelectItem value={VehicleType.Van}>Van</SelectItem>
                   <SelectItem value={VehicleType.Car}>Car</SelectItem>
