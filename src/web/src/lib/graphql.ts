@@ -11,6 +11,9 @@ export async function graphqlFetch<T>(
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+    console.log("Token being sent:", token.substring(0, 20) + "...");
+  } else {
+    console.warn("No token available for request");
   }
 
   const body = { query, variables };
