@@ -86,9 +86,9 @@ export function VehicleForm({
                   onChange={(e) => field.onChange(e.target.value as VehicleType)}
                 >
                   <option value="">Select vehicle type</option>
-                  <option value={VehicleType.Van}>Van</option>
-                  <option value={VehicleType.Car}>Car</option>
-                  <option value={VehicleType.Bike}>Bike</option>
+                  <option value={VehicleType.VAN}>Van</option>
+                  <option value={VehicleType.CAR}>Car</option>
+                  <option value={VehicleType.BIKE}>Bike</option>
                 </select>
               </FormControl>
               <FormMessage />

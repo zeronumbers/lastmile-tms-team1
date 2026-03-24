@@ -1,14 +1,14 @@
 export enum VehicleType {
-  Van = "Van",
-  Car = "Car",
-  Bike = "Bike",
+  VAN = "VAN",
+  CAR = "CAR",
+  BIKE = "BIKE",
 }
 
 export enum VehicleStatus {
-  Available = "Available",
-  InUse = "InUse",
-  Maintenance = "Maintenance",
-  Retired = "Retired",
+  AVAILABLE = "AVAILABLE",
+  IN_USE = "IN_USE",
+  MAINTENANCE = "MAINTENANCE",
+  RETIRED = "RETIRED",
 }
 
 export interface VehicleSummary {

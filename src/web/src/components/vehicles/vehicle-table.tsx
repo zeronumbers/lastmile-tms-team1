@@ -34,13 +34,13 @@ const columnHelper = createColumnHelper<VehicleSummary>();
 
 function getStatusBadgeVariant(status: VehicleStatus) {
   switch (status) {
-    case VehicleStatus.Available:
+    case VehicleStatus.AVAILABLE:
       return "success";
-    case VehicleStatus.InUse:
+    case VehicleStatus.IN_USE:
       return "default";
-    case VehicleStatus.Maintenance:
+    case VehicleStatus.MAINTENANCE:
       return "warning";
-    case VehicleStatus.Retired:
+    case VehicleStatus.RETIRED:
       return "secondary";
     default:
       return "outline";

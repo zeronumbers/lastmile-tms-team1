@@ -63,10 +63,10 @@ export function VehicleListClient() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value={VehicleStatus.Available}>Available</SelectItem>
-            <SelectItem value={VehicleStatus.InUse}>In Use</SelectItem>
-            <SelectItem value={VehicleStatus.Maintenance}>Maintenance</SelectItem>
-            <SelectItem value={VehicleStatus.Retired}>Retired</SelectItem>
+            <SelectItem value={VehicleStatus.AVAILABLE}>Available</SelectItem>
+            <SelectItem value={VehicleStatus.IN_USE}>In Use</SelectItem>
+            <SelectItem value={VehicleStatus.MAINTENANCE}>Maintenance</SelectItem>
+            <SelectItem value={VehicleStatus.RETIRED}>Retired</SelectItem>
           </SelectContent>
         </Select>
       </div>
