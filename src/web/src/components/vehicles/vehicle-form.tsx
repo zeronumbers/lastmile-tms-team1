@@ -14,13 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Link from "next/link";
 import { VehicleType } from "@/types/vehicle";
 
@@ -86,19 +79,18 @@ export function VehicleForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Vehicle Type</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value as VehicleType)}
-                value={field.value as string}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={VehicleType.Van}>Van</SelectItem>
-                  <SelectItem value={VehicleType.Car}>Car</SelectItem>
-                  <SelectItem value={VehicleType.Bike}>Bike</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <select
+                  className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
+                  value={field.value as string}
+                  onChange={(e) => field.onChange(e.target.value as VehicleType)}
+                >
+                  <option value="">Select vehicle type</option>
+                  <option value={VehicleType.Van}>Van</option>
+                  <option value={VehicleType.Car}>Car</option>
+                  <option value={VehicleType.Bike}>Bike</option>
+                </select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
