@@ -13,7 +13,7 @@ export interface AddressDto {
 }
 
 export interface DailyOperatingHoursDto {
-  dayOfWeek: DayOfWeek;
+  dayOfWeek: string;
   openTime: string;
   closeTime: string;
 }
@@ -97,9 +97,9 @@ export interface AddressInput {
 }
 
 export interface DailyOperatingHoursInput {
-  dayOfWeek: DayOfWeek;
-  openTime: string;
-  closeTime: string;
+  dayOfWeek: string;
+  openTime: string | null;
+  closeTime: string | null;
 }
 
 export interface CreateDepotInput {

@@ -36,17 +36,17 @@ interface DepotResponse {
 }
 
 const DAYS = [
-  { value: 0, label: "Sunday" },
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
+  { value: "SUNDAY", label: "Sunday" },
+  { value: "MONDAY", label: "Monday" },
+  { value: "TUESDAY", label: "Tuesday" },
+  { value: "WEDNESDAY", label: "Wednesday" },
+  { value: "THURSDAY", label: "Thursday" },
+  { value: "FRIDAY", label: "Friday" },
+  { value: "SATURDAY", label: "Saturday" },
 ];
 
 const operatingHoursEntrySchema = z.object({
-  dayOfWeek: z.number(),
+  dayOfWeek: z.string(),
   openTime: z.string().optional(),
   closeTime: z.string().optional(),
 });
@@ -105,7 +105,7 @@ export function DepotForm({ depotId }: DepotFormProps) {
     defaultValues: {
       name: "",
       isActive: true,
-      operatingHours: DAYS.map((d) => ({ dayOfWeek: d.value, openTime: "", closeTime: "" })),
+      operatingHours: DAYS.map((d) => ({ dayOfWeek: d.value, openTime: "09:00:00", closeTime: "17:00:00" })),
     },
   });
 
@@ -179,13 +179,12 @@ export function DepotForm({ depotId }: DepotFormProps) {
           } as AddressInput)
         : undefined;
 
-      // Only include operating hours that have both open and close times
+      // Send all operating hours — empty openTime/closeTime means "remove this day"
       const operatingHours: DailyOperatingHoursInput[] | undefined = values.operatingHours
-        ?.filter((h) => h.openTime && h.closeTime)
-        .map((h) => ({
+        ?.map((h) => ({
           dayOfWeek: h.dayOfWeek,
-          openTime: h.openTime!,
-          closeTime: h.closeTime!,
+          openTime: h.openTime || null,
+          closeTime: h.closeTime || null,
         }));
 
       if (isEditing && depotId) {
@@ -406,7 +405,7 @@ export function DepotForm({ depotId }: DepotFormProps) {
                           <FormItem>
                             <FormLabel className="text-xs text-muted-foreground">Opens</FormLabel>
                             <FormControl>
-                              <Input type="time" {...f} className="h-9" />
+                              <Input type="time" step="1" {...f} className="h-9" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -419,7 +418,7 @@ export function DepotForm({ depotId }: DepotFormProps) {
                           <FormItem>
                             <FormLabel className="text-xs text-muted-foreground">Closes</FormLabel>
                             <FormControl>
-                              <Input type="time" {...f} className="h-9" />
+                              <Input type="time" step="1" {...f} className="h-9" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
