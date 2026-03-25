@@ -45,6 +45,16 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         {
             services.AddSingleton<LastMile.TMS.Application.Common.Interfaces.ICurrentUserService, StubCurrentUserService>();
 
+            // Remove all hosted services to prevent TaskCanceledException during teardown.
+            // StackExchangeRedisCache registers a RedisCacheService and Hangfire registers
+            // BackgroundJobServerHostedService; both hang on shutdown when Redis/Hangfire
+            // backends are unreachable in the test environment.
+            var hostedServices = services.Where(d => d.ServiceType.IsAssignableTo(typeof(IHostedService))).ToList();
+            foreach (var svc in hostedServices)
+            {
+                services.Remove(svc);
+            }
+
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
             if (descriptor != null)
             {
