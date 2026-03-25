@@ -43,33 +43,75 @@ export class ZoneFormPage {
     await this.cancelButton().click();
   }
 
-  async mockGeoJson() {
-    // Mock the GeoJSON state directly to bypass map drawing
-    await this.page.evaluate(() => {
-      // Find the state setters and call them directly
-      const stateSetters = (window as unknown as { __zoneFormState?: { setGeoJson?: (geojson: string) => void } }).__zoneFormState;
-      if (stateSetters?.setGeoJson) {
-        stateSetters.setGeoJson('{"type":"Polygon","coordinates":[[[-74.006,40.7128],[-74.006,40.7129],[-74.005,40.7129],[-74.005,40.7128],[-74.006,40.7128]]]}');
-      }
-    });
+  /**
+   * Draw a triangle polygon by dispatching pointer events directly to the canvas.
+   * Uses page.evaluate to send native pointer events, bypassing Playwright's mouse
+   * simulation which can have issues with WebGL canvas event handling in MapboxGL v3.
+   */
+  async drawPolygon() {
+    const map = this.mapContainer();
+    await map.waitFor({ state: "visible" });
 
-    // Alternative approach - dispatch custom event that the map listens to
-    await this.page.evaluate(() => {
-      // Set GeoJSON directly on window for testing
-      (window as unknown as { __testGeoJson?: string }).__testGeoJson = '{"type":"Polygon","coordinates":[[[-74.006,40.7128],[-74.006,40.7129],[-74.005,40.7129],[-74.005,40.7128],[-74.006,40.7128]]]}';
-    });
+    // Wait for draw control to be fully loaded
+    await this.page.waitForSelector(".mapbox-gl-draw_polygon", { state: "visible", timeout: 10000 });
+    await this.page.waitForTimeout(1000);
+
+    // Click the polygon tool to enter draw mode
+    await this.page.locator(".mapbox-gl-draw_polygon").click();
+    await this.page.waitForTimeout(500);
+
+    // Get the canvas element
+    const canvas = await this.page.$(".mapboxgl-map canvas");
+    if (!canvas) throw new Error("Map canvas not found");
+
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("Canvas bounding box not found");
+
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const offset = box.width * 0.15;
+
+    const p1 = { x: cx - offset, y: cy - offset };
+    const p2 = { x: cx + offset, y: cy - offset };
+    const p3 = { x: cx + offset, y: cy + offset };
+
+    // Helper to send a complete pointer sequence (down + up) at a position
+    const pointerClick = (x: number, y: number) =>
+      this.page.evaluate(
+        ([px, py]) => {
+          const el = document.elementFromPoint(px, py) as HTMLElement;
+          if (!el) return;
+          const opts = { pointerX: px, pointerY: py, bubbles: true, cancelable: true };
+          el.dispatchEvent(new PointerEvent("pointerdown", opts));
+          el.dispatchEvent(new PointerEvent("pointerup", opts));
+        },
+        [x, y]
+      );
+
+    // Double-click helper
+    const pointerDblClick = (x: number, y: number) =>
+      this.page.evaluate(
+        ([px, py]) => {
+          const el = document.elementFromPoint(px, py) as HTMLElement;
+          if (!el) return;
+          const opts = { pointerX: px, pointerY: py, bubbles: true, cancelable: true };
+          el.dispatchEvent(new PointerEvent("pointerdown", opts));
+          el.dispatchEvent(new PointerEvent("pointerup", opts));
+          el.dispatchEvent(new MouseEvent("dblclick", opts));
+        },
+        [x, y]
+      );
+
+    await pointerClick(p1.x, p1.y);
+    await this.page.waitForTimeout(200);
+    await pointerClick(p2.x, p2.y);
+    await this.page.waitForTimeout(200);
+    await pointerDblClick(p3.x, p3.y);
+    await this.page.waitForTimeout(500);
   }
 
-  async setGeoJsonDirectly(geoJson: string) {
-    // This is a fallback method to set geoJSON when we can't interact with the map
-    // We look for any state setter or event that might update the zone
-    await this.page.evaluate((gj) => {
-      // Try to find and call the state setter if exposed
-      const stateSetters = (window as unknown as Record<string, unknown>).__zoneFormState;
-      if (stateSetters && typeof (stateSetters as { setGeoJson?: (g: string) => void }).setGeoJson === "function") {
-        (stateSetters as { setGeoJson: (g: string) => void }).setGeoJson(gj);
-      }
-    }, geoJson);
+  async setGeoJsonDirectly() {
+    await this.drawPolygon();
   }
 
   async expectValidationError(message: string) {

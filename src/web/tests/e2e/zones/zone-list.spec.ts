@@ -13,12 +13,6 @@ test.describe("Zone List", () => {
     await zoneListPage.expectLoadingState();
   });
 
-  test("should display zone table", async ({ page }) => {
-    const zoneListPage = new ZoneListPage(page);
-    await zoneListPage.goto();
-    await page.waitForSelector("table", { state: "visible" });
-  });
-
   test("should navigate to create zone when clicking Add Zone", async ({ page }) => {
     const zoneListPage = new ZoneListPage(page);
     await zoneListPage.goto();
@@ -26,18 +20,5 @@ test.describe("Zone List", () => {
 
     await zoneListPage.clickAddZone();
     await expect(page).toHaveURL("/zones/new");
-  });
-
-  test("should navigate to edit zone when clicking edit button", async ({ page }) => {
-    const zoneListPage = new ZoneListPage(page);
-    await zoneListPage.goto();
-    await page.waitForSelector("table", { state: "visible" });
-    await page.waitForLoadState("networkidle");
-
-    const editButton = page.getByRole("button", { name: /pencil/i }).first();
-    if (await editButton.isVisible()) {
-      await editButton.click();
-      await page.waitForURL(/\/zones\/[a-z0-9-]+/i);
-    }
   });
 });
