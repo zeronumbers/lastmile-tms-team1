@@ -21,7 +21,9 @@ export default function NewRoutePage() {
     vehicleId?: string | null;
   }) => {
     try {
-      await createRoute.mutateAsync(values);
+      // Convert datetime-local format to ISO 8601 with UTC timezone
+      const plannedStartTime = new Date(values.plannedStartTime).toISOString();
+      await createRoute.mutateAsync({ ...values, plannedStartTime });
       toast.success("Route created successfully");
       router.push("/routes");
     } catch {

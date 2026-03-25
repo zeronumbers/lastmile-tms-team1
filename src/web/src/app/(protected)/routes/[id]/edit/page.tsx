@@ -26,7 +26,9 @@ export default function EditRoutePage() {
     vehicleId?: string | null;
   }) => {
     try {
-      await updateRoute.mutateAsync({ id, ...values });
+      // Convert datetime-local format to ISO 8601 with UTC timezone
+      const plannedStartTime = new Date(values.plannedStartTime).toISOString();
+      await updateRoute.mutateAsync({ id, ...values, plannedStartTime });
       toast.success("Route updated successfully");
       router.push(`/routes/${id}`);
     } catch {
