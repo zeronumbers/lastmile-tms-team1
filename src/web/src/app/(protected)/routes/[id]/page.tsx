@@ -5,9 +5,11 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRoute } from "@/lib/hooks/use-routes";
+import { useRoute, useChangeRouteStatus } from "@/lib/hooks/use-routes";
 import { RouteStatus } from "@/types/route";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 function getStatusBadgeVariant(status: RouteStatus) {
   switch (status) {
@@ -26,9 +28,26 @@ function getStatusBadgeVariant(status: RouteStatus) {
 
 export default function RouteDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
+  const [newStatus, setNewStatus] = useState<string>("");
 
   const { data: route, isLoading } = useRoute(id);
+  const changeStatus = useChangeRouteStatus();
+
+  const handleStatusChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStatus || newStatus === route?.status) return;
+
+    try {
+      await changeStatus.mutateAsync({ id, newStatus: newStatus as RouteStatus });
+      toast.success("Route status updated");
+      setNewStatus("");
+      router.refresh();
+    } catch {
+      toast.error("Failed to update route status");
+    }
+  };
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
@@ -74,6 +93,29 @@ export default function RouteDetailPage() {
                 <Badge variant={getStatusBadgeVariant(route.status)}>
                   {route.status.replace("_", " ")}
                 </Badge>
+                <form onSubmit={handleStatusChange} className="flex gap-2 mt-2">
+                  <select
+                    className="flex w-[160px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                  >
+                    <option value="">Change status</option>
+                    {Object.values(RouteStatus)
+                      .filter((s) => s !== route.status)
+                      .map((status) => (
+                        <option key={status} value={status}>
+                          {status.replace("_", " ")}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50"
+                    disabled={!newStatus || changeStatus.isPending}
+                  >
+                    {changeStatus.isPending ? "..." : "Update"}
+                  </button>
+                </form>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Parcels</p>

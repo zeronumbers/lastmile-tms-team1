@@ -1,0 +1,75 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using LastMile.TMS.Application.Common.Interfaces;
+using LastMile.TMS.Application.Features.Routes;
+using LastMile.TMS.Domain.Enums;
+
+namespace LastMile.TMS.Application.Features.Routes.Commands;
+
+public class ChangeRouteStatusCommandHandler(IAppDbContext context) : IRequestHandler<ChangeRouteStatusCommand, RouteDto>
+{
+    public async Task<RouteDto> Handle(ChangeRouteStatusCommand request, CancellationToken cancellationToken)
+    {
+        var route = await context.Routes
+            .Include(r => r.Vehicle)
+            .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
+
+        if (route is null)
+        {
+            throw new InvalidOperationException($"Route with ID {request.Id} not found");
+        }
+
+        var oldVehicleId = route.VehicleId;
+
+        // Handle status transitions
+        if (request.NewStatus == RouteStatus.Completed)
+        {
+            route.ActualEndTime = DateTime.UtcNow;
+            // Release vehicle when route is completed
+            if (oldVehicleId.HasValue)
+            {
+                var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == oldVehicleId.Value, cancellationToken);
+                if (vehicle != null && vehicle.Status == Domain.Enums.VehicleStatus.InUse)
+                {
+                    var stillInUse = await context.Routes.AnyAsync(r => r.VehicleId == oldVehicleId.Value && r.Id != request.Id, cancellationToken);
+                    if (!stillInUse)
+                    {
+                        vehicle.Status = Domain.Enums.VehicleStatus.Available;
+                    }
+                }
+            }
+        }
+        else if (request.NewStatus == RouteStatus.InProgress && !route.ActualStartTime.HasValue)
+        {
+            route.ActualStartTime = DateTime.UtcNow;
+            // Assign vehicle if not already assigned
+            if (oldVehicleId.HasValue)
+            {
+                var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == oldVehicleId.Value, cancellationToken);
+                if (vehicle != null && vehicle.Status == Domain.Enums.VehicleStatus.Available)
+                {
+                    vehicle.Status = Domain.Enums.VehicleStatus.InUse;
+                }
+            }
+        }
+
+        route.Status = request.NewStatus;
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return new RouteDto
+        {
+            Id = route.Id,
+            Name = route.Name,
+            Status = route.Status,
+            PlannedStartTime = route.PlannedStartTime,
+            ActualStartTime = route.ActualStartTime,
+            ActualEndTime = route.ActualEndTime,
+            TotalDistanceKm = route.TotalDistanceKm,
+            TotalParcelCount = route.TotalParcelCount,
+            VehicleId = route.VehicleId,
+            VehiclePlate = route.Vehicle?.RegistrationPlate,
+            CreatedAt = route.CreatedAt
+        };
+    }
+}

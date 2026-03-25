@@ -442,6 +442,84 @@ public class RouteIntegrationTests : IAsyncLifetime
         deleteJson.RootElement.GetProperty("data").GetProperty("deleteRoute").GetBoolean().Should().BeTrue();
     }
 
+    [Fact]
+    public async Task ChangeRouteStatus_ToInProgress_SetsActualStartTime()
+    {
+        // Arrange - Create a route
+        var createMutation = @"
+            mutation {
+                createRoute(
+                    name: ""Status Change Test"",
+                    plannedStartTime: ""2026-04-10T09:00:00Z"",
+                    totalDistanceKm: 40.0,
+                    totalParcelCount: 20
+                ) { id }
+            }";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Act - Change status to IN_PROGRESS
+        var changeMutation = $@"
+            mutation {{
+                changeRouteStatus(id: ""{routeId}"", newStatus: IN_PROGRESS) {{
+                    id
+                    status
+                    actualStartTime
+                }}
+            }}";
+        var changeResponse = await ExecuteGraphQLAsync(changeMutation);
+
+        // Assert
+        changeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var changeJson = await ReadJsonAsync(changeResponse);
+        changeJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = changeJson.RootElement.GetProperty("data").GetProperty("changeRouteStatus");
+        data.GetProperty("status").GetString().Should().Be("IN_PROGRESS");
+        data.GetProperty("actualStartTime").GetString().Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task ChangeRouteStatus_ToCompleted_ReleasesVehicle()
+    {
+        // Arrange - Create a route with vehicle
+        var createMutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Complete With Vehicle"",
+                    plannedStartTime: ""2026-04-11T10:00:00Z"",
+                    totalDistanceKm: 50.0,
+                    totalParcelCount: 25,
+                    vehicleId: ""{_vehicleId}""
+                ) {{ id }}
+            }}";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Act - Change status to COMPLETED
+        var completeMutation = $@"
+            mutation {{
+                changeRouteStatus(id: ""{routeId}"", newStatus: COMPLETED) {{
+                    id
+                    status
+                    actualEndTime
+                    vehiclePlate
+                }}
+            }}";
+        var completeResponse = await ExecuteGraphQLAsync(completeMutation);
+
+        // Assert
+        completeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var completeJson = await ReadJsonAsync(completeResponse);
+        completeJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = completeJson.RootElement.GetProperty("data").GetProperty("changeRouteStatus");
+        data.GetProperty("status").GetString().Should().Be("COMPLETED");
+        data.GetProperty("actualEndTime").GetString().Should().NotBeNullOrEmpty();
+        // Vehicle should be released (plate still returned but vehicle status updated)
+        data.GetProperty("vehiclePlate").GetString().Should().NotBeNullOrEmpty();
+    }
+
     private async Task<HttpResponseMessage> ExecuteGraphQLAsync(string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "/graphql");

@@ -92,3 +92,21 @@ export const DELETE_ROUTE = `
     deleteRoute(id: $id)
   }
 `;
+
+export const CHANGE_ROUTE_STATUS = `
+  mutation ChangeRouteStatus($id: UUID!, $newStatus: RouteStatus!) {
+    changeRouteStatus(id: $id, newStatus: $newStatus) {
+      id
+      name
+      status
+      plannedStartTime
+      actualStartTime
+      actualEndTime
+      totalDistanceKm
+      totalParcelCount
+      vehicleId
+      vehiclePlate
+      createdAt
+    }
+  }
+`;

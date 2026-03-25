@@ -100,4 +100,14 @@ public class Mutation
     {
         return await mediator.Send(new DeleteRouteCommand(id), cancellationToken);
     }
+
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
+    public async Task<RouteDto> ChangeRouteStatus(
+        [Service] IMediator mediator,
+        Guid id,
+        RouteStatus newStatus,
+        CancellationToken cancellationToken = default)
+    {
+        return await mediator.Send(new ChangeRouteStatusCommand(id, newStatus), cancellationToken);
+    }
 }

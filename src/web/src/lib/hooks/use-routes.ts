@@ -9,6 +9,7 @@ import {
   CREATE_ROUTE,
   UPDATE_ROUTE,
   DELETE_ROUTE,
+  CHANGE_ROUTE_STATUS,
 } from "@/lib/operations/routes";
 import { Route, RouteSummary, RouteStatus } from "@/types/route";
 
@@ -30,6 +31,10 @@ interface UpdateRouteResponse {
 
 interface DeleteRouteResponse {
   deleteRoute: boolean;
+}
+
+interface ChangeRouteStatusResponse {
+  changeRouteStatus: Route;
 }
 
 export function useRoutes(status?: RouteStatus) {
@@ -143,6 +148,25 @@ export function useDeleteRoute() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["routes"] });
+    },
+  });
+}
+
+export function useChangeRouteStatus() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: RouteStatus }) => {
+      return graphqlFetch<ChangeRouteStatusResponse>(
+        CHANGE_ROUTE_STATUS,
+        { id, newStatus },
+        session?.user?.accessToken
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["routes"] });
+      queryClient.invalidateQueries({ queryKey: ["route", variables.id] });
     },
   });
 }
