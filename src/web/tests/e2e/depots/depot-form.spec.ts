@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { DepotFormPage } from "../../page-objects/DepotFormPage";
 import { DepotListPage } from "../../page-objects/DepotListPage";
 import path from "path";

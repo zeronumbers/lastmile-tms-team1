@@ -1,7 +1,4 @@
 import { test, expect } from "@playwright/test";
-import path from "path";
-
-const adminAuthFile = path.join(__dirname, "..", "..", "fixtures", ".auth", "admin.json");
 
 test.describe("Authentication", () => {
   test("should display login form with username and password fields", async ({ page }) => {

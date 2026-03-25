@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 
 test("debug depot create", async ({ page }) => {
   const errors: string[] = [];
@@ -26,7 +26,7 @@ test("debug depot create", async ({ page }) => {
   await page.getByPlaceholder("Enter depot name").fill("Debug Depot");
 
   // Listen for network requests
-  const gqlRequests: any[] = [];
+  const gqlRequests: { url: string; method: string; headers: Record<string, string>; postData: string | null }[] = [];
   page.on('request', req => {
     if (req.url().includes('graphql')) {
       gqlRequests.push({

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { ZoneFormPage } from "../../page-objects/ZoneFormPage";
 import { ZoneListPage } from "../../page-objects/ZoneListPage";
 import { DepotFormPage } from "../../page-objects/DepotFormPage";

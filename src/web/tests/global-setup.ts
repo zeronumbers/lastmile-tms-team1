@@ -1,7 +1,8 @@
 import { chromium, FullConfig } from "@playwright/test";
 import path from "path";
 
-async function globalSetup(config: FullConfig) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Playwright requires this signature
+async function globalSetup(_config: FullConfig) {
   const baseURL = process.env.E2E_BASE_URL ?? "http://localhost";
   const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
   const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123";

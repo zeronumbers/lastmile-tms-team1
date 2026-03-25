@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 
 test.describe("Depot Form Fresh Login", () => {
   test("should create depot with minimal data (fresh login)", async ({ page }) => {

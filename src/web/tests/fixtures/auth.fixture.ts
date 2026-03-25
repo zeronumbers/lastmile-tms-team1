@@ -1,7 +1,4 @@
-import { test as base, Page, expect } from "@playwright/test";
-import path from "path";
-
-const adminAuthFile = path.join(__dirname, ".auth", "admin.json");
+import { test as base, Page } from "@playwright/test";
 
 export interface AuthenticatedPage {
   authenticatedPage: Page;
@@ -13,6 +10,7 @@ export const test = base.extend<AuthenticatedPage>({
       // Mock window.confirm to always return true for delete operations
       window.confirm = () => true;
     });
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture, not React
     await use(page);
   },
 });
@@ -28,5 +26,3 @@ export async function loginAsAdmin(page: Page) {
   await page.getByRole("button", { name: "Sign In" }).click();
   await page.waitForURL(`${baseURL}/dashboard`);
 }
-
-export { adminAuthFile };
