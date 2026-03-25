@@ -14,6 +14,7 @@ public class RouteIntegrationTests : IAsyncLifetime
     private HttpClient _client = null!;
     private string _accessToken = null!;
     private Guid _vehicleId = Guid.Empty;
+    private string _vehiclePlate = null!;
 
     private static string AdminUsername => Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? "admin";
     private static string AdminPassword => Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@123";
@@ -52,7 +53,8 @@ public class RouteIntegrationTests : IAsyncLifetime
         if (vehicleJson.RootElement.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
         {
             var errorMessage = errors[0].GetProperty("message").GetString();
-            throw new InvalidOperationException($"Failed to create vehicle in InitializeAsync: {errorMessage}");
+            var fullResponse = vehicleJson.RootElement.GetRawText();
+            throw new InvalidOperationException($"Failed to create vehicle in InitializeAsync: {errorMessage}. Response: {fullResponse}");
         }
 
         if (!vehicleJson.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
@@ -66,6 +68,9 @@ public class RouteIntegrationTests : IAsyncLifetime
         }
 
         _vehicleId = Guid.Parse(createVehicle.GetProperty("id").GetString()!);
+        _vehiclePlate = createVehicle.TryGetProperty("registrationPlate", out var plateEl)
+            ? plateEl.GetString()!
+            : uniquePlate;
     }
 
     public async Task DisposeAsync()
@@ -154,7 +159,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
         var data = json.RootElement.GetProperty("data").GetProperty("createRoute");
         data.GetProperty("vehicleId").GetString().Should().Be(_vehicleId.ToString());
-        data.GetProperty("vehiclePlate").GetString().Should().Be("ROUTE-VEH-001");
+        data.GetProperty("vehiclePlate").GetString().Should().Be(_vehiclePlate);
     }
 
     [Fact]
@@ -355,7 +360,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
         var data = json.RootElement.GetProperty("data").GetProperty("updateRoute");
         data.GetProperty("vehicleId").GetString().Should().Be(_vehicleId.ToString());
-        data.GetProperty("vehiclePlate").GetString().Should().Be("ROUTE-VEH-001");
+        data.GetProperty("vehiclePlate").GetString().Should().Be(_vehiclePlate);
     }
 
     [Fact]
