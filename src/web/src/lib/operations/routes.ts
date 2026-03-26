@@ -6,7 +6,9 @@ export const GET_ROUTES = `
       status
       plannedStartTime
       vehicleId
-      vehiclePlate
+      vehicle {
+        registrationPlate
+      }
     }
   }
 `;
@@ -23,7 +25,9 @@ export const GET_ROUTE = `
       totalDistanceKm
       totalParcelCount
       vehicleId
-      vehiclePlate
+      vehicle {
+        registrationPlate
+      }
       createdAt
     }
   }

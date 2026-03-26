@@ -1,10 +1,11 @@
 using HotChocolate.Authorization;
 using HotChocolate.Data;
 using LastMile.TMS.Application.Features.Vehicles;
-using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
+using VehicleEntity = LastMile.TMS.Domain.Entities.Vehicle;
+using LastMile.TMS.Domain.Entities;
 
 namespace LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
 
@@ -15,40 +16,22 @@ public class VehicleQuery
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<VehicleSummaryDto> GetVehicles(AppDbContext context)
+    public IQueryable<VehicleEntity> GetVehicles(AppDbContext context)
     {
-        return context.Vehicles
-            .OrderBy(v => v.RegistrationPlate)
-            .Select(v => new VehicleSummaryDto
-            {
-                Id = v.Id,
-                RegistrationPlate = v.RegistrationPlate,
-                Type = v.Type,
-                Status = v.Status,
-                DepotId = v.DepotId
-            });
+        return context.Vehicles;
     }
 
     [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     [UseProjection]
     [UseFirstOrDefault]
-    public IQueryable<VehicleDto> GetVehicle(AppDbContext context, Guid id)
+    public IQueryable<VehicleEntity> GetVehicle(AppDbContext context, Guid id)
     {
-        return context.Vehicles
-            .Where(v => v.Id == id)
-            .Select(v => new VehicleDto
-            {
-                Id = v.Id,
-                RegistrationPlate = v.RegistrationPlate,
-                Type = v.Type,
-                ParcelCapacity = v.ParcelCapacity,
-                WeightCapacityKg = v.WeightCapacityKg,
-                Status = v.Status,
-                DepotId = v.DepotId,
-                CreatedAt = v.CreatedAt
-            });
+        return context.Vehicles.Where(v => v.Id == id);
     }
 
+    // GetVehicleHistory uses manual aggregation (Sum, Count, Distinct) that cannot be
+    // expressed through UseFiltering/UseProjection. The aggregations require loading
+    // journeys into memory and computing totals, which is not supported by simple projection.
     [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     public async Task<VehicleHistoryDto?> GetVehicleHistory(
         AppDbContext context,

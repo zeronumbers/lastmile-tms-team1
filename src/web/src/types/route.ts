@@ -11,7 +11,9 @@ export interface RouteSummary {
   status: RouteStatus;
   plannedStartTime: string;
   vehicleId: string | null;
-  vehiclePlate: string | null;
+  vehicle: {
+    registrationPlate: string | null;
+  } | null;
 }
 
 export interface Route {
@@ -24,7 +26,9 @@ export interface Route {
   totalDistanceKm: number;
   totalParcelCount: number;
   vehicleId: string | null;
-  vehiclePlate: string | null;
+  vehicle: {
+    registrationPlate: string | null;
+  } | null;
   createdAt: string;
 }
 

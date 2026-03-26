@@ -1,10 +1,8 @@
 using HotChocolate.Authorization;
 using HotChocolate.Data;
-using LastMile.TMS.Application.Features.Routes;
-using LastMile.TMS.Domain.Entities;
-using LastMile.TMS.Domain.Enums;
 using LastMile.TMS.Persistence;
-using Microsoft.EntityFrameworkCore;
+using RouteEntity = LastMile.TMS.Domain.Entities.Route;
+using LastMile.TMS.Domain.Entities;
 
 namespace LastMile.TMS.Api.GraphQL.Extensions.Route;
 
@@ -15,41 +13,16 @@ public class RouteQuery
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<RouteSummaryDto> GetRoutes(AppDbContext context)
+    public IQueryable<RouteEntity> GetRoutes(AppDbContext context)
     {
-        return context.Routes
-            .OrderBy(r => r.PlannedStartTime)
-            .Select(r => new RouteSummaryDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Status = r.Status,
-                PlannedStartTime = r.PlannedStartTime,
-                VehicleId = r.VehicleId,
-                VehiclePlate = r.Vehicle != null ? r.Vehicle.RegistrationPlate : null
-            });
+        return context.Routes;
     }
 
     [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
     [UseProjection]
     [UseFirstOrDefault]
-    public IQueryable<RouteDto> GetRoute(AppDbContext context, Guid id)
+    public IQueryable<RouteEntity> GetRoute(AppDbContext context, Guid id)
     {
-        return context.Routes
-            .Where(r => r.Id == id)
-            .Select(r => new RouteDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Status = r.Status,
-                PlannedStartTime = r.PlannedStartTime,
-                ActualStartTime = r.ActualStartTime,
-                ActualEndTime = r.ActualEndTime,
-                TotalDistanceKm = r.TotalDistanceKm,
-                TotalParcelCount = r.TotalParcelCount,
-                VehicleId = r.VehicleId,
-                VehiclePlate = r.Vehicle != null ? r.Vehicle.RegistrationPlate : null,
-                CreatedAt = r.CreatedAt
-            });
+        return context.Routes.Where(r => r.Id == id);
     }
 }

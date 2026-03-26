@@ -127,7 +127,7 @@ export default function RouteDetailPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Vehicle</p>
-                <p>{route.vehiclePlate ?? "Not assigned"}</p>
+                <p>{route.vehicle?.registrationPlate ?? "Not assigned"}</p>
               </div>
             </div>
 
