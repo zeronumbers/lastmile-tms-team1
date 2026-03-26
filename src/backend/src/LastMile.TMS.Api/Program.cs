@@ -120,7 +120,8 @@ try
         .AddAuthorization()
         .AddSpatialTypes()
         .AddQueryType<Query>()
-        .AddMutationType<Mutation>();
+        .AddMutationType<Mutation>()
+        .AddErrorFilter<ErrorFilter>();
 
     builder.Services.AddHangfire(config =>
         config.UsePostgreSqlStorage(options =>
