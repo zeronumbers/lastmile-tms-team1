@@ -86,7 +86,8 @@ export function RouteTable({ data, onDelete, isDeleting }: RouteTableProps) {
         return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       },
     }),
-    columnHelper.accessor("vehiclePlate", {
+    columnHelper.accessor((row) => row.vehicle?.registrationPlate, {
+      id: "vehiclePlate",
       header: "Vehicle",
       cell: (info) => info.getValue() ?? <span className="text-muted-foreground">Unassigned</span>,
     }),
