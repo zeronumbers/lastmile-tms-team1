@@ -50,7 +50,7 @@ export function useVehicles(status?: VehicleStatus) {
     queryFn: async () => {
       const data = await graphqlFetch<VehiclesResponse>(
         GET_VEHICLES,
-        status ? { status } : {},
+        status ? { where: { status } } : {},
         session?.user?.accessToken
       );
       return data.vehicles;

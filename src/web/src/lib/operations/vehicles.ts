@@ -1,6 +1,6 @@
 export const GET_VEHICLES = `
-  query GetVehicles($status: VehicleStatus) {
-    vehicles(status: $status) {
+  query GetVehicles($where: VehicleFilterInput) {
+    vehicles(where: $where) {
       id
       registrationPlate
       type

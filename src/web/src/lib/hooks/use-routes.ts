@@ -45,7 +45,7 @@ export function useRoutes(status?: RouteStatus) {
     queryFn: async () => {
       const data = await graphqlFetch<RoutesResponse>(
         GET_ROUTES,
-        status ? { status } : {},
+        status ? { where: { status } } : {},
         session?.user?.accessToken
       );
       return data.routes;

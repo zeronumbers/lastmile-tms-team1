@@ -1,6 +1,6 @@
 export const GET_ROUTES = `
-  query GetRoutes($status: RouteStatus) {
-    routes(status: $status) {
+  query GetRoutes($where: RouteFilterInput) {
+    routes(where: $where) {
       id
       name
       status
