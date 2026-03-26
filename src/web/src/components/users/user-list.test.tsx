@@ -126,7 +126,7 @@ describe('UserList', () => {
       />
     );
 
-    expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Inactive')).toBeInTheDocument();
+    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+    expect(screen.getByText('INACTIVE')).toBeInTheDocument();
   });
 });

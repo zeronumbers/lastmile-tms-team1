@@ -6,7 +6,7 @@ describe('UserStatusBadge', () => {
   it('renders Active status with green styling', () => {
     render(<UserStatusBadge status="ACTIVE" />);
 
-    const badge = screen.getByText('Active');
+    const badge = screen.getByText('ACTIVE');
     expect(badge).toBeInTheDocument();
     expect(badge.className).toContain('bg-emerald-500/10');
     expect(badge.className).toContain('text-emerald-500');
@@ -15,7 +15,7 @@ describe('UserStatusBadge', () => {
   it('renders Inactive status with gray styling', () => {
     render(<UserStatusBadge status="INACTIVE" />);
 
-    const badge = screen.getByText('Inactive');
+    const badge = screen.getByText('INACTIVE');
     expect(badge).toBeInTheDocument();
     expect(badge.className).toContain('bg-muted');
     expect(badge.className).toContain('text-muted-foreground');
@@ -24,7 +24,7 @@ describe('UserStatusBadge', () => {
   it('renders Suspended status with red styling', () => {
     render(<UserStatusBadge status="SUSPENDED" />);
 
-    const badge = screen.getByText('Suspended');
+    const badge = screen.getByText('SUSPENDED');
     expect(badge).toBeInTheDocument();
     expect(badge.className).toContain('bg-red-500/10');
     expect(badge.className).toContain('text-red-500');
