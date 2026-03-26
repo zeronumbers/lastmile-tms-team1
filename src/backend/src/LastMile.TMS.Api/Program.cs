@@ -11,6 +11,8 @@ using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
 using LastMile.TMS.Api.GraphQL;
+using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
+using LastMile.TMS.Api.GraphQL.Extensions.Route;
 using HotChocolate.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
@@ -117,10 +119,16 @@ try
     builder.Services
         .AddGraphQLServer()
         .AddProjections()
+        .AddFiltering()
+        .AddSorting()
         .AddAuthorization()
         .AddSpatialTypes()
         .AddQueryType<Query>()
+        .AddQueryType<VehicleQuery>()
+        .AddQueryType<RouteQuery>()
         .AddMutationType<Mutation>()
+        .AddMutationType<VehicleMutation>()
+        .AddMutationType<RouteMutation>()
         .AddErrorFilter<ErrorFilter>();
 
     builder.Services.AddHangfire(config =>
