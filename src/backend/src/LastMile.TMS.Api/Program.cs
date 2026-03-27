@@ -2,6 +2,8 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using HotChocolate.AspNetCore;
 using LastMile.TMS.Api.GraphQL;
+using LastMile.TMS.Api.GraphQL.Extensions.Depot;
+using LastMile.TMS.Api.GraphQL.Extensions.Zone;
 using LastMile.TMS.Api.GraphQL.Inputs;
 using LastMile.TMS.Application;
 using LastMile.TMS.Domain.Entities;
@@ -122,8 +124,12 @@ try
         .AddFiltering()
         .AddSorting()
         .AddProjections()
-        .AddQueryType<Query>()
-        .AddMutationType<Mutation>()
+        .AddQueryType<Query>(d => d.Name("Query").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
+        .AddMutationType<Mutation>(d => d.Name("Mutation").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
+        .AddType<DepotQuery>()
+        .AddType<DepotMutation>()
+        .AddType<ZoneQuery>()
+        .AddType<ZoneMutation>()
         .AddType<CreateDepotInput>()
         .AddType<UpdateDepotInput>()
         .AddType<UpdateAddressInputType>()
