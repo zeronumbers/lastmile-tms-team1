@@ -15,7 +15,7 @@ public class LabelServiceTests
         _labelService = new LabelService();
     }
 
-    private static Parcel CreateTestParcel(string trackingNumber = "LMTT1-TEST-123456")
+    private static Parcel CreateTestParcel()
     {
         var address = new Address
         {
@@ -34,18 +34,12 @@ public class LabelServiceTests
             Name = "Zone-A"
         };
 
-        var parcel = new Parcel
-        {
-            RecipientAddress = address,
-            RecipientAddressId = address.Id,
-            Zone = zone,
-            ParcelType = "Standard",
-            ServiceType = ServiceType.Express
-        };
-
-        // Use reflection to set the read-only TrackingNumber for testing
-        var trackingNumberProperty = typeof(Parcel).GetProperty("TrackingNumber");
-        trackingNumberProperty?.SetValue(parcel, trackingNumber);
+        // Use domain factory method to create parcel with proper tracking number
+        var parcel = Parcel.Create("Test parcel", ServiceType.Express);
+        parcel.RecipientAddress = address;
+        parcel.RecipientAddressId = address.Id;
+        parcel.Zone = zone;
+        parcel.ParcelType = "Standard";
 
         return parcel;
     }
@@ -173,9 +167,9 @@ public class LabelServiceTests
         // Arrange
         var parcels = new List<Parcel>
         {
-            CreateTestParcel("LMTT1-TEST-000001"),
-            CreateTestParcel("LMTT1-TEST-000002"),
-            CreateTestParcel("LMTT1-TEST-000003")
+            CreateTestParcel(),
+            CreateTestParcel(),
+            CreateTestParcel()
         };
 
         // Act

@@ -48,48 +48,51 @@ public class LabelIntegrationTests : IAsyncLifetime
             ContactName = "Test User"
         };
 
+        // Create a proper polygon for zone boundary (not a point)
+        var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        var polygon = geometryFactory.CreatePolygon(new[]
+        {
+            new NetTopologySuite.Geometries.Coordinate(0, 0),
+            new NetTopologySuite.Geometries.Coordinate(0.001, 0),
+            new NetTopologySuite.Geometries.Coordinate(0.001, 0.001),
+            new NetTopologySuite.Geometries.Coordinate(0, 0.001),
+            new NetTopologySuite.Geometries.Coordinate(0, 0)
+        });
+
         var zone = new Zone
         {
             Name = "Test-Zone",
             IsActive = true,
             DepotId = Guid.NewGuid(),
-            BoundaryGeometry = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326).CreatePoint(new NetTopologySuite.Geometries.Coordinate(0, 0))
+            BoundaryGeometry = polygon
         };
 
         context.Addresses.Add(address);
         await context.SaveChangesAsync();
 
-        var trackingNumber = Parcel.GenerateTrackingNumber();
-        var parcel = new Parcel
-        {
-            RecipientAddressId = address.Id,
-            RecipientAddress = address,
-            ShipperAddressId = address.Id,
-            ShipperAddress = address,
-            ZoneId = zone.Id,
-            Zone = zone,
-            ParcelType = "Standard",
-            ServiceType = ServiceType.Express,
-            Weight = 1.5m,
-            WeightUnit = WeightUnit.Kg,
-            Length = 10m,
-            Width = 10m,
-            Height = 10m,
-            DimensionUnit = DimensionUnit.Cm,
-            DeclaredValue = 100m,
-            Currency = "USD",
-            Status = ParcelStatus.Registered
-        };
-
-        // Use reflection to set the read-only TrackingNumber
-        var trackingNumberProperty = typeof(Parcel).GetProperty("TrackingNumber");
-        trackingNumberProperty?.SetValue(parcel, trackingNumber);
+        // Use domain factory method to create parcel with proper tracking number
+        var parcel = Parcel.Create("Test parcel", ServiceType.Express);
+        parcel.RecipientAddressId = address.Id;
+        parcel.RecipientAddress = address;
+        parcel.ShipperAddressId = address.Id;
+        parcel.ShipperAddress = address;
+        parcel.ZoneId = zone.Id;
+        parcel.Zone = zone;
+        parcel.ParcelType = "Standard";
+        parcel.Weight = 1.5m;
+        parcel.WeightUnit = WeightUnit.Kg;
+        parcel.Length = 10m;
+        parcel.Width = 10m;
+        parcel.Height = 10m;
+        parcel.DimensionUnit = DimensionUnit.Cm;
+        parcel.DeclaredValue = 100m;
+        parcel.Currency = "USD";
 
         context.Zones.Add(zone);
         context.Parcels.Add(parcel);
         await context.SaveChangesAsync();
 
-        return (parcel.Id, trackingNumber);
+        return (parcel.Id, parcel.TrackingNumber);
     }
 
     [Fact]
