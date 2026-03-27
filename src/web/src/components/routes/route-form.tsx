@@ -15,7 +15,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Link from "next/link";
-import { RouteStatus } from "@/types/route";
 import { useVehicles } from "@/lib/hooks/use-vehicles";
 import { VehicleStatus } from "@/types/vehicle";
 
