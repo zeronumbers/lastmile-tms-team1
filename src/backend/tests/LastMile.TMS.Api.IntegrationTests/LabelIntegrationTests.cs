@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using LastMile.TMS.Domain.Common;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -59,15 +60,24 @@ public class LabelIntegrationTests : IAsyncLifetime
             new NetTopologySuite.Geometries.Coordinate(0, 0)
         });
 
+        // Create depot first, then zone that references it
+        var depot = new Depot
+        {
+            Name = "Test Depot",
+            IsActive = true,
+            OperatingHours = OperatingHours.CreateWeekdays(new TimeOnly(8, 0), new TimeOnly(18, 0))
+        };
+
         var zone = new Zone
         {
             Name = "Test-Zone",
             IsActive = true,
-            DepotId = Guid.NewGuid(),
+            Depot = depot,
             BoundaryGeometry = polygon
         };
 
         context.Addresses.Add(address);
+        context.Depots.Add(depot);
         await context.SaveChangesAsync();
 
         // Use domain factory method to create parcel with proper tracking number
