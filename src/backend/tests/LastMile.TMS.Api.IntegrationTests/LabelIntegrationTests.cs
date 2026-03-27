@@ -1,0 +1,192 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using FluentAssertions;
+using LastMile.TMS.Domain.Entities;
+using LastMile.TMS.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using NetTopologySuite;
+
+namespace LastMile.TMS.Api.IntegrationTests;
+
+[Collection("Integration")]
+public class LabelIntegrationTests : IAsyncLifetime
+{
+    private readonly IntegrationTestWebApplicationFactory _factory;
+    private HttpClient _client = null!;
+
+    public LabelIntegrationTests(PostgreSqlContainerFixture postgreSqlFixture)
+    {
+        _factory = new IntegrationTestWebApplicationFactory(postgreSqlFixture);
+    }
+
+    public async Task InitializeAsync()
+    {
+        await _factory.InitializeAsync();
+        _client = _factory.CreateClient();
+    }
+
+    public async Task DisposeAsync()
+    {
+        _client.Dispose();
+        await _factory.DisposeAsync();
+    }
+
+    private async Task<(Guid parcelId, string trackingNumber)> SeedParcelAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Persistence.AppDbContext>();
+
+        var address = new Address
+        {
+            Street1 = "456 Test St",
+            City = "Testville",
+            State = "TS",
+            PostalCode = "12345",
+            CountryCode = "US",
+            ContactName = "Test User"
+        };
+
+        var zone = new Zone
+        {
+            Name = "Test-Zone",
+            IsActive = true,
+            DepotId = Guid.NewGuid(),
+            BoundaryGeometry = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326).CreatePoint(new NetTopologySuite.Geometries.Coordinate(0, 0))
+        };
+
+        context.Addresses.Add(address);
+        await context.SaveChangesAsync();
+
+        var trackingNumber = Parcel.GenerateTrackingNumber();
+        var parcel = new Parcel
+        {
+            RecipientAddressId = address.Id,
+            RecipientAddress = address,
+            ShipperAddressId = address.Id,
+            ShipperAddress = address,
+            ZoneId = zone.Id,
+            Zone = zone,
+            ParcelType = "Standard",
+            ServiceType = ServiceType.Express,
+            Weight = 1.5m,
+            WeightUnit = WeightUnit.Kg,
+            Length = 10m,
+            Width = 10m,
+            Height = 10m,
+            DimensionUnit = DimensionUnit.Cm,
+            DeclaredValue = 100m,
+            Currency = "USD",
+            Status = ParcelStatus.Registered
+        };
+
+        // Use reflection to set the read-only TrackingNumber
+        var trackingNumberProperty = typeof(Parcel).GetProperty("TrackingNumber");
+        trackingNumberProperty?.SetValue(parcel, trackingNumber);
+
+        context.Zones.Add(zone);
+        context.Parcels.Add(parcel);
+        await context.SaveChangesAsync();
+
+        return (parcel.Id, trackingNumber);
+    }
+
+    [Fact]
+    public async Task GetZplLabel_WithValidParcel_ReturnsOk()
+    {
+        // Arrange
+        var (parcelId, trackingNumber) = await SeedParcelAsync();
+
+        // Act
+        var response = await _client.GetAsync($"/api/labels/{parcelId}/zpl");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain(trackingNumber);
+        content.Should().Contain("Test User");
+        content.Should().Contain("456 Test St");
+    }
+
+    [Fact]
+    public async Task GetZplLabel_WithInvalidParcelId_ReturnsNotFound()
+    {
+        // Arrange
+        var invalidParcelId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/labels/{invalidParcelId}/zpl");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetPdfLabel_WithValidParcel_ReturnsOk()
+    {
+        // Arrange
+        var (parcelId, trackingNumber) = await SeedParcelAsync();
+
+        // Act
+        var response = await _client.GetAsync($"/api/labels/{parcelId}/pdf");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/pdf");
+        var content = await response.Content.ReadAsByteArrayAsync();
+        content.Should().NotBeEmpty();
+        var header = Encoding.ASCII.GetString(content, 0, 5);
+        header.Should().Be("%PDF-");
+    }
+
+    [Fact]
+    public async Task GetPdfLabel_WithInvalidParcelId_ReturnsNotFound()
+    {
+        // Arrange
+        var invalidParcelId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/labels/{invalidParcelId}/pdf");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostBulkLabels_WithMultipleParcelIds_ReturnsPdf()
+    {
+        // Arrange
+        var (parcelId1, _) = await SeedParcelAsync();
+        var (parcelId2, _) = await SeedParcelAsync();
+        var parcelIds = new List<Guid> { parcelId1, parcelId2 };
+        var json = JsonSerializer.Serialize(parcelIds);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/labels/bulk/pdf", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/pdf");
+        var responseBytes = await response.Content.ReadAsByteArrayAsync();
+        responseBytes.Should().NotBeEmpty();
+        var header = Encoding.ASCII.GetString(responseBytes, 0, 5);
+        header.Should().Be("%PDF-");
+    }
+
+    [Fact]
+    public async Task PostBulkLabels_WithInvalidParcelIds_ReturnsNotFound()
+    {
+        // Arrange
+        var invalidParcelIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
+        var json = JsonSerializer.Serialize(invalidParcelIds);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/labels/bulk/pdf", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+}
