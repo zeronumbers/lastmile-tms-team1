@@ -1,18 +1,11 @@
 using HotChocolate;
 using HotChocolate.Execution;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace LastMile.TMS.Api.GraphQL;
 
 public class ErrorFilter : IErrorFilter
 {
-    private readonly ILogger<ErrorFilter> _logger;
-
-    public ErrorFilter(ILogger<ErrorFilter> logger)
-    {
-        _logger = logger;
-    }
-
     public IError OnError(IError error)
     {
         if (error.Exception is not null)
@@ -20,7 +13,7 @@ public class ErrorFilter : IErrorFilter
             var exceptionType = error.Exception.GetType().Name;
             var traceId = Guid.NewGuid().ToString("N")[..8];
 
-            _logger.LogError(
+            Log.Error(
                 error.Exception,
                 "GraphQL error {TraceId}: {ExceptionType} - {Message}",
                 traceId,
