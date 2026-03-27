@@ -19,6 +19,6 @@ public record UpdateAddressInput(
 public record UpdateDepotCommand(
     Guid Id,
     string Name,
-    UpdateAddressInput? Address,
+    UpdateAddressInput Address,
     List<DailyOperatingHoursInput>? OperatingHours,
     bool IsActive) : IRequest<DepotResult>;

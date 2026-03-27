@@ -7,7 +7,7 @@ public record DailyOperatingHoursInput(DayOfWeek DayOfWeek, TimeOnly? OpenTime, 
 
 public record CreateDepotCommand(
     string Name,
-    AddressInput? Address,
+    AddressInput Address,
     List<DailyOperatingHoursInput>? OperatingHours,
     bool IsActive = true) : IRequest<DepotResult>;
 

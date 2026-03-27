@@ -78,6 +78,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         var mutation = @"mutation {
             createDepot(input: {
                 name: ""Test Depot"",
+                address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" },
                 isActive: true
             }) {
                 id
@@ -102,7 +103,8 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         // Arrange
         var mutation = @"mutation {
             createDepot(input: {
-                name: """"
+                name: """",
+                address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }
             }) {
                 id
                 name
@@ -123,7 +125,8 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         // Arrange - First create a depot
         var createMutation = @"mutation {
             createDepot(input: {
-                name: ""Original Depot""
+                name: ""Original Depot"",
+                address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }
             }) {
                 id
                 name
@@ -138,6 +141,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
             updateDepot(input: {{
                 id: ""{depotId}"",
                 name: ""Updated Depot"",
+                address: {{ street1: ""456 Update St"", city: ""Update City"", state: ""US"", postalCode: ""54321"", countryCode: ""US"" }},
                 isActive: false
             }}) {{
                 id
@@ -158,7 +162,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
     {
         // Arrange - First create a depot
         var createDepotMutation = @"mutation {
-            createDepot(input: { name: ""Zone Test Depot"" }) {
+            createDepot(input: { name: ""Zone Test Depot"", address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" } }) {
                 id
             }
         }";
@@ -196,7 +200,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
     {
         // Arrange - First create a depot
         var createDepotMutation = @"mutation {
-            createDepot(input: { name: ""Invalid GeoJSON Depot"" }) {
+            createDepot(input: { name: ""Invalid GeoJSON Depot"", address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" } }) {
                 id
             }
         }";
@@ -230,7 +234,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
     {
         // Arrange - Create depot first
         var createDepotMutation = @"mutation {
-            createDepot(input: { name: ""Link Test Depot"" }) {
+            createDepot(input: { name: ""Link Test Depot"", address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" } }) {
                 id
                 name
             }
@@ -265,7 +269,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
     {
         // Arrange - Create depot first
         var createDepotMutation = @"mutation {
-            createDepot(input: { name: ""Update Zone Depot"" }) {
+            createDepot(input: { name: ""Update Zone Depot"", address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" } }) {
                 id
             }
         }";
@@ -317,6 +321,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         var createMutation = @"mutation {
             createDepot(input: {
                 name: ""Query Test Depot"",
+                address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" },
                 isActive: true
             }) {
                 id
@@ -355,7 +360,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
     {
         // Arrange - Create depot and zone
         var createDepotMutation = @"mutation {
-            createDepot(input: { name: ""All Zones Depot"" }) {
+            createDepot(input: { name: ""All Zones Depot"", address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" } }) {
                 id
             }
         }";
@@ -408,6 +413,7 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         var createMutation = @"mutation {
             createDepot(input: {
                 name: ""Persist Test Depot"",
+                address: { street1: ""123 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" },
                 isActive: true
             }) {
                 id
@@ -447,6 +453,231 @@ public class DepotZoneIntegrationTests : IAsyncLifetime
         var depotIds = depots.EnumerateArray().Select(d => d.GetProperty("id").GetString()).ToList();
 
         depotIds.Should().Contain(depotId, $"Created depot with ID {depotId} should be queryable after creation. Found IDs: {string.Join(", ", depotIds)}");
+    }
+
+    [Fact]
+    public async Task UpdateDepot_Address_ShouldPersistNewAddress()
+    {
+        // Arrange - Create depot with initial address
+        var createMutation = @"mutation {
+            createDepot(input: {
+                name: ""Address Update Depot"",
+                address: { street1: ""100 Old St"", city: ""Old City"", state: ""OC"", postalCode: ""11111"", countryCode: ""US"" }
+            }) {
+                id
+                name
+            }
+        }";
+
+        var createJson = await GraphQLRequestAsync(createMutation);
+        var depotId = createJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
+
+        // Act - Update the depot with a new address
+        var updateMutation = $@"mutation {{
+            updateDepot(input: {{
+                id: ""{depotId}"",
+                name: ""Address Update Depot"",
+                address: {{ street1: ""200 New St"", city: ""New City"", state: ""NC"", postalCode: ""22222"", countryCode: ""US"" }},
+                isActive: true
+            }}) {{
+                id
+                name
+            }}
+        }}";
+
+        var updateJson = await GraphQLRequestAsync(updateMutation);
+
+        if (updateJson.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"Update depot failed: {errors.GetRawText()}");
+        }
+
+        // Assert - Query the depot and verify the new address
+        var query = $@"query {{
+            depot(id: ""{depotId}"") {{
+                id
+                name
+                address {{
+                    street1
+                    city
+                    state
+                    postalCode
+                }}
+            }}
+        }}";
+
+        var queryJson = await GraphQLRequestAsync(query);
+
+        if (queryJson.TryGetProperty("errors", out var queryErrors))
+        {
+            throw new Exception($"Query depot failed: {queryErrors.GetRawText()}");
+        }
+
+        var depot = queryJson.GetProperty("data").GetProperty("depot");
+        depot.GetProperty("address").GetProperty("street1").GetString().Should().Be("200 New St");
+        depot.GetProperty("address").GetProperty("city").GetString().Should().Be("New City");
+        depot.GetProperty("address").GetProperty("state").GetString().Should().Be("NC");
+        depot.GetProperty("address").GetProperty("postalCode").GetString().Should().Be("22222");
+    }
+
+    [Fact]
+    public async Task UpdateDepot_Schedule_ShouldPersistNewSchedule()
+    {
+        // Arrange - Create depot with default schedule (Mon-Fri 9-17)
+        var createMutation = @"mutation {
+            createDepot(input: {
+                name: ""Schedule Update Depot"",
+                address: { street1: ""100 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }
+            }) {
+                id
+                name
+            }
+        }";
+
+        var createJson = await GraphQLRequestAsync(createMutation);
+        var depotId = createJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
+
+        // Act - Update the depot schedule to Mon-Sat 8-20
+        var updateMutation = $@"mutation {{
+            updateDepot(input: {{
+                id: ""{depotId}"",
+                name: ""Schedule Update Depot"",
+                address: {{ street1: ""100 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }},
+                operatingHours: [
+                    {{ dayOfWeek: MONDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }},
+                    {{ dayOfWeek: TUESDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }},
+                    {{ dayOfWeek: WEDNESDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }},
+                    {{ dayOfWeek: THURSDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }},
+                    {{ dayOfWeek: FRIDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }},
+                    {{ dayOfWeek: SATURDAY, openTime: ""08:00:00"", closeTime: ""20:00:00"" }}
+                ],
+                isActive: true
+            }}) {{
+                id
+                name
+            }}
+        }}";
+
+        var updateJson = await GraphQLRequestAsync(updateMutation);
+
+        if (updateJson.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"Update depot schedule failed: {errors.GetRawText()}");
+        }
+
+        // Assert - Query the depot and verify the new schedule
+        var query = $@"query {{
+            depot(id: ""{depotId}"") {{
+                id
+                name
+                shiftSchedules {{
+                    dayOfWeek
+                    openTime
+                    closeTime
+                }}
+            }}
+        }}";
+
+        var queryJson = await GraphQLRequestAsync(query);
+
+        if (queryJson.TryGetProperty("errors", out var queryErrors))
+        {
+            throw new Exception($"Query depot failed: {queryErrors.GetRawText()}");
+        }
+
+        var depot = queryJson.GetProperty("data").GetProperty("depot");
+        var schedules = depot.GetProperty("shiftSchedules");
+
+        // Verify Saturday is now in the schedule with new hours
+        var saturdaySchedule = schedules.EnumerateArray().FirstOrDefault(s => s.GetProperty("dayOfWeek").GetString() == "SATURDAY");
+        saturdaySchedule.ValueKind.Should().NotBe(JsonValueKind.Undefined);
+        saturdaySchedule.GetProperty("openTime").GetString().Should().Be("08:00:00");
+        saturdaySchedule.GetProperty("closeTime").GetString().Should().Be("20:00:00");
+
+        // Verify Friday has updated hours (was 17:00, now 20:00)
+        var fridaySchedule = schedules.EnumerateArray().FirstOrDefault(s => s.GetProperty("dayOfWeek").GetString() == "FRIDAY");
+        fridaySchedule.ValueKind.Should().NotBe(JsonValueKind.Undefined);
+        fridaySchedule.GetProperty("openTime").GetString().Should().Be("08:00:00");
+        fridaySchedule.GetProperty("closeTime").GetString().Should().Be("20:00:00");
+
+        // Verify Sunday is NOT in the schedule anymore
+        var sundaySchedule = schedules.EnumerateArray().FirstOrDefault(s => s.GetProperty("dayOfWeek").GetString() == "SUNDAY");
+        sundaySchedule.ValueKind.Should().Be(JsonValueKind.Undefined);
+    }
+
+    [Fact]
+    public async Task UpdateDepot_Name_ZoneDepotName_ShouldReflectChange()
+    {
+        // Arrange - Create depot
+        var createDepotMutation = @"mutation {
+            createDepot(input: {
+                name: ""Original Depot Name"",
+                address: { street1: ""100 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }
+            }) {
+                id
+                name
+            }
+        }";
+
+        var depotJson = await GraphQLRequestAsync(createDepotMutation);
+        var depotId = depotJson.GetProperty("data").GetProperty("createDepot").GetProperty("id").GetString();
+
+        // Arrange - Create zone linked to the depot
+        var geoJson = @"{""type"":""Polygon"",""coordinates"":[[[-122.4194,37.7749],[-122.4094,37.7749],[-122.4094,37.7849],[-122.4194,37.7849],[-122.4194,37.7749]]]}";
+        var createZoneMutation = $@"mutation {{
+            createZone(input: {{
+                name: ""Test Zone"",
+                geoJson: ""{geoJson.Replace("\"", "\\\"")}"",
+                depotId: ""{depotId}""
+            }}) {{
+                id
+                name
+            }}
+        }}";
+
+        await GraphQLRequestAsync(createZoneMutation);
+
+        // Act - Update depot name
+        var updateMutation = $@"mutation {{
+            updateDepot(input: {{
+                id: ""{depotId}"",
+                name: ""Updated Depot Name"",
+                address: {{ street1: ""100 Test St"", city: ""Test City"", state: ""TS"", postalCode: ""12345"", countryCode: ""US"" }},
+                isActive: true
+            }}) {{
+                id
+                name
+            }}
+        }}";
+
+        await GraphQLRequestAsync(updateMutation);
+
+        // Assert - Query the zone and verify depot name has changed
+        var query = $@"query {{
+            zones {{
+                nodes {{
+                    id
+                    name
+                    depot {{
+                        id
+                        name
+                    }}
+                }}
+            }}
+        }}";
+
+        var queryJson = await GraphQLRequestAsync(query);
+
+        if (queryJson.TryGetProperty("errors", out var queryErrors))
+        {
+            throw new Exception($"Query zones failed: {queryErrors.GetRawText()}");
+        }
+
+        var zones = queryJson.GetProperty("data").GetProperty("zones").GetProperty("nodes");
+        var testZone = zones.EnumerateArray().FirstOrDefault(z => z.GetProperty("name").GetString() == "Test Zone");
+
+        testZone.ValueKind.Should().NotBe(JsonValueKind.Undefined);
+        testZone.GetProperty("depot").GetProperty("name").GetString().Should().Be("Updated Depot Name");
     }
 
     private static async Task CleanupTestDataAsync(string connectionString)

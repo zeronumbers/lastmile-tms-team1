@@ -20,7 +20,7 @@ public class DepotConfiguration : IEntityTypeConfiguration<Depot>
         builder.HasOne(d => d.Address)
            .WithMany()
            .HasForeignKey(d => d.AddressId)
-           .OnDelete(DeleteBehavior.SetNull);
+           .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(d => d.Zones)
            .WithOne(z => z.Depot)

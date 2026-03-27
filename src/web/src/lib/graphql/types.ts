@@ -117,7 +117,7 @@ export interface DailyOperatingHoursInput {
 
 export interface CreateDepotInput {
   name: string;
-  address?: AddressInput;
+  address: AddressInput;
   operatingHours?: DailyOperatingHoursInput[];
   isActive?: boolean;
 }
@@ -125,7 +125,7 @@ export interface CreateDepotInput {
 export interface UpdateDepotInput {
   id: string;
   name: string;
-  address?: AddressInput;
+  address: AddressInput;
   operatingHours?: DailyOperatingHoursInput[];
   isActive: boolean;
 }

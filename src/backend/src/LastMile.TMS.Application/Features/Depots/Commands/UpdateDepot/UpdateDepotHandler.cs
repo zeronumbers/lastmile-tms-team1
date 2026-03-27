@@ -73,26 +73,24 @@ public class UpdateDepotHandler(IAppDbContext dbContext) : IRequestHandler<Updat
             }
         }
 
-        if (request.Address != null)
+        if (depot.Address == null)
         {
-            if (depot.Address == null)
-            {
-                depot.Address = new Address();
-                dbContext.Addresses.Add(depot.Address);
-            }
-
-            depot.Address.Street1 = request.Address.Street1;
-            depot.Address.Street2 = request.Address.Street2;
-            depot.Address.City = request.Address.City;
-            depot.Address.State = request.Address.State;
-            depot.Address.PostalCode = request.Address.PostalCode;
-            depot.Address.CountryCode = request.Address.CountryCode;
-            depot.Address.IsResidential = request.Address.IsResidential;
-            depot.Address.ContactName = request.Address.ContactName;
-            depot.Address.CompanyName = request.Address.CompanyName;
-            depot.Address.Phone = request.Address.Phone;
-            depot.Address.Email = request.Address.Email;
+            // Pre-migration data: AddressId is set but Address navigation is not loaded
+            // This should not happen after migration, but handle for backward compatibility
+            throw new InvalidOperationException($"Depot with ID {request.Id} has no Address. Please apply the 'MakeDepotAddressRequired' migration first.");
         }
+
+        depot.Address.Street1 = request.Address.Street1;
+        depot.Address.Street2 = request.Address.Street2;
+        depot.Address.City = request.Address.City;
+        depot.Address.State = request.Address.State;
+        depot.Address.PostalCode = request.Address.PostalCode;
+        depot.Address.CountryCode = string.IsNullOrEmpty(request.Address.CountryCode) ? "US" : request.Address.CountryCode;
+        depot.Address.IsResidential = request.Address.IsResidential;
+        depot.Address.ContactName = request.Address.ContactName;
+        depot.Address.CompanyName = request.Address.CompanyName;
+        depot.Address.Phone = request.Address.Phone;
+        depot.Address.Email = request.Address.Email;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 

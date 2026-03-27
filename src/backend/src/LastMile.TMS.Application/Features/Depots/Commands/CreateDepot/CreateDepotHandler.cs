@@ -14,23 +14,20 @@ public class CreateDepotHandler(IAppDbContext dbContext) : IRequestHandler<Creat
             IsActive = request.IsActive
         };
 
-        if (request.Address != null)
+        depot.Address = new Address
         {
-            depot.Address = new Address
-            {
-                Street1 = request.Address.Street1,
-                Street2 = request.Address.Street2,
-                City = request.Address.City,
-                State = request.Address.State,
-                PostalCode = request.Address.PostalCode,
-                CountryCode = request.Address.CountryCode,
-                IsResidential = request.Address.IsResidential,
-                ContactName = request.Address.ContactName,
-                CompanyName = request.Address.CompanyName,
-                Phone = request.Address.Phone,
-                Email = request.Address.Email
-            };
-        }
+            Street1 = request.Address.Street1,
+            Street2 = request.Address.Street2,
+            City = request.Address.City,
+            State = request.Address.State,
+            PostalCode = request.Address.PostalCode,
+            CountryCode = request.Address.CountryCode,
+            IsResidential = request.Address.IsResidential,
+            ContactName = request.Address.ContactName,
+            CompanyName = request.Address.CompanyName,
+            Phone = request.Address.Phone,
+            Email = request.Address.Email
+        };
 
         // Use provided operating hours or default to Mon-Fri 9:00-17:00
         var scheduleEntries = request.OperatingHours is { Count: > 0 }

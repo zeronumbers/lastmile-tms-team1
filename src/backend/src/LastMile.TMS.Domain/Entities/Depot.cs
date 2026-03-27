@@ -6,8 +6,8 @@ public class Depot : BaseAuditableEntity
 {
     public string Name { get; set; } = string.Empty;
 
-    public Address? Address { get; set; }
-    public Guid? AddressId { get; set; }
+    public Address Address { get; set; } = null!;
+    public Guid AddressId { get; set; }
 
     public bool IsActive { get; set; } = true;
 

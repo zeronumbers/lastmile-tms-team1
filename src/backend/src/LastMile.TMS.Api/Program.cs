@@ -131,6 +131,7 @@ try
         .AddType<ZoneQuery>()
         .AddType<ZoneMutation>()
         .AddType<CreateDepotInput>()
+        .AddType<AddressInputType>()
         .AddType<UpdateDepotInput>()
         .AddType<UpdateAddressInputType>()
         .AddType<DailyOperatingHoursInputType>()

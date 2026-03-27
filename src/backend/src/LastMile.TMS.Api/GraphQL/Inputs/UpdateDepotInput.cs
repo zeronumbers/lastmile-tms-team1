@@ -13,7 +13,7 @@ public class UpdateDepotInput : InputObjectType<UpdateDepotCommand>
         descriptor.Field(d => d.Id).Type<NonNullType<UuidType>>();
         descriptor.Field(d => d.Name).Type<NonNullType<StringType>>();
         descriptor.Field(d => d.IsActive).Type<NonNullType<BooleanType>>();
-        descriptor.Field(d => d.Address).Type<UpdateAddressInputType>();
+        descriptor.Field(d => d.Address).Type<NonNullType<UpdateAddressInputType>>();
         descriptor.Field(d => d.OperatingHours).Type<ListType<DailyOperatingHoursInputType>>();
     }
 }

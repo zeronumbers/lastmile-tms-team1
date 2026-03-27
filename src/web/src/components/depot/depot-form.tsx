@@ -55,18 +55,18 @@ const depotFormSchema = z.object({
   name: z.string().min(1, "Depot name is required"),
   isActive: z.boolean(),
   address: z.object({
-    street1: z.string().min(1, "Street address is required").optional(),
+    street1: z.string().min(1, "Street address is required"),
     street2: z.string().nullable().optional().transform((v) => v ?? ""),
-    city: z.string().min(1, "City is required").optional(),
-    state: z.string().min(1, "State is required").optional(),
-    postalCode: z.string().min(1, "Postal code is required").optional(),
+    city: z.string().min(1, "City is required"),
+    state: z.string().min(1, "State is required"),
+    postalCode: z.string().min(1, "Postal code is required"),
     countryCode: z.string().min(1).optional(),
     isResidential: z.boolean().optional(),
     contactName: z.string().nullable().optional().transform((v) => v ?? ""),
     companyName: z.string().nullable().optional().transform((v) => v ?? ""),
     phone: z.string().nullable().optional().transform((v) => v ?? ""),
     email: z.string().nullable().optional().transform((v) => v ?? ""),
-  }).optional(),
+  }),
   operatingHours: z.array(operatingHoursEntrySchema).optional(),
 });
 
@@ -133,21 +133,19 @@ export function DepotForm({ depotId }: DepotFormProps) {
       form.reset({
         name: depot.name,
         isActive: depot.isActive,
-        address: depot.address
-          ? {
-              street1: depot.address.street1,
-              street2: depot.address.street2 ?? "",
-              city: depot.address.city,
-              state: depot.address.state,
-              postalCode: depot.address.postalCode,
-              countryCode: depot.address.countryCode,
-              isResidential: depot.address.isResidential,
-              contactName: depot.address.contactName ?? "",
-              companyName: depot.address.companyName ?? "",
-              phone: depot.address.phone ?? "",
-              email: depot.address.email ?? "",
-            }
-          : undefined,
+        address: {
+          street1: depot.address?.street1 ?? "",
+          street2: depot.address?.street2 ?? "",
+          city: depot.address?.city ?? "",
+          state: depot.address?.state ?? "",
+          postalCode: depot.address?.postalCode ?? "",
+          countryCode: depot.address?.countryCode,
+          isResidential: depot.address?.isResidential,
+          contactName: depot.address?.contactName ?? "",
+          companyName: depot.address?.companyName ?? "",
+          phone: depot.address?.phone ?? "",
+          email: depot.address?.email ?? "",
+        },
         operatingHours,
       });
     }
@@ -155,29 +153,19 @@ export function DepotForm({ depotId }: DepotFormProps) {
 
   async function onSubmit(values: DepotFormValues) {
     try {
-      // Only include address if there's actual address data
-      const hasAddressData = values.address && (
-        values.address.street1 ||
-        values.address.city ||
-        values.address.state ||
-        values.address.postalCode
-      );
-
-      const address: AddressInput | undefined = hasAddressData
-        ? ({
-            ...(values.address!.street1 && { street1: values.address!.street1 }),
-            ...(values.address!.street2 && { street2: values.address!.street2 }),
-            ...(values.address!.city && { city: values.address!.city }),
-            ...(values.address!.state && { state: values.address!.state }),
-            ...(values.address!.postalCode && { postalCode: values.address!.postalCode }),
-            ...(values.address!.countryCode && { countryCode: values.address!.countryCode }),
-            ...(values.address!.isResidential !== undefined && { isResidential: values.address!.isResidential }),
-            ...(values.address!.contactName && { contactName: values.address!.contactName }),
-            ...(values.address!.companyName && { companyName: values.address!.companyName }),
-            ...(values.address!.phone && { phone: values.address!.phone }),
-            ...(values.address!.email && { email: values.address!.email }),
-          } as AddressInput)
-        : undefined;
+      const address: AddressInput = {
+        street1: values.address.street1,
+        street2: values.address.street2 || undefined,
+        city: values.address.city,
+        state: values.address.state,
+        postalCode: values.address.postalCode,
+        ...(values.address.countryCode && { countryCode: values.address.countryCode }),
+        ...(values.address.isResidential !== undefined && { isResidential: values.address.isResidential }),
+        ...(values.address.contactName && { contactName: values.address.contactName }),
+        ...(values.address.companyName && { companyName: values.address.companyName }),
+        ...(values.address.phone && { phone: values.address.phone }),
+        ...(values.address.email && { email: values.address.email }),
+      };
 
       // Send all operating hours — empty openTime/closeTime means "remove this day"
       const operatingHours: DailyOperatingHoursInput[] | undefined = values.operatingHours
