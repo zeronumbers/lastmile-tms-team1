@@ -1,5 +1,12 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using HotChocolate;
+using LastMile.TMS.Api.GraphQL;
+using LastMile.TMS.Api.GraphQL.Extensions.Depot;
+using LastMile.TMS.Api.GraphQL.Extensions.Zone;
+using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
+using LastMile.TMS.Api.GraphQL.Extensions.Route;
+using LastMile.TMS.Api.GraphQL.Inputs;
 using LastMile.TMS.Application;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Infrastructure;
@@ -10,10 +17,6 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
-using LastMile.TMS.Api.GraphQL;
-using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
-using LastMile.TMS.Api.GraphQL.Extensions.Route;
-using HotChocolate.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -124,12 +127,23 @@ try
         .AddSorting()
         .AddAuthorization()
         .AddSpatialTypes()
-        .AddQueryType<Query>()
+        .AddQueryType<Query>(d => d.Name("Query").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
+        .AddMutationType<Mutation>(d => d.Name("Mutation").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
+        .AddType<DepotQuery>()
+        .AddType<DepotMutation>()
+        .AddType<ZoneQuery>()
+        .AddType<ZoneMutation>()
         .AddType<VehicleQuery>()
-        .AddType<RouteQuery>()
-        .AddMutationType<Mutation>()
         .AddType<VehicleMutation>()
+        .AddType<RouteQuery>()
         .AddType<RouteMutation>()
+        .AddType<CreateDepotInput>()
+        .AddType<AddressInputType>()
+        .AddType<UpdateDepotInput>()
+        .AddType<UpdateAddressInputType>()
+        .AddType<DailyOperatingHoursInputType>()
+        .AddType<CreateZoneInput>()
+        .AddType<UpdateZoneInput>()
         .AddErrorFilter<ErrorFilter>();
 
     builder.Services.AddHangfire(config =>
@@ -162,7 +176,7 @@ try
     // Apply migrations then seed database
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    await context.Database.MigrateAsync();
     var seeder = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Application.Common.Interfaces.IDbSeeder>();
     await seeder.SeedAsync();
 

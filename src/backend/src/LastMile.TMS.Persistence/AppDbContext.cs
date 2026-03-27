@@ -16,6 +16,7 @@ public class AppDbContext(
     public DbSet<Depot> Depots => Set<Depot>();
     public DbSet<Driver> Drivers => Set<Driver>();
     public DbSet<Route> Routes => Set<Route>();
+    public DbSet<ShiftSchedule> ShiftSchedules => Set<ShiftSchedule>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<VehicleJourney> VehicleJourneys => Set<VehicleJourney>();
     public DbSet<Zone> Zones => Set<Zone>();
