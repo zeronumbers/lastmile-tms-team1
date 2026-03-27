@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Truck, Route } from "lucide-react";
+import { Truck, Route, Building2, MapPin } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -44,6 +44,34 @@ export default async function DashboardPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Depots</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Warehouse depots</p>
+            <Button variant="link" className="p-0 h-auto mt-2" asChild>
+              <Link href="/depots">View depots</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Zones</CardTitle>
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Delivery zones</p>
+            <Button variant="link" className="p-0 h-auto mt-2" asChild>
+              <Link href="/zones">View zones</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -66,6 +94,18 @@ export default async function DashboardPage() {
                 Manage Routes
               </Link>{" "}
               - Create and manage delivery routes
+            </li>
+            <li>
+              <Link href="/depots" className="text-primary hover:underline">
+                Manage Depots
+              </Link>{" "}
+              - Manage warehouse depots and their information
+            </li>
+            <li>
+              <Link href="/zones" className="text-primary hover:underline">
+                Manage Zones
+              </Link>{" "}
+              - Define delivery zones and their boundaries
             </li>
           </ul>
         </CardContent>
