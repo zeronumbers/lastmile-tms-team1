@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/form";
 import Link from "next/link";
 import { VehicleType } from "@/types/vehicle";
+import { useGraphQuery } from "@/hooks/use-graphql";
+import { GET_DEPOTS_QUERY } from "@/lib/graphql/queries/depot";
 
 const vehicleSchema = z.object({
   registrationPlate: z.string().min(1, "Registration plate is required").max(20),
@@ -28,6 +30,12 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
+
+interface DepotsResponse {
+  depots: {
+    nodes: { id: string; name: string }[];
+  };
+}
 
 interface VehicleFormProps {
   defaultValues?: Partial<VehicleFormValues>;
@@ -52,6 +60,13 @@ export function VehicleForm({
       ...defaultValues,
     },
   });
+
+  const { data: depotsData, isLoading: depotsLoading } = useGraphQuery<DepotsResponse, null>({
+    queryKey: ["depots"],
+    query: GET_DEPOTS_QUERY,
+  });
+
+  const depots = depotsData?.depots?.nodes ?? [];
 
   return (
     <Form {...form}>
@@ -154,14 +169,19 @@ export function VehicleForm({
             <FormItem>
               <FormLabel>Depot (Optional)</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Depot ID"
+                <select
+                  className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                  ref={field.ref}
-                />
+                  onChange={(e) => field.onChange(e.target.value || null)}
+                  disabled={depotsLoading}
+                >
+                  <option value="">Select depot</option>
+                  {depots.map((depot) => (
+                    <option key={depot.id} value={depot.id}>
+                      {depot.name}
+                    </option>
+                  ))}
+                </select>
               </FormControl>
               <FormDescription>Assign to a depot</FormDescription>
               <FormMessage />
