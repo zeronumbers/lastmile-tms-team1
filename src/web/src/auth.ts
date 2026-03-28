@@ -65,15 +65,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Initial sign in
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
-        // Decode JWT to get exp, email and roles (payload[1] is base64url)
         const payload = (user.accessToken as string).split('.')[1];
         const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
         token.accessTokenExp = decoded.exp as number;
         token.email = decoded.email as string;
         token.roles = decoded.role as string[] | undefined;
+        return token;
       }
+
+      // Check if access token is close to expiring (refresh 60s before)
+      const now = Math.floor(Date.now() / 1000);
+      if (token.accessTokenExp && token.accessTokenExp < now + 60) {
+        // Refresh the token
+        const params = new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: token.refreshToken as string,
+        });
+
+        const res = await fetch(`${API_BASE_URL}/connect/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString(),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          token.accessToken = data.access_token;
+          token.refreshToken = data.refresh_token ?? token.refreshToken;
+          const newPayload = data.access_token.split('.')[1];
+          const decoded = JSON.parse(atob(newPayload.replace(/-/g, '+').replace(/_/g, '/')));
+          token.accessTokenExp = decoded.exp as number;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {

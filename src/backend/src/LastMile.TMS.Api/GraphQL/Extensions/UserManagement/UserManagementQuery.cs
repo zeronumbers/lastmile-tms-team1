@@ -1,6 +1,7 @@
 using HotChocolate.Authorization;
 using HotChocolate.Data;
 using HotChocolate.Types.Pagination;
+using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Application.Users.DTOs;
 using LastMile.TMS.Application.Users.Queries.GetUserById;
 using LastMile.TMS.Application.Users.Queries.GetUsers;
@@ -9,9 +10,9 @@ using LastMile.TMS.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace LastMile.TMS.Api.GraphQL.Queries;
+namespace LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
 
-[ExtendObjectType(OperationTypeNames.Query)]
+[ExtendObjectType(typeof(Query))]
 public class UserManagementQuery
 {
     [UsePaging(DefaultPageSize = 50)]

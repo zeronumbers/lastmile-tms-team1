@@ -11,8 +11,7 @@ using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
 using LastMile.TMS.Api.GraphQL;
-using LastMile.TMS.Api.GraphQL.Queries;
-using LastMile.TMS.Api.GraphQL.Mutations;
+using LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
 using HotChocolate.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
@@ -123,8 +122,8 @@ try
         .AddFiltering()
         .AddSorting()
         .AddSpatialTypes()
-        .AddQueryType<Query>()
-        .AddMutationType<Mutation>()
+        .AddQueryType<Query>(d => d.Name("Query").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
+        .AddMutationType<Mutation>(d => d.Name("Mutation").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
         .AddType<UserManagementQuery>()
         .AddType<UserManagementMutation>()
         .AddErrorFilter<GraphQLErrorFilter>();
@@ -151,10 +150,10 @@ try
     app.UseAuthorization();
     app.MapGraphQL().WithOptions(new GraphQLServerOptions
     {
-      Tool =
-      {
-        Enable = app.Environment.IsDevelopment()
-      },
+        Tool =
+        {
+            Enable = app.Environment.IsDevelopment()
+        },
     });
     app.MapControllers();
     app.UseHangfireDashboard("/hangfire");
@@ -162,7 +161,7 @@ try
     // Apply migrations then seed database
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    await context.Database.MigrateAsync();
     var seeder = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Application.Common.Interfaces.IDbSeeder>();
     await seeder.SeedAsync();
 

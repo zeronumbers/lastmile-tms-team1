@@ -1,3 +1,4 @@
+using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Application.Users.Commands.CompletePasswordReset;
 using LastMile.TMS.Application.Users.Commands.CreateUser;
 using LastMile.TMS.Application.Users.Commands.DeactivateUser;
@@ -6,9 +7,9 @@ using LastMile.TMS.Application.Users.Commands.UpdateUser;
 using LastMile.TMS.Application.Users.DTOs;
 using MediatR;
 
-namespace LastMile.TMS.Api.GraphQL.Mutations;
+namespace LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
 
-[ExtendObjectType(OperationTypeNames.Mutation)]
+[ExtendObjectType(typeof(Mutation))]
 public class UserManagementMutation
 {
     public async Task<UserDto> CreateUser(

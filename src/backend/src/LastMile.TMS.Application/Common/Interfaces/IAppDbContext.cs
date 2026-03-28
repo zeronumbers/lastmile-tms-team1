@@ -5,8 +5,12 @@ namespace LastMile.TMS.Application.Common.Interfaces;
 
 public interface IAppDbContext
 {
-    DbSet<Role> Roles { get; }
+    DbSet<Address> Addresses { get; }
     DbSet<Depot> Depots { get; }
+    DbSet<Driver> Drivers { get; }
+    DbSet<Role> Roles { get; }
+    DbSet<ShiftSchedule> ShiftSchedules { get; }
+    DbSet<User> Users { get; }
     DbSet<Zone> Zones { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
