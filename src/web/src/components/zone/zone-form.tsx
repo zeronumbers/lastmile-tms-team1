@@ -203,11 +203,9 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
                     onValueChange={field.onChange}
                     value={field.value}
                   >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a depot" />
-                      </SelectTrigger>
-                    </FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a depot" />
+                    </SelectTrigger>
                     <SelectContent>
                       {depots.map((depot) => (
                         <SelectItem key={depot.id} value={depot.id}>
