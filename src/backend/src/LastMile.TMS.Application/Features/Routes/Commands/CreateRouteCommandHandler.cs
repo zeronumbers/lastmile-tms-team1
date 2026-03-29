@@ -11,6 +11,16 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
 {
     public async Task<RouteDto> Handle(CreateRouteCommand request, CancellationToken cancellationToken)
     {
+        // Validate vehicle exists (but don't assign it yet - assignment happens when route starts)
+        if (request.VehicleId.HasValue)
+        {
+            var vehicleExists = await context.Vehicles.AnyAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+            if (!vehicleExists)
+            {
+                throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
+            }
+        }
+
         var route = new Route
         {
             Name = request.Name,
@@ -20,16 +30,6 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             TotalParcelCount = request.TotalParcelCount,
             VehicleId = request.VehicleId
         };
-
-        if (request.VehicleId.HasValue)
-        {
-            var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
-            if (vehicle == null)
-            {
-                throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
-            }
-            vehicle.AssignToRoute(request.TotalParcelCount);
-        }
 
         context.Routes.Add(route);
         await context.SaveChangesAsync(cancellationToken);

@@ -27,7 +27,7 @@ export interface Vehicle {
   weightCapacityKg: number;
   status: VehicleStatus;
   depotId: string | null;
-  depotName: string | null;
+  depot: { name: string } | null;
   createdAt: string;
 }
 

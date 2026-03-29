@@ -28,42 +28,55 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         route.TotalParcelCount = request.TotalParcelCount;
         route.VehicleId = request.VehicleId;
 
-        // Update vehicle statuses
-        if (oldVehicleId != request.VehicleId)
+        // Only update vehicle assignment when route is InProgress
+        // For Planned routes, just validate vehicle exists - assignment happens when route starts
+        if (route.Status == RouteStatus.InProgress)
         {
-            if (oldVehicleId.HasValue)
+            if (oldVehicleId != request.VehicleId)
             {
-                var oldVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == oldVehicleId.Value, cancellationToken);
-                if (oldVehicle != null && oldVehicle.Status == Domain.Enums.VehicleStatus.InUse)
+                if (oldVehicleId.HasValue)
                 {
-                    // Check if vehicle is still assigned to other routes
-                    var stillInUse = await context.Routes.AnyAsync(r => r.VehicleId == oldVehicleId.Value && r.Id != request.Id, cancellationToken);
-                    if (!stillInUse)
+                    var oldVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == oldVehicleId.Value, cancellationToken);
+                    if (oldVehicle != null && oldVehicle.Status == Domain.Enums.VehicleStatus.InUse)
                     {
-                        oldVehicle.ReleaseFromRoute();
+                        // Check if vehicle is still assigned to other routes
+                        var stillInUse = await context.Routes.AnyAsync(r => r.VehicleId == oldVehicleId.Value && r.Id != request.Id, cancellationToken);
+                        if (!stillInUse)
+                        {
+                            oldVehicle.ReleaseFromRoute();
+                        }
                     }
                 }
-            }
 
-            if (request.VehicleId.HasValue)
+                if (request.VehicleId.HasValue)
+                {
+                    var newVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+                    if (newVehicle == null)
+                    {
+                        throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
+                    }
+                    newVehicle.AssignToRoute(request.TotalParcelCount);
+                }
+            }
+            else if (request.VehicleId.HasValue && oldParcelCount != request.TotalParcelCount)
             {
-                var newVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
-                if (newVehicle == null)
+                // If vehicle is the same but parcel count changed, re-validate capacity
+                var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+                if (vehicle == null)
                 {
                     throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
                 }
-                newVehicle.AssignToRoute(request.TotalParcelCount);
+                vehicle.AssignToRoute(request.TotalParcelCount);
             }
         }
-        else if (request.VehicleId.HasValue && oldParcelCount != request.TotalParcelCount)
+        else if (oldVehicleId != request.VehicleId && request.VehicleId.HasValue)
         {
-            // If vehicle is the same but parcel count changed, re-validate capacity
-            var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
-            if (vehicle == null)
+            // For Planned routes, just validate that the new vehicle exists
+            var vehicleExists = await context.Vehicles.AnyAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+            if (!vehicleExists)
             {
                 throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
             }
-            vehicle.AssignToRoute(request.TotalParcelCount);
         }
 
         await context.SaveChangesAsync(cancellationToken);

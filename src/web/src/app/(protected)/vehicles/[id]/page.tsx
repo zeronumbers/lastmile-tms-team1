@@ -107,7 +107,7 @@ export default function VehicleDetailPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Depot</p>
-                <p>{vehicle.depotName ?? "Not assigned"}</p>
+                <p>{vehicle.depot?.name ?? "Not assigned"}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
