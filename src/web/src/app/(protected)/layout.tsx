@@ -1,71 +1,96 @@
-import { auth, signOut } from "@/auth";
-import { redirect } from "next/navigation";
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Truck,
+  LayoutDashboard,
+  LogOut,
+  Route,
+  Building2,
+  MapPin,
+  Users,
+} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Session } from "next-auth";
 
-async function Navbar({ session }: { session: Session | null }) {
-  const isAdmin = session?.user?.roles?.includes("Admin") ?? false;
+const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/vehicles", label: "Vehicles", icon: Truck },
+  { href: "/routes", label: "Routes", icon: Route },
+  { href: "/depots", label: "Depots", icon: Building2 },
+  { href: "/zones", label: "Zones", icon: MapPin },
+  { href: "/users", label: "Users", icon: Users, adminOnly: true },
+];
 
-  return (
-    <nav className="border-b bg-background">
-      <div className="flex h-16 items-center px-4 gap-4">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="font-semibold text-lg">
-            Last Mile TMS
-          </Link>
-          <div className="flex gap-4">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Dashboard
-            </Link>
-            {isAdmin && (
-              <Link
-                href="/users"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Users
-              </Link>
-            )}
-          </div>
-        </div>
-        <div className="ml-auto flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            {session?.user?.email}
-          </span>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <Button variant="outline" size="sm" type="submit">
-              Sign Out
-            </Button>
-          </form>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-export default async function ProtectedLayout({
+export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.roles?.includes("Admin") ?? false;
 
   return (
-    <>
-      <Navbar session={session} />
-      <main>{children}</main>
-    </>
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <aside className="relative w-64 border-r bg-card flex flex-col">
+        <div className="flex h-16 items-center border-b px-6">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="text-xl font-bold">Last Mile TMS</span>
+          </Link>
+        </div>
+
+        <nav className="p-4 space-y-1">
+          {navItems.map((item) => {
+            // Skip admin-only items if not admin
+            if (item.adminOnly && !isAdmin) {
+              return null;
+            }
+
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto p-4 border-t">
+          <form
+            action={async () => {
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              type="submit"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </form>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">{children}</main>
+    </div>
   );
 }

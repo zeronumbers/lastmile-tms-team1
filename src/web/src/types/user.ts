@@ -10,7 +10,9 @@ export interface UserDto {
   roleName: string | null;
   roleId: string | null;
   zoneId: string | null;
+  zoneName: string | null;
   depotId: string | null;
+  depotName: string | null;
   createdAt: string;
 }
 
@@ -72,6 +74,21 @@ export interface UsersQueryResponse {
 // Flattened version returned by fetchUsers
 export interface FlatUsersQueryResponse {
   users: UserDto[];
+}
+
+export interface PageInfo {
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
+}
+
+export interface PaginatedUsersQueryResponse {
+  users: {
+    nodes: UserDto[];
+    pageInfo: PageInfo;
+    totalCount: number;
+  };
 }
 
 export interface UserByIdQueryResponse {

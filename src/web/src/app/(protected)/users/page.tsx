@@ -19,13 +19,12 @@ export default function UsersPage() {
 
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? null;
-  const { data, isLoading: isLoadingUsers } = useUsers();
+  const { users, pageInfo, totalCount, isLoading: isLoadingUsers, gotoNextPage, gotoPrevPage } = useUsers();
   const { data: lookups, isLoading: isLoadingLookups } = useUserManagementLookups();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deactivateUser = useDeactivateUser();
 
-  const users = data?.users ?? [];
   const isLoading = isLoadingUsers || isLoadingLookups;
 
   const roles = lookups?.roles ?? [];
@@ -79,6 +78,10 @@ export default function UsersPage() {
         isLoading={isLoading}
         onEdit={handleOpenEdit}
         onDeactivate={handleDeactivate}
+        pageInfo={pageInfo}
+        totalCount={totalCount}
+        onNextPage={gotoNextPage}
+        onPrevPage={gotoPrevPage}
       />
 
       <UserDialog

@@ -42,13 +42,22 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public Guid? RoleId { get; private set; }
     public Role? Role { get; private set; }
 
+    // Computed property for GraphQL projection
+    public string? RoleName => Role?.Name;
+
     // Zone assignment (for drivers/dispatchers)
     public Guid? ZoneId { get; private set; }
     public Zone? Zone { get; private set; }
 
+    // Computed property for GraphQL projection
+    public string? ZoneName => Zone?.Name;
+
     // Depot assignment (for warehouse operators)
     public Guid? DepotId { get; private set; }
     public Depot? Depot { get; private set; }
+
+    // Computed property for GraphQL projection
+    public string? DepotName => Depot?.Name;
 
     // Factory method
     public static User Create(

@@ -1,5 +1,6 @@
 using FluentValidation;
-using HotChocolate.Resolvers;
+using HotChocolate;
+using HotChocolate.Execution;
 using LastMile.TMS.Application.Common;
 using Microsoft.EntityFrameworkCore;
 

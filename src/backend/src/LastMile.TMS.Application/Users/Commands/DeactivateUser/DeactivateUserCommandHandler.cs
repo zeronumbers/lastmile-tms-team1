@@ -71,7 +71,9 @@ public class DeactivateUserCommandHandler(
             roleName,
             user.RoleId,
             user.ZoneId,
+            user.Zone != null ? user.Zone.Name : null,
             user.DepotId,
+            user.Depot != null ? user.Depot.Name : null,
             user.CreatedAt);
     }
 }

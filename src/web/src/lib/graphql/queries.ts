@@ -5,11 +5,13 @@ import type {
 	UserByIdQueryResponse,
 	UsersFilter,
 	UserDto,
+	PageInfo,
+	PaginatedUsersQueryResponse,
 } from '@/types/user';
 
 const GET_USERS_QUERY = `
-	query GetUsers {
-		users {
+	query GetUsers($first: Int, $after: String) {
+		users(first: $first, after: $after) {
 			nodes {
 				id
 				firstName
@@ -20,9 +22,18 @@ const GET_USERS_QUERY = `
 				roleName
 				roleId
 				zoneId
+				zoneName
 				depotId
+				depotName
 				createdAt
 			}
+			pageInfo {
+				hasNextPage
+				hasPreviousPage
+				startCursor
+				endCursor
+			}
+			totalCount
 		}
 	}
 `;
@@ -47,8 +58,9 @@ const GET_USER_BY_ID_QUERY = `
 
 export async function fetchUsers(
 	token: string,
-	filters?: UsersFilter
-): Promise<FlatUsersQueryResponse> {
+	filters?: UsersFilter,
+	pageParams?: { first?: number; after?: string }
+): Promise<{ users: UserDto[]; pageInfo: PageInfo; totalCount: number }> {
 	// Build filter variables for HotChocolate
 	const where: Record<string, unknown> = {};
 
@@ -74,7 +86,7 @@ export async function fetchUsers(
 			? { [filters.order.field]: filters.order.direction }
 			: undefined;
 
-	const response = await apiFetch<{ data: { users: { nodes: UserDto[] } } }>('/api/graphql', {
+	const response = await apiFetch<{ data: { users: PaginatedUsersQueryResponse['users'] } }>('/api/graphql', {
 		method: 'POST',
 		token,
 		body: JSON.stringify({
@@ -82,12 +94,17 @@ export async function fetchUsers(
 			variables: {
 				where: Object.keys(where).length > 0 ? where : undefined,
 				orderBy,
+				first: pageParams?.first ?? 10,
+				after: pageParams?.after,
 			},
 		}),
 	});
 
-	// Extract nodes from cursor connection, unwrapping GraphQL data wrapper
-	return { users: response.data.users.nodes };
+	return {
+		users: response.data.users.nodes,
+		pageInfo: response.data.users.pageInfo,
+		totalCount: response.data.users.totalCount,
+	};
 }
 
 export async function fetchUserById(

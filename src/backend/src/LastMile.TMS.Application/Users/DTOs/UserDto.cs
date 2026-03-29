@@ -12,6 +12,8 @@ public record UserDto(
     string? RoleName,
     Guid? RoleId,
     Guid? ZoneId,
+    string? ZoneName,
     Guid? DepotId,
+    string? DepotName,
     DateTimeOffset CreatedAt
 );

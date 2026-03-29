@@ -4,14 +4,18 @@ import { useState } from 'react';
 import { UserStatusBadge } from './user-status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import type { UserDto } from '@/types/user';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { UserDto, PageInfo } from '@/types/user';
 
 interface UserListProps {
   users: UserDto[];
   isLoading: boolean;
   onEdit: (user: UserDto) => void;
   onDeactivate: (userId: string) => void;
+  pageInfo?: PageInfo;
+  totalCount?: number;
+  onNextPage?: () => void;
+  onPrevPage?: () => void;
 }
 
 export function UserList({
@@ -19,6 +23,10 @@ export function UserList({
   isLoading,
   onEdit,
   onDeactivate,
+  pageInfo,
+  totalCount,
+  onNextPage,
+  onPrevPage,
 }: UserListProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -65,6 +73,8 @@ export function UserList({
               <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Phone</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Zone</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Depot</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
               <th className="px-4 py-3 text-right text-sm font-medium">Actions</th>
             </tr>
@@ -78,6 +88,8 @@ export function UserList({
                 <td className="px-4 py-3 text-sm">{user.email}</td>
                 <td className="px-4 py-3 text-sm">{user.phoneNumber ?? '-'}</td>
                 <td className="px-4 py-3 text-sm">{user.roleName ?? '-'}</td>
+                <td className="px-4 py-3 text-sm">{user.zoneName ?? '-'}</td>
+                <td className="px-4 py-3 text-sm">{user.depotName ?? '-'}</td>
                 <td className="px-4 py-3 text-sm">
                   <UserStatusBadge status={user.status} />
                 </td>
@@ -105,6 +117,34 @@ export function UserList({
           </tbody>
         </table>
       </div>
+
+      {pageInfo && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Total: {totalCount ?? 0} users
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onPrevPage}
+              disabled={!pageInfo.hasPreviousPage}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNextPage}
+              disabled={!pageInfo.hasNextPage}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

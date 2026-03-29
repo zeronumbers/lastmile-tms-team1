@@ -1,9 +1,11 @@
 using Hangfire;
 using Hangfire.PostgreSql;
-using HotChocolate.AspNetCore;
+using HotChocolate;
 using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Api.GraphQL.Extensions.Depot;
 using LastMile.TMS.Api.GraphQL.Extensions.Zone;
+using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
+using LastMile.TMS.Api.GraphQL.Extensions.Route;
 using LastMile.TMS.Api.GraphQL.Inputs;
 using LastMile.TMS.Application;
 using LastMile.TMS.Domain.Entities;
@@ -18,6 +20,8 @@ using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
 using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
 using HotChocolate.AspNetCore;
+using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
+using LastMile.TMS.Api.GraphQL.Extensions.Route;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -122,10 +126,11 @@ try
     // GraphQL
     builder.Services
         .AddGraphQLServer()
-        .AddAuthorization()
+        .ModifyCostOptions(o => o.MaxFieldCost = 15000)
         .AddProjections()
         .AddFiltering()
         .AddSorting()
+        .AddAuthorization()
         .AddSpatialTypes()
         .AddQueryType<Query>(d => d.Name("Query").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
         .AddMutationType<Mutation>(d => d.Name("Mutation").Field("sentinel").Type<StringType>().Resolve(_ => "sentinel"))
@@ -133,6 +138,10 @@ try
         .AddType<DepotMutation>()
         .AddType<ZoneQuery>()
         .AddType<ZoneMutation>()
+        .AddType<VehicleQuery>()
+        .AddType<VehicleMutation>()
+        .AddType<RouteQuery>()
+        .AddType<RouteMutation>()
         .AddType<CreateDepotInput>()
         .AddType<AddressInputType>()
         .AddType<UpdateDepotInput>()
@@ -142,7 +151,8 @@ try
         .AddType<UpdateZoneInput>()
         .AddType<UserManagementQuery>()
         .AddType<UserManagementMutation>()
-        .AddErrorFilter<GraphQLErrorFilter>();
+        .AddErrorFilter<GraphQLErrorFilter>()
+        .AddErrorFilter<ErrorFilter>();
 
     builder.Services.AddHangfire(config =>
         config.UsePostgreSqlStorage(options =>
