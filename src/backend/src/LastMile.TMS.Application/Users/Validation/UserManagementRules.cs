@@ -10,12 +10,6 @@ public static class UserManagementRules
         Guid? depotId,
         Guid? zoneId)
     {
-        // Cannot have both
-        if (depotId.HasValue && zoneId.HasValue)
-        {
-            return "User cannot be assigned to both a zone and a depot";
-        }
-
         // Validate depot exists and is active
         if (depotId.HasValue)
         {
@@ -39,7 +33,7 @@ public static class UserManagementRules
             }
         }
 
-        // Validate zone exists, is active, and belongs to correct depot
+        // Validate zone exists and is active
         if (zoneId.HasValue)
         {
             var zone = await context.Zones
@@ -60,6 +54,12 @@ public static class UserManagementRules
             if (!zone.IsActive)
             {
                 return "Zone is not active";
+            }
+
+            // If both depot and zone are set, verify zone belongs to the depot
+            if (depotId.HasValue && zone.DepotId != depotId.Value)
+            {
+                return "Zone does not belong to the selected depot";
             }
         }
 

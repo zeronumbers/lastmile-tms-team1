@@ -65,14 +65,18 @@ public class UpdateUserCommandHandler(
         {
             user.AssignToZone(request.ZoneId.Value);
         }
-        else if (request.DepotId.HasValue)
+        else
+        {
+            user.ClearZone();
+        }
+
+        if (request.DepotId.HasValue)
         {
             user.AssignToDepot(request.DepotId.Value);
         }
         else
         {
-            // Clear both using domain method
-            user.ClearZoneAndDepot();
+            user.ClearDepot();
         }
 
         var result = await userManager.UpdateAsync(user);

@@ -203,9 +203,6 @@ export function UserForm({ roles, zones, depots, onSubmit, user, isLoading }: Us
             </option>
           ))}
         </select>
-        <p className="text-xs text-muted-foreground">
-          Warehouse operators are assigned to a depot
-        </p>
       </div>
 
       <div className="space-y-2">
@@ -224,9 +221,6 @@ export function UserForm({ roles, zones, depots, onSubmit, user, isLoading }: Us
             </option>
           ))}
         </select>
-        <p className="text-xs text-muted-foreground">
-          Drivers and dispatchers are assigned to a zone within a depot
-        </p>
       </div>
 
       {!isEditMode && (

@@ -6,6 +6,7 @@ import { useUsers } from '@/hooks/use-users';
 import { useCreateUser } from '@/hooks/use-create-user';
 import { useUpdateUser } from '@/hooks/use-update-user';
 import { useDeactivateUser } from '@/hooks/use-deactivate-user';
+import { useActivateUser } from '@/hooks/use-activate-user';
 import { useUserManagementLookups } from '@/hooks/use-user-management-lookups';
 import { UserList } from '@/components/users/user-list';
 import { UserDialog } from '@/components/users/user-dialog';
@@ -24,6 +25,7 @@ export default function UsersPage() {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deactivateUser = useDeactivateUser();
+  const activateUser = useActivateUser();
 
   const isLoading = isLoadingUsers || isLoadingLookups;
 
@@ -63,6 +65,10 @@ export default function UsersPage() {
     deactivateUser.mutate(userId);
   };
 
+  const handleActivate = (userId: string) => {
+    activateUser.mutate(userId);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
@@ -78,6 +84,7 @@ export default function UsersPage() {
         isLoading={isLoading}
         onEdit={handleOpenEdit}
         onDeactivate={handleDeactivate}
+        onActivate={handleActivate}
         pageInfo={pageInfo}
         totalCount={totalCount}
         onNextPage={gotoNextPage}

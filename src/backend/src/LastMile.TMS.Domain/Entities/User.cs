@@ -124,13 +124,11 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public void AssignToZone(Guid zoneId)
     {
         ZoneId = zoneId;
-        DepotId = null;
     }
 
     public void AssignToDepot(Guid depotId)
     {
         DepotId = depotId;
-        ZoneId = null;
     }
 
     public void AssignRole(Guid roleId)
@@ -175,6 +173,16 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public void ClearZoneAndDepot()
     {
         ZoneId = null;
+        DepotId = null;
+    }
+
+    public void ClearZone()
+    {
+        ZoneId = null;
+    }
+
+    public void ClearDepot()
+    {
         DepotId = null;
     }
 

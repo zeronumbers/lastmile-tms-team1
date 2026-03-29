@@ -12,6 +12,7 @@ interface UserListProps {
   isLoading: boolean;
   onEdit: (user: UserDto) => void;
   onDeactivate: (userId: string) => void;
+  onActivate: (userId: string) => void;
   pageInfo?: PageInfo;
   totalCount?: number;
   onNextPage?: () => void;
@@ -23,6 +24,7 @@ export function UserList({
   isLoading,
   onEdit,
   onDeactivate,
+  onActivate,
   pageInfo,
   totalCount,
   onNextPage,
@@ -109,6 +111,16 @@ export function UserList({
                       className="text-red-500 hover:text-red-600"
                     >
                       Deactivate
+                    </Button>
+                  )}
+                  {user.status === 'INACTIVE' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onActivate(user.id)}
+                      className="text-green-500 hover:text-green-600"
+                    >
+                      Activate
                     </Button>
                   )}
                 </td>

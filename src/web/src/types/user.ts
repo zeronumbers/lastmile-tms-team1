@@ -61,6 +61,10 @@ export interface DeactivateUserMutationResponse {
   deactivateUser: UserDto;
 }
 
+export interface ActivateUserMutationResponse {
+  activateUser: UserDto;
+}
+
 export interface ResetPasswordMutationResponse {
   resetPassword: boolean;
 }

@@ -1,5 +1,6 @@
 using HotChocolate.Authorization;
 using LastMile.TMS.Api.GraphQL;
+using LastMile.TMS.Application.Users.Commands.ActivateUser;
 using LastMile.TMS.Application.Users.Commands.CompletePasswordReset;
 using LastMile.TMS.Application.Users.Commands.CreateUser;
 using LastMile.TMS.Application.Users.Commands.DeactivateUser;
@@ -70,6 +71,20 @@ public class UserManagementMutation
 
         if (!result.IsSuccess)
             throw new InvalidOperationException(result.Error ?? "Failed to deactivate user");
+
+        return result.Value;
+    }
+
+    [Authorize(Roles = [Role.RoleNames.Admin])]
+    public async Task<UserDto> ActivateUser(
+        [Service] IMediator mediator,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await mediator.Send(new ActivateUserCommand(userId), cancellationToken);
+
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.Error ?? "Failed to activate user");
 
         return result.Value;
     }

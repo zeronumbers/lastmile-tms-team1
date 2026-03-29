@@ -5,6 +5,7 @@ import type {
   CreateUserMutationResponse,
   UpdateUserMutationResponse,
   DeactivateUserMutationResponse,
+  ActivateUserMutationResponse,
   ResetPasswordMutationResponse,
 } from '@/types/user';
 
@@ -98,6 +99,24 @@ const DEACTIVATE_USER_MUTATION = `
   }
 `;
 
+const ACTIVATE_USER_MUTATION = `
+  mutation ActivateUser($userId: UUID!) {
+    activateUser(userId: $userId) {
+      id
+      firstName
+      lastName
+      email
+      phoneNumber
+      status
+      roleName
+      roleId
+      zoneId
+      depotId
+      createdAt
+    }
+  }
+`;
+
 const RESET_PASSWORD_MUTATION = `
   mutation ResetPassword($email: String!) {
     resetPassword(email: $email)
@@ -160,6 +179,20 @@ export async function deactivateUser(
     token,
     body: JSON.stringify({
       query: DEACTIVATE_USER_MUTATION,
+      variables: { userId },
+    }),
+  });
+}
+
+export async function activateUser(
+  token: string,
+  userId: string
+): Promise<ActivateUserMutationResponse> {
+  return apiFetch<ActivateUserMutationResponse>('/api/graphql', {
+    method: 'POST',
+    token,
+    body: JSON.stringify({
+      query: ACTIVATE_USER_MUTATION,
       variables: { userId },
     }),
   });

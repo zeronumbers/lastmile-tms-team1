@@ -31,8 +31,5 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
             .Matches("[0-9]").WithMessage("Password must contain at least one digit")
             .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character");
 
-        RuleFor(x => x)
-            .Must(x => x.ZoneId == null || x.DepotId == null)
-            .WithMessage("User cannot be assigned to both a zone and a depot");
     }
 }

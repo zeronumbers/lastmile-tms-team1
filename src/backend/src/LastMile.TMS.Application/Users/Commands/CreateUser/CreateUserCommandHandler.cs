@@ -60,7 +60,8 @@ public class CreateUserCommandHandler(
         {
             user.AssignToZone(request.ZoneId.Value);
         }
-        else if (request.DepotId.HasValue)
+
+        if (request.DepotId.HasValue)
         {
             user.AssignToDepot(request.DepotId.Value);
         }
