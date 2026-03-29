@@ -121,7 +121,7 @@ try
     // GraphQL
     builder.Services
         .AddGraphQLServer()
-        .ModifyCostOptions(o => o.MaxFieldCost = 100000)
+        .ModifyCostOptions(o => o.MaxFieldCost = 15000)
         .AddProjections()
         .AddFiltering()
         .AddSorting()
