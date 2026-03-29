@@ -37,9 +37,14 @@ public class RouteTests
     [InlineData(RouteStatus.Planned, RouteStatus.InProgress, true)]
     [InlineData(RouteStatus.InProgress, RouteStatus.Completed, true)]
     [InlineData(RouteStatus.Planned, RouteStatus.Cancelled, true)]
+    [InlineData(RouteStatus.InProgress, RouteStatus.Cancelled, true)]
     [InlineData(RouteStatus.Completed, RouteStatus.InProgress, false)]
+    [InlineData(RouteStatus.Completed, RouteStatus.Cancelled, false)]
     [InlineData(RouteStatus.Cancelled, RouteStatus.Completed, false)]
-    public void StatusTransition_ShouldFollowValidRules(RouteStatus from, RouteStatus to, bool expected)
+    [InlineData(RouteStatus.Cancelled, RouteStatus.InProgress, false)]
+    [InlineData(RouteStatus.Planned, RouteStatus.Completed, false)]
+    [InlineData(RouteStatus.Completed, RouteStatus.Planned, false)]
+    public void CanTransitionTo_ValidatesStatusTransitions(RouteStatus from, RouteStatus to, bool expected)
     {
         // Arrange
         var route = new Route
@@ -50,21 +55,88 @@ public class RouteTests
         };
 
         // Act
-        var canTransition = CanTransition(route, to);
+        var canTransition = route.CanTransitionTo(to);
 
         // Assert
         canTransition.Should().Be(expected);
     }
 
-    private static bool CanTransition(Route route, RouteStatus to)
+    [Fact]
+    public void TransitionTo_FromPlannedToInProgress_SetsActualStartTime()
     {
-        return (route.Status, to) switch
+        // Arrange
+        var route = new Route
         {
-            (RouteStatus.Planned, RouteStatus.InProgress) => true,
-            (RouteStatus.Planned, RouteStatus.Cancelled) => true,
-            (RouteStatus.InProgress, RouteStatus.Completed) => true,
-            (RouteStatus.InProgress, RouteStatus.Cancelled) => true,
-            _ => false
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Planned
         };
+
+        // Act
+        route.TransitionTo(RouteStatus.InProgress);
+
+        // Assert
+        route.Status.Should().Be(RouteStatus.InProgress);
+        route.ActualStartTime.Should().NotBeNull();
+        route.ActualEndTime.Should().BeNull();
+    }
+
+    [Fact]
+    public void TransitionTo_FromInProgressToCompleted_SetsActualEndTime()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.InProgress
+        };
+
+        // Act
+        route.TransitionTo(RouteStatus.Completed);
+
+        // Assert
+        route.Status.Should().Be(RouteStatus.Completed);
+        route.ActualStartTime.Should().BeNull(); // Was never set
+        route.ActualEndTime.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void TransitionTo_InvalidTransition_ThrowsException()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Completed
+        };
+
+        // Act
+        var act = () => route.TransitionTo(RouteStatus.InProgress);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Cannot transition from*");
+    }
+
+    [Fact]
+    public void TransitionTo_FromPlannedToCancelled_Succeeds()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Planned
+        };
+
+        // Act
+        route.TransitionTo(RouteStatus.Cancelled);
+
+        // Assert
+        route.Status.Should().Be(RouteStatus.Cancelled);
+        route.ActualStartTime.Should().BeNull();
+        route.ActualEndTime.Should().BeNull();
     }
 }

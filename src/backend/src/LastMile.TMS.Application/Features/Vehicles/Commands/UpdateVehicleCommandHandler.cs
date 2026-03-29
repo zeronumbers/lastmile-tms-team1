@@ -17,7 +17,7 @@ public class UpdateVehicleCommandHandler : IRequestHandler<UpdateVehicleCommand,
     public async Task<VehicleDto> Handle(UpdateVehicleCommand request, CancellationToken cancellationToken)
     {
         var vehicle = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-            _context.Vehicles.Where(v => v.Id == request.Id), cancellationToken)
+            _context.Vehicles.Include(v => v.Depot).Where(v => v.Id == request.Id), cancellationToken)
             ?? throw new InvalidOperationException($"Vehicle with ID {request.Id} not found");
 
         vehicle.Update(request.RegistrationPlate, request.Type, request.ParcelCapacity, request.WeightCapacityKg, request.DepotId);
@@ -33,6 +33,7 @@ public class UpdateVehicleCommandHandler : IRequestHandler<UpdateVehicleCommand,
             WeightCapacityKg = vehicle.WeightCapacityKg,
             Status = vehicle.Status,
             DepotId = vehicle.DepotId,
+            DepotName = vehicle.Depot?.Name,
             CreatedAt = vehicle.CreatedAt
         };
     }

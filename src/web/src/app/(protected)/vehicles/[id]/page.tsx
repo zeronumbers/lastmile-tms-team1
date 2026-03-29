@@ -106,8 +106,8 @@ export default function VehicleDetailPage() {
                 <p>{vehicle.weightCapacityKg} kg</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Depot ID</p>
-                <p>{vehicle.depotId ?? "Not assigned"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Depot</p>
+                <p>{vehicle.depotName ?? "Not assigned"}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">

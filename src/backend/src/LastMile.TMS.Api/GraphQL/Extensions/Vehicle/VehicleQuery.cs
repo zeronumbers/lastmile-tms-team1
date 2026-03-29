@@ -26,7 +26,7 @@ public class VehicleQuery
     [UseFirstOrDefault]
     public IQueryable<VehicleEntity> GetVehicle(AppDbContext context, Guid id)
     {
-        return context.Vehicles.Where(v => v.Id == id);
+        return context.Vehicles.Include(v => v.Depot).Where(v => v.Id == id);
     }
 
     // GetVehicleHistory uses manual aggregation (Sum, Count, Distinct) that cannot be

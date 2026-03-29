@@ -40,6 +40,7 @@ public class CreateVehicleCommandHandler : IRequestHandler<CreateVehicleCommand,
             WeightCapacityKg = vehicle.WeightCapacityKg,
             Status = vehicle.Status,
             DepotId = vehicle.DepotId,
+            DepotName = vehicle.Depot?.Name,
             CreatedAt = vehicle.CreatedAt
         };
     }

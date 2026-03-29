@@ -17,7 +17,7 @@ public class ChangeVehicleStatusCommandHandler : IRequestHandler<ChangeVehicleSt
     public async Task<VehicleDto> Handle(ChangeVehicleStatusCommand request, CancellationToken cancellationToken)
     {
         var vehicle = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
-            _context.Vehicles.Where(v => v.Id == request.Id), cancellationToken)
+            _context.Vehicles.Include(v => v.Depot).Where(v => v.Id == request.Id), cancellationToken)
             ?? throw new InvalidOperationException($"Vehicle with ID {request.Id} not found");
 
         vehicle.TransitionTo(request.NewStatus);
@@ -32,6 +32,7 @@ public class ChangeVehicleStatusCommandHandler : IRequestHandler<ChangeVehicleSt
             WeightCapacityKg = vehicle.WeightCapacityKg,
             Status = vehicle.Status,
             DepotId = vehicle.DepotId,
+            DepotName = vehicle.Depot?.Name,
             CreatedAt = vehicle.CreatedAt
         };
     }

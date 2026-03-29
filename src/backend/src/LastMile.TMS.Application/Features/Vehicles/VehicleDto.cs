@@ -11,6 +11,7 @@ public class VehicleDto
     public decimal WeightCapacityKg { get; set; }
     public VehicleStatus Status { get; set; }
     public Guid? DepotId { get; set; }
+    public string? DepotName { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
 

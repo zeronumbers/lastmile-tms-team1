@@ -20,6 +20,7 @@ export const GET_VEHICLE = `
       weightCapacityKg
       status
       depotId
+      depotName
       createdAt
     }
   }
