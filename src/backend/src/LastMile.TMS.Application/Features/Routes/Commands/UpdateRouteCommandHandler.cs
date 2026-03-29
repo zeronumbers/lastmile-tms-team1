@@ -71,12 +71,17 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         }
         else if (oldVehicleId != request.VehicleId && request.VehicleId.HasValue)
         {
-            // For Planned routes, just validate that the new vehicle exists
-            var vehicleExists = await context.Vehicles.AnyAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
-            if (!vehicleExists)
+            // For Planned routes, validate vehicle exists and load it for response
+            var newVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+            if (newVehicle == null)
             {
                 throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
             }
+            if (newVehicle.Status == Domain.Enums.VehicleStatus.Retired)
+            {
+                throw new InvalidOperationException("Cannot assign a retired vehicle to a route.");
+            }
+            route.Vehicle = newVehicle;
         }
 
         await context.SaveChangesAsync(cancellationToken);

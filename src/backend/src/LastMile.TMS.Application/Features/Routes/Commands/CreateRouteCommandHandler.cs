@@ -11,13 +11,17 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
 {
     public async Task<RouteDto> Handle(CreateRouteCommand request, CancellationToken cancellationToken)
     {
-        // Validate vehicle exists (but don't assign it yet - assignment happens when route starts)
+        // Validate vehicle exists and is not retired (but don't assign it yet - assignment happens when route starts)
         if (request.VehicleId.HasValue)
         {
-            var vehicleExists = await context.Vehicles.AnyAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
-            if (!vehicleExists)
+            var vehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
+            if (vehicle == null)
             {
                 throw new InvalidOperationException($"Vehicle with ID {request.VehicleId.Value} not found.");
+            }
+            if (vehicle.Status == VehicleStatus.Retired)
+            {
+                throw new InvalidOperationException("Cannot assign a retired vehicle to a route.");
             }
         }
 
