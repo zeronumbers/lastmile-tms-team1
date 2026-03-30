@@ -21,12 +21,10 @@ public class DriverQuery
         => context.Drivers.AsNoTracking();
 
     [Authorize(Roles = new[] { Role.RoleNames.Admin, Role.RoleNames.OperationsManager })]
-    [UseProjection]
     [UseSingleOrDefault]
+    [UseProjection]
     public IQueryable<DomainDriver> GetDriver(Guid id, [Service] AppDbContext context)
         => context.Drivers
-            .Include(d => d.Zone)
-            .Include(d => d.Depot)
             .AsNoTracking()
             .Where(d => d.Id == id);
 }

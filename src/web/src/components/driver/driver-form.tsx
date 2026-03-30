@@ -24,13 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useGraphQuery, useGraphMutation } from "@/hooks/use-graphql";
 import { GET_DRIVER_QUERY } from "@/lib/graphql/queries/driver";
 import { GET_ZONES_QUERY } from "@/lib/graphql/queries/zone";
@@ -65,7 +58,7 @@ const driverFormSchema = z.object({
   photo: z.string().nullable().optional().transform((v) => v ?? ""),
   zoneId: z.string().min(1, "Zone is required"),
   depotId: z.string().min(1, "Depot is required"),
-  userId: z.string().nullable().optional().transform((v) => v ?? ""),
+  userId: z.string().uuid("User ID must be a valid GUID"),
   isActive: z.boolean(),
 });
 
@@ -133,7 +126,7 @@ export function DriverForm({ driverId }: DriverFormProps) {
         phone: driver.phone,
         email: driver.email,
         licenseNumber: driver.licenseNumber,
-        licenseExpiryDate: driver.licenseExpiryDate.split("T")[0],
+        licenseExpiryDate: driver.licenseExpiryDate.slice(0, 16),
         photo: driver.photo ?? "",
         zoneId: driver.zoneId,
         depotId: driver.depotId,
@@ -156,11 +149,11 @@ export function DriverForm({ driverId }: DriverFormProps) {
             phone: values.phone,
             email: values.email,
             licenseNumber: values.licenseNumber,
-            licenseExpiryDate: values.licenseExpiryDate,
+            licenseExpiryDate: `${values.licenseExpiryDate}:00Z`,
             photo: values.photo || undefined,
             zoneId: values.zoneId,
             depotId: values.depotId,
-            userId: values.userId || undefined,
+            userId: values.userId,
             isActive: values.isActive,
           },
         });
@@ -173,11 +166,11 @@ export function DriverForm({ driverId }: DriverFormProps) {
             phone: values.phone,
             email: values.email,
             licenseNumber: values.licenseNumber,
-            licenseExpiryDate: values.licenseExpiryDate,
+            licenseExpiryDate: `${values.licenseExpiryDate}:00Z`,
             photo: values.photo || undefined,
             zoneId: values.zoneId,
             depotId: values.depotId,
-            userId: values.userId || undefined,
+            userId: values.userId,
             isActive: values.isActive,
           },
         });
@@ -304,9 +297,9 @@ export function DriverForm({ driverId }: DriverFormProps) {
                   name="licenseExpiryDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>License Expiry Date</FormLabel>
+                      <FormLabel>License Expiry Date (UTC)</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="datetime-local" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -338,24 +331,20 @@ export function DriverForm({ driverId }: DriverFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Zone</FormLabel>
-                      <Select
-                        key={field.value || "empty"}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a zone" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
+                      <FormControl>
+                        <select
+                          className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="">Select a zone</option>
                           {zones.map((zone) => (
-                            <SelectItem key={zone.id} value={zone.id}>
+                            <option key={zone.id} value={zone.id}>
                               {zone.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -367,24 +356,20 @@ export function DriverForm({ driverId }: DriverFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Depot</FormLabel>
-                      <Select
-                        key={field.value || "empty"}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a depot" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
+                      <FormControl>
+                        <select
+                          className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="">Select a depot</option>
                           {depots.map((depot) => (
-                            <SelectItem key={depot.id} value={depot.id}>
+                            <option key={depot.id} value={depot.id}>
                               {depot.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
