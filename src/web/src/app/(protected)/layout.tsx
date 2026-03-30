@@ -10,6 +10,7 @@ import {
   Building2,
   MapPin,
   Users,
+  CircleUser,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/depots", label: "Depots", icon: Building2 },
   { href: "/zones", label: "Zones", icon: MapPin },
   { href: "/users", label: "Users", icon: Users, adminOnly: true },
+  { href: "/drivers", label: "Drivers", icon: CircleUser },
 ];
 
 export default function ProtectedLayout({
