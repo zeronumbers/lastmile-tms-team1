@@ -65,7 +65,8 @@ public class LabelIntegrationTests : IAsyncLifetime
         {
             Name = "Test Depot",
             IsActive = true,
-            OperatingHours = OperatingHours.CreateWeekdays(new TimeOnly(8, 0), new TimeOnly(18, 0))
+            Address = address,
+            AddressId = address.Id
         };
 
         var zone = new Zone
