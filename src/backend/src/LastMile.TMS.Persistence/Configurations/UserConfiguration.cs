@@ -25,9 +25,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(255);
         builder.HasIndex(u => u.Email).IsUnique();
 
-        // Phone (PhoneNumber) - optional
+        // Phone (PhoneNumber) - optional, but must be unique if provided
         builder.Property(u => u.PhoneNumber)
             .HasMaxLength(20);
+        builder.HasIndex(u => u.PhoneNumber).IsUnique();
 
         // Username (required by Identity)
         builder.Property(u => u.UserName)
@@ -79,5 +80,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsDeleted).HasDefaultValue(false);
         builder.Property(u => u.DeletedAt);
         builder.Property(u => u.DeletedBy).HasMaxLength(256);
+
+        // System admin flag
+        builder.Property(u => u.IsSystemAdmin).HasDefaultValue(false);
     }
 }

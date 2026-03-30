@@ -9,8 +9,9 @@ import {
   Route,
   Building2,
   MapPin,
+  Users,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/routes", label: "Routes", icon: Route },
   { href: "/depots", label: "Depots", icon: Building2 },
   { href: "/zones", label: "Zones", icon: MapPin },
+  { href: "/users", label: "Users", icon: Users, adminOnly: true },
 ];
 
 export default function ProtectedLayout({
@@ -28,6 +30,8 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.roles?.includes("Admin") ?? false;
 
   return (
     <div className="flex min-h-screen">
@@ -41,6 +45,11 @@ export default function ProtectedLayout({
 
         <nav className="p-4 space-y-1">
           {navItems.map((item) => {
+            // Skip admin-only items if not admin
+            if (item.adminOnly && !isAdmin) {
+              return null;
+            }
+
             const Icon = item.icon;
             const isActive = pathname === item.href;
 

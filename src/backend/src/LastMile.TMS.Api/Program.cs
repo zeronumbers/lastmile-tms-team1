@@ -17,6 +17,11 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Serilog;
 using DbSeeder = LastMile.TMS.Api.Services.DbSeeder;
+using LastMile.TMS.Api.GraphQL;
+using LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
+using HotChocolate.AspNetCore;
+using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
+using LastMile.TMS.Api.GraphQL.Extensions.Route;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -144,6 +149,9 @@ try
         .AddType<DailyOperatingHoursInputType>()
         .AddType<CreateZoneInput>()
         .AddType<UpdateZoneInput>()
+        .AddType<UserManagementQuery>()
+        .AddType<UserManagementMutation>()
+        .AddErrorFilter<GraphQLErrorFilter>()
         .AddErrorFilter<ErrorFilter>();
 
     builder.Services.AddHangfire(config =>

@@ -24,6 +24,11 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     // Backwards compatibility alias for PhoneNumber
     public string? Phone => PhoneNumber;
 
+    // System admin flag (cannot be deactivated or modified by other admins)
+    public bool IsSystemAdmin { get; private set; }
+
+    public void MarkAsSystemAdmin() => IsSystemAdmin = true;
+
     // IBaseAuditableEntity
     public DateTimeOffset CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
@@ -37,13 +42,22 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public Guid? RoleId { get; private set; }
     public Role? Role { get; private set; }
 
+    // Computed property for GraphQL projection
+    public string? RoleName => Role?.Name;
+
     // Zone assignment (for drivers/dispatchers)
     public Guid? ZoneId { get; private set; }
     public Zone? Zone { get; private set; }
 
+    // Computed property for GraphQL projection
+    public string? ZoneName => Zone?.Name;
+
     // Depot assignment (for warehouse operators)
     public Guid? DepotId { get; private set; }
     public Depot? Depot { get; private set; }
+
+    // Computed property for GraphQL projection
+    public string? DepotName => Depot?.Name;
 
     // Factory method
     public static User Create(
@@ -110,13 +124,11 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public void AssignToZone(Guid zoneId)
     {
         ZoneId = zoneId;
-        DepotId = null;
     }
 
     public void AssignToDepot(Guid depotId)
     {
         DepotId = depotId;
-        ZoneId = null;
     }
 
     public void AssignRole(Guid roleId)
@@ -127,6 +139,51 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public void RemoveRole()
     {
         RoleId = null;
+    }
+
+    public void UpdateName(string firstName, string lastName)
+    {
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new ArgumentException("First name is required", nameof(firstName));
+
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new ArgumentException("Last name is required", nameof(lastName));
+
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+    }
+
+    public void UpdatePhone(string? phone)
+    {
+        PhoneNumber = phone?.Trim();
+    }
+
+    public void UpdateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email is required", nameof(email));
+
+        if (!IsValidEmail(email))
+            throw new ArgumentException("Invalid email format", nameof(email));
+
+        Email = email.ToLowerInvariant().Trim();
+        UserName = email.ToLowerInvariant().Trim();
+    }
+
+    public void ClearZoneAndDepot()
+    {
+        ZoneId = null;
+        DepotId = null;
+    }
+
+    public void ClearZone()
+    {
+        ZoneId = null;
+    }
+
+    public void ClearDepot()
+    {
+        DepotId = null;
     }
 
     // Set password hash (PasswordHash is inherited from IdentityUser but with protected setter)
