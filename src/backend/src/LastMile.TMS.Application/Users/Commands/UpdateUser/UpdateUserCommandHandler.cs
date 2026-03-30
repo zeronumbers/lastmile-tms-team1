@@ -5,6 +5,7 @@ using LastMile.TMS.Application.Users.Validation;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Common;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using LastMile.TMS.Application.Users.Common;
 
 namespace LastMile.TMS.Application.Users.Commands.UpdateUser;
@@ -30,6 +31,18 @@ public class UpdateUserCommandHandler(
         user.UpdateName(request.FirstName, request.LastName);
         user.UpdateEmail(request.Email);
         user.UpdatePhone(request.Phone);
+
+        // Check if phone number already exists for another user (if provided)
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            var existingByPhone = await context.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.PhoneNumber == request.Phone && u.Id != user.Id, cancellationToken);
+            if (existingByPhone != null)
+            {
+                return Result<UserDto>.Failure("User with this phone number already exists");
+            }
+        }
 
         // Update role if provided
         string? roleName = null;

@@ -1,5 +1,17 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
+export interface GraphQLResponse<T> {
+  data?: T;
+  errors?: Array<{ message: string }>;
+}
+
+export class GraphQLError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GraphQLError';
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { token?: string }
@@ -28,5 +40,12 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  return res.json() as Promise<T>;
+  const json = await res.json() as GraphQLResponse<T>;
+
+  // Check for GraphQL errors - these return HTTP 200 but contain error messages
+  if (json.errors && json.errors.length > 0) {
+    throw new GraphQLError(json.errors[0].message);
+  }
+
+  return json as T;
 }

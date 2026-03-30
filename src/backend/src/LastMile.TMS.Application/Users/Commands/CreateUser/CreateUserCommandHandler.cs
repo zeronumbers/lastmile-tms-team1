@@ -5,6 +5,7 @@ using LastMile.TMS.Application.Users.Validation;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Common;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace LastMile.TMS.Application.Users.Commands.CreateUser;
 
@@ -28,6 +29,18 @@ public class CreateUserCommandHandler(
         if (existingByUserName != null)
         {
             return Result<UserDto>.Failure("User with this username already exists");
+        }
+
+        // Check if phone number already exists (if provided)
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            var existingByPhone = await context.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.PhoneNumber == request.Phone, cancellationToken);
+            if (existingByPhone != null)
+            {
+                return Result<UserDto>.Failure("User with this phone number already exists");
+            }
         }
 
         // Check if role exists

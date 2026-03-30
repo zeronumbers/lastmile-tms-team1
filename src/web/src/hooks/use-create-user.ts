@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { createUser } from '@/lib/graphql/mutations';
-import type { CreateUserInput, UserDto } from '@/types/user';
+import type { CreateUserInput } from '@/types/user';
 import { toast } from 'sonner';
 
 export function useCreateUser() {
@@ -11,14 +11,9 @@ export function useCreateUser() {
 
   return useMutation({
     mutationFn: (input: CreateUserInput) => createUser(token, input),
-    onSuccess: (data) => {
-      // Update the query cache directly with the new user
-      queryClient.setQueryData(['users'], (old: { users: UserDto[] } | undefined) => {
-        if (!old?.users) return old;
-        return {
-          users: [...old.users, data.createUser],
-        };
-      });
+    onSuccess: () => {
+      // Invalidate all user queries to force refetch from server
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User created successfully');
     },
     onError: () => {

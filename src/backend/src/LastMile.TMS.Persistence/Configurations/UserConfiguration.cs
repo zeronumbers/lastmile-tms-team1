@@ -25,9 +25,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(255);
         builder.HasIndex(u => u.Email).IsUnique();
 
-        // Phone (PhoneNumber) - optional
+        // Phone (PhoneNumber) - optional, but must be unique if provided
         builder.Property(u => u.PhoneNumber)
             .HasMaxLength(20);
+        builder.HasIndex(u => u.PhoneNumber).IsUnique();
 
         // Username (required by Identity)
         builder.Property(u => u.UserName)
