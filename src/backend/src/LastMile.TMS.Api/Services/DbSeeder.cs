@@ -81,6 +81,8 @@ public class DbSeeder : IDbSeeder
 
         Log.Information("Seeding admin user: {Username}, {Email}", adminUsername, adminEmail);
 
+        const string adminPhone = "+1234567890";
+
         // Check by username OR email
         var existingAdmin = await _userManager.FindByNameAsync(adminUsername);
         if (existingAdmin != null)
@@ -97,10 +99,25 @@ public class DbSeeder : IDbSeeder
                 Log.Warning("Failed to reset admin password: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
+            // Fix phone if empty (avoid unique constraint issues)
+            if (string.IsNullOrWhiteSpace(existingAdmin.PhoneNumber))
+            {
+                existingAdmin.UpdatePhone(adminPhone);
+                await _userManager.UpdateAsync(existingAdmin);
+                Log.Information("Updated admin phone number.");
+            }
+
             // Ensure admin has Admin role
             if (!await _userManager.IsInRoleAsync(existingAdmin, "Admin"))
             {
                 await _userManager.AddToRoleAsync(existingAdmin, "Admin");
+                // Also set the RoleId foreign key since AddToRoleAsync doesn't do this
+                var adminRole = await _roleManager.FindByNameAsync("Admin");
+                if (adminRole != null)
+                {
+                    existingAdmin.AssignRole(adminRole.Id);
+                    await _userManager.UpdateAsync(existingAdmin);
+                }
                 Log.Information("Added Admin role to existing user.");
             }
 
@@ -125,6 +142,14 @@ public class DbSeeder : IDbSeeder
                 Log.Information("Admin user (by email) password reset successfully.");
             }
 
+            // Fix phone if empty (avoid unique constraint issues)
+            if (string.IsNullOrWhiteSpace(existingByEmail.PhoneNumber))
+            {
+                existingByEmail.UpdatePhone(adminPhone);
+                await _userManager.UpdateAsync(existingByEmail);
+                Log.Information("Updated admin phone number.");
+            }
+
             // Update username if different
             if (existingByEmail.UserName != adminUsername)
             {
@@ -136,6 +161,13 @@ public class DbSeeder : IDbSeeder
             if (!await _userManager.IsInRoleAsync(existingByEmail, "Admin"))
             {
                 await _userManager.AddToRoleAsync(existingByEmail, "Admin");
+                // Also set the RoleId foreign key since AddToRoleAsync doesn't do this
+                var adminRole = await _roleManager.FindByNameAsync("Admin");
+                if (adminRole != null)
+                {
+                    existingByEmail.AssignRole(adminRole.Id);
+                    await _userManager.UpdateAsync(existingByEmail);
+                }
                 Log.Information("Added Admin role to existing user.");
             }
 
@@ -155,13 +187,20 @@ public class DbSeeder : IDbSeeder
                 "System",
                 "Administrator",
                 adminEmail,
-                adminUsername);
+                adminUsername,
+                adminPhone);
 
             var result = await _userManager.CreateAsync(admin, adminPassword);
 
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(admin, "Admin");
+                // Also set the RoleId foreign key since AddToRoleAsync doesn't do this
+                var adminRole = await _roleManager.FindByNameAsync("Admin");
+                if (adminRole != null)
+                {
+                    admin.AssignRole(adminRole.Id);
+                }
                 admin.MarkAsSystemAdmin();
                 await _userManager.UpdateAsync(admin);
                 Log.Information("Admin user created successfully with Admin role and marked as system admin.");
@@ -182,29 +221,60 @@ public class DbSeeder : IDbSeeder
         // Test users - one per role (password: Test@1234)
         var testUsers = new[]
         {
-            ("Operations Manager", "ops@lastmile.com", "Opmgr", "Test@1234", "Operations Manager"),
-            ("Dispatcher", "dispatcher@lastmile.com", "Dispatchr", "Test@1234", "Dispatcher"),
-            ("Warehouse Operator", "warehouse@lastmile.com", "Warehouseop", "Test@1234", "Warehouse Operator"),
-            ("Driver", "driver@lastmile.com", "Drivr", "Test@1234", "Driver"),
+            ("Operations Manager", "ops@lastmile.com", "Opmgr", "Test@1234", "Operations Manager", "+1234567891"),
+            ("Dispatcher", "dispatcher@lastmile.com", "Dispatchr", "Test@1234", "Dispatcher", "+1234567892"),
+            ("Warehouse Operator", "warehouse@lastmile.com", "Warehouseop", "Test@1234", "Warehouse Operator", "+1234567893"),
+            ("Driver", "driver@lastmile.com", "Drivr", "Test@1234", "Driver", "+1234567894"),
         };
 
-        foreach (var (firstName, email, userName, password, roleName) in testUsers)
+        foreach (var (firstName, email, userName, password, roleName, phone) in testUsers)
         {
             var existing = await _userManager.FindByEmailAsync(email);
             if (existing != null)
             {
-                Log.Debug("Test user already exists: {Email}", email);
+                // Update phone if it's empty (fix unique constraint issue)
+                if (string.IsNullOrWhiteSpace(existing.PhoneNumber))
+                {
+                    existing.UpdatePhone(phone);
+                    await _userManager.UpdateAsync(existing);
+                    Log.Information("Updated phone for existing user {Email}", email);
+                }
+
+                // Ensure existing user has the correct role
+                if (!await _userManager.IsInRoleAsync(existing, roleName))
+                {
+                    await _userManager.AddToRoleAsync(existing, roleName);
+                    // Also set the RoleId foreign key since AddToRoleAsync doesn't do this
+                    var role = await _roleManager.FindByNameAsync(roleName);
+                    if (role != null)
+                    {
+                        existing.AssignRole(role.Id);
+                        await _userManager.UpdateAsync(existing);
+                    }
+                    Log.Information("Assigned role {Role} to existing user {Email}", roleName, email);
+                }
+                else
+                {
+                    Log.Debug("Test user already exists with correct role: {Email}", email);
+                }
                 continue;
             }
 
             try
             {
-                var user = User.Create(firstName, lastName: $"{roleName} User", email, userName);
+                var user = User.Create(firstName, lastName: $"{roleName} User", email, userName, phone);
                 var result = await _userManager.CreateAsync(user, password);
 
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, roleName);
+                    // Also set the RoleId foreign key since AddToRoleAsync doesn't do this
+                    var role = await _roleManager.FindByNameAsync(roleName);
+                    if (role != null)
+                    {
+                        user.AssignRole(role.Id);
+                        await _userManager.UpdateAsync(user);
+                    }
                     Log.Information("Created test user: {Email} with role {Role}", email, roleName);
                 }
                 else
