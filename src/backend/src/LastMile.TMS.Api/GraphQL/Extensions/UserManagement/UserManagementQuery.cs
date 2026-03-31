@@ -20,8 +20,8 @@ public class UserManagementQuery
         => context.Users.IgnoreQueryFilters().Where(u => !u.IsDeleted).AsNoTracking();
 
     [Authorize(Roles = [Role.RoleNames.Admin])]
+    [UseSingleOrDefault]
     [UseProjection]
-    [UseFirstOrDefault]
     public IQueryable<User> GetUser(Guid id, [Service] AppDbContext context)
         => context.Users.IgnoreQueryFilters().Where(u => u.Id == id && !u.IsDeleted).AsNoTracking();
 
