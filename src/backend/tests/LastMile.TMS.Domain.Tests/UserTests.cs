@@ -82,7 +82,7 @@ public class UserTests
         var zoneId = Guid.NewGuid();
 
         // Act
-        user.AssignToZone(zoneId);
+        user.AssignToZone(zoneId, "Test Zone");
 
         // Assert
         user.ZoneId.Should().Be(zoneId);
@@ -97,7 +97,7 @@ public class UserTests
         var depotId = Guid.NewGuid();
 
         // Act
-        user.AssignToDepot(depotId);
+        user.AssignToDepot(depotId, "Test Depot");
 
         // Assert
         user.DepotId.Should().Be(depotId);

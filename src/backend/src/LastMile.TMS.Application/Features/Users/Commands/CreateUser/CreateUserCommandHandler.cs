@@ -66,17 +66,19 @@ public class CreateUserCommandHandler(
             phone: request.Phone);
 
         // Assign role using domain method
-        user.AssignRole(request.RoleId);
+        user.AssignRole(request.RoleId, role.Name);
 
         // Assign zone or depot if provided
         if (request.ZoneId.HasValue)
         {
-            user.AssignToZone(request.ZoneId.Value);
+            var zone = await context.Zones.FindAsync(new object[] { request.ZoneId.Value }, cancellationToken);
+            user.AssignToZone(request.ZoneId.Value, zone?.Name);
         }
 
         if (request.DepotId.HasValue)
         {
-            user.AssignToDepot(request.DepotId.Value);
+            var depot = await context.Depots.FindAsync(new object[] { request.DepotId.Value }, cancellationToken);
+            user.AssignToDepot(request.DepotId.Value, depot?.Name);
         }
 
         // Create user with password
@@ -95,24 +97,19 @@ public class CreateUserCommandHandler(
             return Result<UserDto>.Failure($"Failed to assign role: {errors}");
         }
 
-        return Result<UserDto>.Success(MapToDto(user, role.Name));
-    }
-
-    private static UserDto MapToDto(User user, string? roleName)
-    {
-        return new UserDto(
+        return Result<UserDto>.Success(new UserDto(
             user.Id,
             user.FirstName,
             user.LastName,
             user.Email!,
             user.PhoneNumber,
             user.Status,
-            roleName,
+            user.RoleName,
             user.RoleId,
             user.ZoneId,
-            user.Zone != null ? user.Zone.Name : null,
+            user.ZoneName,
             user.DepotId,
-            user.Depot != null ? user.Depot.Name : null,
-            user.CreatedAt);
+            user.DepotName,
+            user.CreatedAt));
     }
 }

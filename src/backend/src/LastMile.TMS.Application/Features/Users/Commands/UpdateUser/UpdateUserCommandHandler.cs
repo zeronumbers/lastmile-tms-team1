@@ -45,7 +45,6 @@ public class UpdateUserCommandHandler(
         }
 
         // Update role if provided
-        string? roleName = null;
         if (request.RoleId.HasValue)
         {
             var role = await roleManager.FindByIdAsync(request.RoleId.Value.ToString());
@@ -53,8 +52,7 @@ public class UpdateUserCommandHandler(
             {
                 return Result<UserDto>.Failure("Role not found");
             }
-            user.AssignRole(request.RoleId.Value);
-            roleName = role.Name;
+            user.AssignRole(request.RoleId.Value, role.Name);
 
             // Update in identity role table too
             var currentRoles = await userManager.GetRolesAsync(user);
@@ -76,7 +74,8 @@ public class UpdateUserCommandHandler(
         // Update zone/depot assignment
         if (request.ZoneId.HasValue)
         {
-            user.AssignToZone(request.ZoneId.Value);
+            var zone = await context.Zones.FindAsync(new object[] { request.ZoneId.Value }, cancellationToken);
+            user.AssignToZone(request.ZoneId.Value, zone?.Name);
         }
         else
         {
@@ -85,7 +84,8 @@ public class UpdateUserCommandHandler(
 
         if (request.DepotId.HasValue)
         {
-            user.AssignToDepot(request.DepotId.Value);
+            var depot = await context.Depots.FindAsync(new object[] { request.DepotId.Value }, cancellationToken);
+            user.AssignToDepot(request.DepotId.Value, depot?.Name);
         }
         else
         {
@@ -99,31 +99,19 @@ public class UpdateUserCommandHandler(
             return Result<UserDto>.Failure($"Failed to update user: {errors}");
         }
 
-        // Get role name if not already fetched
-        if (roleName == null && user.RoleId.HasValue)
-        {
-            var role = await roleManager.FindByIdAsync(user.RoleId.Value.ToString());
-            roleName = role?.Name;
-        }
-
-        return Result<UserDto>.Success(MapToDto(user, roleName));
-    }
-
-    private static UserDto MapToDto(User user, string? roleName)
-    {
-        return new UserDto(
+        return Result<UserDto>.Success(new UserDto(
             user.Id,
             user.FirstName,
             user.LastName,
             user.Email!,
             user.PhoneNumber,
             user.Status,
-            roleName,
+            user.RoleName,
             user.RoleId,
             user.ZoneId,
-            user.Zone != null ? user.Zone.Name : null,
+            user.ZoneName,
             user.DepotId,
-            user.Depot != null ? user.Depot.Name : null,
-            user.CreatedAt);
+            user.DepotName,
+            user.CreatedAt));
     }
 }

@@ -13,11 +13,11 @@ public static class UserMappings
         u.Email!,
         u.PhoneNumber,
         u.Status,
-        u.Role != null ? u.Role.Name : null,
+        u.RoleName,
         u.RoleId,
         u.ZoneId,
-        u.Zone != null ? u.Zone.Name : null,
+        u.ZoneName,
         u.DepotId,
-        u.Depot != null ? u.Depot.Name : null,
+        u.DepotName,
         u.CreatedAt);
 }

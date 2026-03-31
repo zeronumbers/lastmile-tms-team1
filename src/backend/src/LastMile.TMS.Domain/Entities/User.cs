@@ -42,22 +42,22 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public Guid? RoleId { get; private set; }
     public Role? Role { get; private set; }
 
-    // Computed property for GraphQL projection
-    public string? RoleName => Role?.Name;
+    // Denormalized name for SQL projection support
+    public string? RoleName { get; private set; }
 
     // Zone assignment (for drivers/dispatchers)
     public Guid? ZoneId { get; private set; }
     public Zone? Zone { get; private set; }
 
-    // Computed property for GraphQL projection
-    public string? ZoneName => Zone?.Name;
+    // Denormalized name for SQL projection support
+    public string? ZoneName { get; private set; }
 
     // Depot assignment (for warehouse operators)
     public Guid? DepotId { get; private set; }
     public Depot? Depot { get; private set; }
 
-    // Computed property for GraphQL projection
-    public string? DepotName => Depot?.Name;
+    // Denormalized name for SQL projection support
+    public string? DepotName { get; private set; }
 
     // Factory method
     public static User Create(
@@ -121,24 +121,28 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
         Status = UserStatus.Suspended;
     }
 
-    public void AssignToZone(Guid zoneId)
+    public void AssignToZone(Guid zoneId, string? zoneName)
     {
         ZoneId = zoneId;
+        ZoneName = zoneName;
     }
 
-    public void AssignToDepot(Guid depotId)
+    public void AssignToDepot(Guid depotId, string? depotName)
     {
         DepotId = depotId;
+        DepotName = depotName;
     }
 
-    public void AssignRole(Guid roleId)
+    public void AssignRole(Guid roleId, string? roleName)
     {
         RoleId = roleId;
+        RoleName = roleName;
     }
 
     public void RemoveRole()
     {
         RoleId = null;
+        RoleName = null;
     }
 
     public void UpdateName(string firstName, string lastName)
@@ -173,17 +177,21 @@ public class User : IdentityUser<Guid>, IBaseAuditableEntity
     public void ClearZoneAndDepot()
     {
         ZoneId = null;
+        ZoneName = null;
         DepotId = null;
+        DepotName = null;
     }
 
     public void ClearZone()
     {
         ZoneId = null;
+        ZoneName = null;
     }
 
     public void ClearDepot()
     {
         DepotId = null;
+        DepotName = null;
     }
 
     // Set password hash (PasswordHash is inherited from IdentityUser but with protected setter)
