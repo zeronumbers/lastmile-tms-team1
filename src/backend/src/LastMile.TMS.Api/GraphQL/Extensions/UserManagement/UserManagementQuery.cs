@@ -17,13 +17,13 @@ public class UserManagementQuery
     [UseFiltering]
     [UseSorting]
     public IQueryable<User> GetUsers([Service] AppDbContext context)
-        => context.Users.IgnoreQueryFilters().Where(u => !u.IsDeleted).AsNoTracking();
+        => context.Users.AsNoTracking();
 
     [Authorize(Roles = [Role.RoleNames.Admin])]
     [UseSingleOrDefault]
     [UseProjection]
     public IQueryable<User> GetUser(Guid id, [Service] AppDbContext context)
-        => context.Users.IgnoreQueryFilters().Where(u => u.Id == id && !u.IsDeleted).AsNoTracking();
+        => context.Users.AsNoTracking().Where(u => u.Id == id);
 
     [Authorize(Roles = [Role.RoleNames.Admin])]
     public async Task<UserManagementLookupsDto> GetUserManagementLookups(
@@ -31,20 +31,16 @@ public class UserManagementQuery
         CancellationToken cancellationToken = default)
     {
         var roles = await context.Roles
-            .IgnoreQueryFilters()
-            .Where(r => !r.IsDeleted)
             .Select(r => new RoleLookupDto(r.Id, r.Name!, r.Description))
             .ToListAsync(cancellationToken);
 
         var depots = await context.Depots
-            .IgnoreQueryFilters()
-            .Where(d => !d.IsDeleted && d.IsActive)
+            .Where(d => d.IsActive)
             .Select(d => new DepotLookupDto(d.Id, d.Name))
             .ToListAsync(cancellationToken);
 
         var zones = await context.Zones
-            .IgnoreQueryFilters()
-            .Where(z => !z.IsDeleted && z.IsActive)
+            .Where(z => z.IsActive)
             .Select(z => new ZoneLookupDto(z.Id, z.Name, z.DepotId))
             .ToListAsync(cancellationToken);
 
