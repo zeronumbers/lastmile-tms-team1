@@ -26,20 +26,7 @@ public class UserManagementQuery
             .Include(u => u.Role)
             .Include(u => u.Zone)
             .Include(u => u.Depot)
-            .Select(u => new UserDto(
-                u.Id,
-                u.FirstName,
-                u.LastName,
-                u.Email!,
-                u.PhoneNumber,
-                u.Status,
-                u.Role != null ? u.Role.Name : null,
-                u.RoleId,
-                u.ZoneId,
-                u.Zone != null ? u.Zone.Name : null,
-                u.DepotId,
-                u.Depot != null ? u.Depot.Name : null,
-                u.CreatedAt));
+            .Select(UserMappings.ToUserDto);
     }
 
     [Authorize(Roles = [Role.RoleNames.Admin])]
@@ -50,20 +37,7 @@ public class UserManagementQuery
             .Include(u => u.Role)
             .Include(u => u.Zone)
             .Include(u => u.Depot)
-            .Select(u => new UserDto(
-                u.Id,
-                u.FirstName,
-                u.LastName,
-                u.Email!,
-                u.PhoneNumber,
-                u.Status,
-                u.Role != null ? u.Role.Name : null,
-                u.RoleId,
-                u.ZoneId,
-                u.Zone != null ? u.Zone.Name : null,
-                u.DepotId,
-                u.Depot != null ? u.Depot.Name : null,
-                u.CreatedAt));
+            .Select(UserMappings.ToUserDto);
     }
 
     public async Task<UserDto?> GetUserById(
