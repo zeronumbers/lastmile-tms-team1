@@ -212,7 +212,6 @@ export interface CreateDriverInput {
   photo?: string;
   zoneId: string;
   depotId: string;
-  userId?: string;
   isActive?: boolean;
 }
 
@@ -227,6 +226,5 @@ export interface UpdateDriverInput {
   photo?: string;
   zoneId: string;
   depotId: string;
-  userId?: string;
   isActive: boolean;
 }
