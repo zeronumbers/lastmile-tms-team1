@@ -7,6 +7,7 @@ public interface IAppDbContext
 {
     DbSet<Address> Addresses { get; }
     DbSet<Depot> Depots { get; }
+    DbSet<DayOff> DaysOff { get; }
     DbSet<Driver> Drivers { get; }
     DbSet<Role> Roles { get; }
     DbSet<Parcel> Parcels { get; }
