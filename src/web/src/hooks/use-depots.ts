@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { depotKeys } from "@/lib/query-key-factory";
+import { depotKeys, userKeys } from "@/lib/query-key-factory";
 import * as depotsService from "@/services/depots.service";
 import { toast } from "sonner";
 
@@ -53,6 +53,7 @@ export function useUpdateDepot() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: depotKeys.all });
       queryClient.invalidateQueries({ queryKey: depotKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success("Depot updated successfully");
     },
     onError: () => {
@@ -69,6 +70,7 @@ export function useDeleteDepot() {
     mutationFn: (id: string) => depotsService.deleteDepot(session!.user.accessToken, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: depotKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success("Depot deleted successfully");
     },
     onError: () => {

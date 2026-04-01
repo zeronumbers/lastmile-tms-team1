@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { zoneKeys } from "@/lib/query-key-factory";
+import { zoneKeys, userKeys } from "@/lib/query-key-factory";
 import * as zonesService from "@/services/zones.service";
 import { toast } from "sonner";
 
@@ -53,6 +53,7 @@ export function useUpdateZone() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: zoneKeys.all });
       queryClient.invalidateQueries({ queryKey: zoneKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success("Zone updated successfully");
     },
     onError: () => {
@@ -69,6 +70,7 @@ export function useDeleteZone() {
     mutationFn: (id: string) => zonesService.deleteZone(session!.user.accessToken, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: zoneKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success("Zone deleted successfully");
     },
     onError: () => {

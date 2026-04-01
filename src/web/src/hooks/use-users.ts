@@ -5,10 +5,10 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { userKeys } from "@/lib/query-key-factory";
 import { fetchUsers } from "@/services/users.service";
-import type { UsersFilter, PageInfo, UserDto } from "@/types/user";
+import type { UsersFilter, PageInfo, User } from "@/types/user";
 
 interface UseUsersResult {
-  users: UserDto[];
+  users: User[];
   pageInfo: PageInfo;
   totalCount: number;
   isLoading: boolean;

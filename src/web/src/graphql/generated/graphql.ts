@@ -219,6 +219,20 @@ export type DailyOperatingHoursInput = {
   openTime?: InputMaybe<Scalars['LocalTime']['input']>;
 };
 
+export enum DataScope {
+  All = 'ALL',
+  Department = 'DEPARTMENT',
+  None = 'NONE',
+  Own = 'OWN'
+}
+
+export type DataScopeOperationFilterInput = {
+  eq?: InputMaybe<DataScope>;
+  in?: InputMaybe<Array<DataScope>>;
+  neq?: InputMaybe<DataScope>;
+  nin?: InputMaybe<Array<DataScope>>;
+};
+
 export type DateTimeOperationFilterInput = {
   eq?: InputMaybe<Scalars['DateTime']['input']>;
   gt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -887,6 +901,13 @@ export type ListFilterInputTypeOfParcelWatcherFilterInput = {
   some?: InputMaybe<ParcelWatcherFilterInput>;
 };
 
+export type ListFilterInputTypeOfRolePermissionFilterInput = {
+  all?: InputMaybe<RolePermissionFilterInput>;
+  any?: InputMaybe<Scalars['Boolean']['input']>;
+  none?: InputMaybe<RolePermissionFilterInput>;
+  some?: InputMaybe<RolePermissionFilterInput>;
+};
+
 export type ListFilterInputTypeOfShiftScheduleFilterInput = {
   all?: InputMaybe<ShiftScheduleFilterInput>;
   any?: InputMaybe<Scalars['Boolean']['input']>;
@@ -899,6 +920,13 @@ export type ListFilterInputTypeOfTrackingEventFilterInput = {
   any?: InputMaybe<Scalars['Boolean']['input']>;
   none?: InputMaybe<TrackingEventFilterInput>;
   some?: InputMaybe<TrackingEventFilterInput>;
+};
+
+export type ListFilterInputTypeOfUserFilterInput = {
+  all?: InputMaybe<UserFilterInput>;
+  any?: InputMaybe<Scalars['Boolean']['input']>;
+  none?: InputMaybe<UserFilterInput>;
+  some?: InputMaybe<UserFilterInput>;
 };
 
 export type ListFilterInputTypeOfVehicleJourneyFilterInput = {
@@ -1386,6 +1414,75 @@ export type ParcelWatcherFilterInput = {
   parcels?: InputMaybe<ListFilterInputTypeOfParcelFilterInput>;
 };
 
+export type Permission = {
+  __typename?: 'Permission';
+  code: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  deletedAt?: Maybe<Scalars['DateTime']['output']>;
+  deletedBy?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
+  lastModifiedBy?: Maybe<Scalars['String']['output']>;
+  module: PermissionModule;
+  name: Scalars['String']['output'];
+  rolePermissions: Array<RolePermission>;
+  scope: PermissionScope;
+};
+
+export type PermissionFilterInput = {
+  and?: InputMaybe<Array<PermissionFilterInput>>;
+  code?: InputMaybe<StringOperationFilterInput>;
+  createdAt?: InputMaybe<DateTimeOperationFilterInput>;
+  createdBy?: InputMaybe<StringOperationFilterInput>;
+  deletedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  deletedBy?: InputMaybe<StringOperationFilterInput>;
+  description?: InputMaybe<StringOperationFilterInput>;
+  id?: InputMaybe<UuidOperationFilterInput>;
+  isDeleted?: InputMaybe<BooleanOperationFilterInput>;
+  lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
+  module?: InputMaybe<PermissionModuleOperationFilterInput>;
+  name?: InputMaybe<StringOperationFilterInput>;
+  or?: InputMaybe<Array<PermissionFilterInput>>;
+  rolePermissions?: InputMaybe<ListFilterInputTypeOfRolePermissionFilterInput>;
+  scope?: InputMaybe<PermissionScopeOperationFilterInput>;
+};
+
+export enum PermissionModule {
+  Depots = 'DEPOTS',
+  Parcels = 'PARCELS',
+  Reports = 'REPORTS',
+  Roles = 'ROLES',
+  Settings = 'SETTINGS',
+  Users = 'USERS',
+  Vehicles = 'VEHICLES',
+  Zones = 'ZONES'
+}
+
+export type PermissionModuleOperationFilterInput = {
+  eq?: InputMaybe<PermissionModule>;
+  in?: InputMaybe<Array<PermissionModule>>;
+  neq?: InputMaybe<PermissionModule>;
+  nin?: InputMaybe<Array<PermissionModule>>;
+};
+
+export enum PermissionScope {
+  All = 'ALL',
+  Delete = 'DELETE',
+  Read = 'READ',
+  Write = 'WRITE'
+}
+
+export type PermissionScopeOperationFilterInput = {
+  eq?: InputMaybe<PermissionScope>;
+  in?: InputMaybe<Array<PermissionScope>>;
+  neq?: InputMaybe<PermissionScope>;
+  nin?: InputMaybe<Array<PermissionScope>>;
+};
+
 export type PointFilterInput = {
   and?: InputMaybe<Array<PointFilterInput>>;
   area?: InputMaybe<FloatOperationFilterInput>;
@@ -1487,8 +1584,7 @@ export type Query = {
   route?: Maybe<Route>;
   routes: Array<Route>;
   sentinel?: Maybe<Scalars['String']['output']>;
-  user: Array<UserDto>;
-  userById?: Maybe<UserDto>;
+  user?: Maybe<User>;
   userManagementLookups: UserManagementLookupsDto;
   users?: Maybe<UsersConnection>;
   vehicle?: Maybe<Vehicle>;
@@ -1530,18 +1626,13 @@ export type QueryUserArgs = {
 };
 
 
-export type QueryUserByIdArgs = {
-  id: Scalars['UUID']['input'];
-};
-
-
 export type QueryUsersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
-  order?: InputMaybe<Array<UserDtoSortInput>>;
-  where?: InputMaybe<UserDtoFilterInput>;
+  order?: InputMaybe<Array<UserSortInput>>;
+  where?: InputMaybe<UserFilterInput>;
 };
 
 
@@ -1575,11 +1666,82 @@ export type QueryZonesArgs = {
   where?: InputMaybe<ZoneFilterInput>;
 };
 
+export type Role = {
+  __typename?: 'Role';
+  concurrencyStamp?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  deletedAt?: Maybe<Scalars['DateTime']['output']>;
+  deletedBy?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
+  lastModifiedBy?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  normalizedName?: Maybe<Scalars['String']['output']>;
+  rolePermissions: Array<RolePermission>;
+  users: Array<User>;
+};
+
+export type RoleFilterInput = {
+  and?: InputMaybe<Array<RoleFilterInput>>;
+  concurrencyStamp?: InputMaybe<StringOperationFilterInput>;
+  createdAt?: InputMaybe<DateTimeOperationFilterInput>;
+  createdBy?: InputMaybe<StringOperationFilterInput>;
+  deletedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  deletedBy?: InputMaybe<StringOperationFilterInput>;
+  description?: InputMaybe<StringOperationFilterInput>;
+  id?: InputMaybe<UuidOperationFilterInput>;
+  isDeleted?: InputMaybe<BooleanOperationFilterInput>;
+  lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
+  name?: InputMaybe<StringOperationFilterInput>;
+  normalizedName?: InputMaybe<StringOperationFilterInput>;
+  or?: InputMaybe<Array<RoleFilterInput>>;
+  rolePermissions?: InputMaybe<ListFilterInputTypeOfRolePermissionFilterInput>;
+  users?: InputMaybe<ListFilterInputTypeOfUserFilterInput>;
+};
+
 export type RoleLookupDto = {
   __typename?: 'RoleLookupDto';
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['UUID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type RolePermission = {
+  __typename?: 'RolePermission';
+  dataScope: DataScope;
+  permission: Permission;
+  permissionId: Scalars['UUID']['output'];
+  role: Role;
+  roleId: Scalars['UUID']['output'];
+};
+
+export type RolePermissionFilterInput = {
+  and?: InputMaybe<Array<RolePermissionFilterInput>>;
+  dataScope?: InputMaybe<DataScopeOperationFilterInput>;
+  or?: InputMaybe<Array<RolePermissionFilterInput>>;
+  permission?: InputMaybe<PermissionFilterInput>;
+  permissionId?: InputMaybe<UuidOperationFilterInput>;
+  role?: InputMaybe<RoleFilterInput>;
+  roleId?: InputMaybe<UuidOperationFilterInput>;
+};
+
+export type RoleSortInput = {
+  concurrencyStamp?: InputMaybe<SortEnumType>;
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  description?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  name?: InputMaybe<SortEnumType>;
+  normalizedName?: InputMaybe<SortEnumType>;
 };
 
 export type Route = {
@@ -1839,6 +2001,44 @@ export type UpdateZoneCommandInput = {
   name: Scalars['String']['input'];
 };
 
+export type User = {
+  __typename?: 'User';
+  accessFailedCount: Scalars['Int']['output'];
+  concurrencyStamp?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  deletedAt?: Maybe<Scalars['DateTime']['output']>;
+  deletedBy?: Maybe<Scalars['String']['output']>;
+  depot?: Maybe<Depot>;
+  depotId?: Maybe<Scalars['UUID']['output']>;
+  email?: Maybe<Scalars['String']['output']>;
+  emailConfirmed: Scalars['Boolean']['output'];
+  firstName: Scalars['String']['output'];
+  id: Scalars['UUID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  isSystemAdmin: Scalars['Boolean']['output'];
+  lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
+  lastModifiedBy?: Maybe<Scalars['String']['output']>;
+  lastName: Scalars['String']['output'];
+  lockoutEnabled: Scalars['Boolean']['output'];
+  lockoutEnd?: Maybe<Scalars['DateTime']['output']>;
+  normalizedEmail?: Maybe<Scalars['String']['output']>;
+  normalizedUserName?: Maybe<Scalars['String']['output']>;
+  passwordHash?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
+  phoneNumberConfirmed: Scalars['Boolean']['output'];
+  role?: Maybe<Role>;
+  roleId?: Maybe<Scalars['UUID']['output']>;
+  securityStamp?: Maybe<Scalars['String']['output']>;
+  status: UserStatus;
+  twoFactorEnabled: Scalars['Boolean']['output'];
+  userName?: Maybe<Scalars['String']['output']>;
+  zone?: Maybe<Zone>;
+  zoneId?: Maybe<Scalars['UUID']['output']>;
+};
+
 export type UserDto = {
   __typename?: 'UserDto';
   createdAt: Scalars['DateTime']['output'];
@@ -1856,38 +2056,43 @@ export type UserDto = {
   zoneName?: Maybe<Scalars['String']['output']>;
 };
 
-export type UserDtoFilterInput = {
-  and?: InputMaybe<Array<UserDtoFilterInput>>;
+export type UserFilterInput = {
+  accessFailedCount?: InputMaybe<IntOperationFilterInput>;
+  and?: InputMaybe<Array<UserFilterInput>>;
+  concurrencyStamp?: InputMaybe<StringOperationFilterInput>;
   createdAt?: InputMaybe<DateTimeOperationFilterInput>;
+  createdBy?: InputMaybe<StringOperationFilterInput>;
+  deletedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  deletedBy?: InputMaybe<StringOperationFilterInput>;
+  depot?: InputMaybe<DepotFilterInput>;
   depotId?: InputMaybe<UuidOperationFilterInput>;
-  depotName?: InputMaybe<StringOperationFilterInput>;
   email?: InputMaybe<StringOperationFilterInput>;
+  emailConfirmed?: InputMaybe<BooleanOperationFilterInput>;
   firstName?: InputMaybe<StringOperationFilterInput>;
   id?: InputMaybe<UuidOperationFilterInput>;
+  isActive?: InputMaybe<BooleanOperationFilterInput>;
+  isDeleted?: InputMaybe<BooleanOperationFilterInput>;
+  isSystemAdmin?: InputMaybe<BooleanOperationFilterInput>;
+  lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
   lastName?: InputMaybe<StringOperationFilterInput>;
-  or?: InputMaybe<Array<UserDtoFilterInput>>;
+  lockoutEnabled?: InputMaybe<BooleanOperationFilterInput>;
+  lockoutEnd?: InputMaybe<DateTimeOperationFilterInput>;
+  normalizedEmail?: InputMaybe<StringOperationFilterInput>;
+  normalizedUserName?: InputMaybe<StringOperationFilterInput>;
+  or?: InputMaybe<Array<UserFilterInput>>;
+  passwordHash?: InputMaybe<StringOperationFilterInput>;
+  phone?: InputMaybe<StringOperationFilterInput>;
   phoneNumber?: InputMaybe<StringOperationFilterInput>;
+  phoneNumberConfirmed?: InputMaybe<BooleanOperationFilterInput>;
+  role?: InputMaybe<RoleFilterInput>;
   roleId?: InputMaybe<UuidOperationFilterInput>;
-  roleName?: InputMaybe<StringOperationFilterInput>;
+  securityStamp?: InputMaybe<StringOperationFilterInput>;
   status?: InputMaybe<UserStatusOperationFilterInput>;
+  twoFactorEnabled?: InputMaybe<BooleanOperationFilterInput>;
+  userName?: InputMaybe<StringOperationFilterInput>;
+  zone?: InputMaybe<ZoneFilterInput>;
   zoneId?: InputMaybe<UuidOperationFilterInput>;
-  zoneName?: InputMaybe<StringOperationFilterInput>;
-};
-
-export type UserDtoSortInput = {
-  createdAt?: InputMaybe<SortEnumType>;
-  depotId?: InputMaybe<SortEnumType>;
-  depotName?: InputMaybe<SortEnumType>;
-  email?: InputMaybe<SortEnumType>;
-  firstName?: InputMaybe<SortEnumType>;
-  id?: InputMaybe<SortEnumType>;
-  lastName?: InputMaybe<SortEnumType>;
-  phoneNumber?: InputMaybe<SortEnumType>;
-  roleId?: InputMaybe<SortEnumType>;
-  roleName?: InputMaybe<SortEnumType>;
-  status?: InputMaybe<SortEnumType>;
-  zoneId?: InputMaybe<SortEnumType>;
-  zoneName?: InputMaybe<SortEnumType>;
 };
 
 export type UserManagementLookupsDto = {
@@ -1895,6 +2100,43 @@ export type UserManagementLookupsDto = {
   depots: Array<DepotLookupDto>;
   roles: Array<RoleLookupDto>;
   zones: Array<ZoneLookupDto>;
+};
+
+export type UserSortInput = {
+  accessFailedCount?: InputMaybe<SortEnumType>;
+  concurrencyStamp?: InputMaybe<SortEnumType>;
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  depot?: InputMaybe<DepotSortInput>;
+  depotId?: InputMaybe<SortEnumType>;
+  email?: InputMaybe<SortEnumType>;
+  emailConfirmed?: InputMaybe<SortEnumType>;
+  firstName?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isActive?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  isSystemAdmin?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  lastName?: InputMaybe<SortEnumType>;
+  lockoutEnabled?: InputMaybe<SortEnumType>;
+  lockoutEnd?: InputMaybe<SortEnumType>;
+  normalizedEmail?: InputMaybe<SortEnumType>;
+  normalizedUserName?: InputMaybe<SortEnumType>;
+  passwordHash?: InputMaybe<SortEnumType>;
+  phone?: InputMaybe<SortEnumType>;
+  phoneNumber?: InputMaybe<SortEnumType>;
+  phoneNumberConfirmed?: InputMaybe<SortEnumType>;
+  role?: InputMaybe<RoleSortInput>;
+  roleId?: InputMaybe<SortEnumType>;
+  securityStamp?: InputMaybe<SortEnumType>;
+  status?: InputMaybe<SortEnumType>;
+  twoFactorEnabled?: InputMaybe<SortEnumType>;
+  userName?: InputMaybe<SortEnumType>;
+  zone?: InputMaybe<ZoneSortInput>;
+  zoneId?: InputMaybe<SortEnumType>;
 };
 
 export enum UserStatus {
@@ -1916,7 +2158,7 @@ export type UsersConnection = {
   /** A list of edges. */
   edges?: Maybe<Array<UsersEdge>>;
   /** A flattened list of the nodes. */
-  nodes?: Maybe<Array<UserDto>>;
+  nodes?: Maybe<Array<User>>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
   /** Identifies the total count of items in the connection. */
@@ -1929,7 +2171,7 @@ export type UsersEdge = {
   /** A cursor for use in pagination. */
   cursor: Scalars['String']['output'];
   /** The item at the end of the edge. */
-  node: UserDto;
+  node: User;
 };
 
 export type UuidOperationFilterInput = {
@@ -2294,19 +2536,19 @@ export type ChangeRouteStatusMutation = { __typename?: 'Mutation', changeRouteSt
 export type GetUsersQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
-  where?: InputMaybe<UserDtoFilterInput>;
-  order?: InputMaybe<Array<UserDtoSortInput> | UserDtoSortInput>;
+  where?: InputMaybe<UserFilterInput>;
+  order?: InputMaybe<Array<UserSortInput> | UserSortInput>;
 }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users?: { __typename?: 'UsersConnection', totalCount: number, nodes?: Array<{ __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, zoneName?: string | null, depotId?: any | null, depotName?: string | null, createdAt: any }> | null, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null } } | null };
+export type GetUsersQuery = { __typename?: 'Query', users?: { __typename?: 'UsersConnection', totalCount: number, nodes?: Array<{ __typename?: 'User', id: any, firstName: string, lastName: string, email?: string | null, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any, role?: { __typename?: 'Role', id: any, name?: string | null } | null, zone?: { __typename?: 'Zone', id: any, name: string } | null, depot?: { __typename?: 'Depot', id: any, name: string } | null }> | null, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null } } | null };
 
-export type GetUserByIdQueryVariables = Exact<{
+export type GetUserQueryVariables = Exact<{
   id: Scalars['UUID']['input'];
 }>;
 
 
-export type GetUserByIdQuery = { __typename?: 'Query', userById?: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: any, firstName: string, lastName: string, email?: string | null, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any, role?: { __typename?: 'Role', id: any, name?: string | null } | null, zone?: { __typename?: 'Zone', id: any, name: string } | null, depot?: { __typename?: 'Depot', id: any, name: string } | null } | null };
 
 export type GetUserManagementLookupsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2325,7 +2567,7 @@ export type CreateUserMutationVariables = Exact<{
 }>;
 
 
-export type CreateUserMutation = { __typename?: 'Mutation', createUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any } };
+export type CreateUserMutation = { __typename?: 'Mutation', createUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, roleName?: string | null, zoneId?: any | null, zoneName?: string | null, depotId?: any | null, depotName?: string | null, createdAt: any } };
 
 export type UpdateUserMutationVariables = Exact<{
   userId: Scalars['UUID']['input'];
@@ -2339,21 +2581,21 @@ export type UpdateUserMutationVariables = Exact<{
 }>;
 
 
-export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any } };
+export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, roleName?: string | null, zoneId?: any | null, zoneName?: string | null, depotId?: any | null, depotName?: string | null, createdAt: any } };
 
 export type DeactivateUserMutationVariables = Exact<{
   userId: Scalars['UUID']['input'];
 }>;
 
 
-export type DeactivateUserMutation = { __typename?: 'Mutation', deactivateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any } };
+export type DeactivateUserMutation = { __typename?: 'Mutation', deactivateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, roleName?: string | null, zoneId?: any | null, zoneName?: string | null, depotId?: any | null, depotName?: string | null, createdAt: any } };
 
 export type ActivateUserMutationVariables = Exact<{
   userId: Scalars['UUID']['input'];
 }>;
 
 
-export type ActivateUserMutation = { __typename?: 'Mutation', activateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleName?: string | null, roleId?: any | null, zoneId?: any | null, depotId?: any | null, createdAt: any } };
+export type ActivateUserMutation = { __typename?: 'Mutation', activateUser: { __typename?: 'UserDto', id: any, firstName: string, lastName: string, email: string, phoneNumber?: string | null, status: UserStatus, roleId?: any | null, roleName?: string | null, zoneId?: any | null, zoneName?: string | null, depotId?: any | null, depotName?: string | null, createdAt: any } };
 
 export type ResetPasswordMutationVariables = Exact<{
   email: Scalars['String']['input'];
@@ -2466,13 +2708,13 @@ export const CreateRouteDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const UpdateRouteDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateRoute"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"plannedStartTime"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DateTime"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"totalDistanceKm"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Decimal"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"totalParcelCount"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"vehicleId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateRoute"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"plannedStartTime"},"value":{"kind":"Variable","name":{"kind":"Name","value":"plannedStartTime"}}},{"kind":"Argument","name":{"kind":"Name","value":"totalDistanceKm"},"value":{"kind":"Variable","name":{"kind":"Name","value":"totalDistanceKm"}}},{"kind":"Argument","name":{"kind":"Name","value":"totalParcelCount"},"value":{"kind":"Variable","name":{"kind":"Name","value":"totalParcelCount"}}},{"kind":"Argument","name":{"kind":"Name","value":"vehicleId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"vehicleId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"plannedStartTime"}},{"kind":"Field","name":{"kind":"Name","value":"totalDistanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"totalParcelCount"}},{"kind":"Field","name":{"kind":"Name","value":"vehicleId"}},{"kind":"Field","name":{"kind":"Name","value":"vehiclePlate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<UpdateRouteMutation, UpdateRouteMutationVariables>;
 export const DeleteRouteDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteRoute"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteRoute"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteRouteMutation, DeleteRouteMutationVariables>;
 export const ChangeRouteStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeRouteStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"newStatus"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RouteStatus"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeRouteStatus"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"newStatus"},"value":{"kind":"Variable","name":{"kind":"Name","value":"newStatus"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"plannedStartTime"}},{"kind":"Field","name":{"kind":"Name","value":"actualStartTime"}},{"kind":"Field","name":{"kind":"Name","value":"actualEndTime"}},{"kind":"Field","name":{"kind":"Name","value":"totalDistanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"totalParcelCount"}},{"kind":"Field","name":{"kind":"Name","value":"vehicleId"}},{"kind":"Field","name":{"kind":"Name","value":"vehiclePlate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<ChangeRouteStatusMutation, ChangeRouteStatusMutationVariables>;
-export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UserDtoFilterInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UserDtoSortInput"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"order"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneName"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depotName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"startCursor"}},{"kind":"Field","name":{"kind":"Name","value":"endCursor"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
-export const GetUserByIdDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserById"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userById"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetUserByIdQuery, GetUserByIdQueryVariables>;
+export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UserFilterInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UserSortInput"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"order"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"role"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zone"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"startCursor"}},{"kind":"Field","name":{"kind":"Name","value":"endCursor"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
+export const GetUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"role"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zone"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetUserQuery, GetUserQueryVariables>;
 export const GetUserManagementLookupsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserManagementLookups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userManagementLookups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"roles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"depots"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"zones"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserManagementLookupsQuery, GetUserManagementLookupsQueryVariables>;
-export const CreateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"phone"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"password"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"firstName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}}},{"kind":"Argument","name":{"kind":"Name","value":"lastName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}}},{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}},{"kind":"Argument","name":{"kind":"Name","value":"phone"},"value":{"kind":"Variable","name":{"kind":"Name","value":"phone"}}},{"kind":"Argument","name":{"kind":"Name","value":"roleId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}}},{"kind":"Argument","name":{"kind":"Name","value":"zoneId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}}},{"kind":"Argument","name":{"kind":"Name","value":"depotId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}}},{"kind":"Argument","name":{"kind":"Name","value":"password"},"value":{"kind":"Variable","name":{"kind":"Name","value":"password"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<CreateUserMutation, CreateUserMutationVariables>;
-export const UpdateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"phone"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"firstName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}}},{"kind":"Argument","name":{"kind":"Name","value":"lastName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}}},{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}},{"kind":"Argument","name":{"kind":"Name","value":"phone"},"value":{"kind":"Variable","name":{"kind":"Name","value":"phone"}}},{"kind":"Argument","name":{"kind":"Name","value":"roleId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}}},{"kind":"Argument","name":{"kind":"Name","value":"zoneId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}}},{"kind":"Argument","name":{"kind":"Name","value":"depotId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<UpdateUserMutation, UpdateUserMutationVariables>;
-export const DeactivateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeactivateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deactivateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<DeactivateUserMutation, DeactivateUserMutationVariables>;
-export const ActivateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ActivateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"activateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<ActivateUserMutation, ActivateUserMutationVariables>;
+export const CreateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"phone"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"password"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"firstName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}}},{"kind":"Argument","name":{"kind":"Name","value":"lastName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}}},{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}},{"kind":"Argument","name":{"kind":"Name","value":"phone"},"value":{"kind":"Variable","name":{"kind":"Name","value":"phone"}}},{"kind":"Argument","name":{"kind":"Name","value":"roleId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}}},{"kind":"Argument","name":{"kind":"Name","value":"zoneId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}}},{"kind":"Argument","name":{"kind":"Name","value":"depotId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}}},{"kind":"Argument","name":{"kind":"Name","value":"password"},"value":{"kind":"Variable","name":{"kind":"Name","value":"password"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneName"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depotName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<CreateUserMutation, CreateUserMutationVariables>;
+export const UpdateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"phone"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"firstName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"firstName"}}},{"kind":"Argument","name":{"kind":"Name","value":"lastName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"lastName"}}},{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}},{"kind":"Argument","name":{"kind":"Name","value":"phone"},"value":{"kind":"Variable","name":{"kind":"Name","value":"phone"}}},{"kind":"Argument","name":{"kind":"Name","value":"roleId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roleId"}}},{"kind":"Argument","name":{"kind":"Name","value":"zoneId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"zoneId"}}},{"kind":"Argument","name":{"kind":"Name","value":"depotId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"depotId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneName"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depotName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<UpdateUserMutation, UpdateUserMutationVariables>;
+export const DeactivateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeactivateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deactivateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneName"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depotName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<DeactivateUserMutation, DeactivateUserMutationVariables>;
+export const ActivateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ActivateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"activateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"roleName"}},{"kind":"Field","name":{"kind":"Name","value":"zoneId"}},{"kind":"Field","name":{"kind":"Name","value":"zoneName"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depotName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<ActivateUserMutation, ActivateUserMutationVariables>;
 export const ResetPasswordDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ResetPassword"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"resetPassword"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}}]}]}}]} as unknown as DocumentNode<ResetPasswordMutation, ResetPasswordMutationVariables>;
 export const GetVehiclesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetVehicles"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"VehicleFilterInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"vehicles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"registrationPlate"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}}]}}]}}]} as unknown as DocumentNode<GetVehiclesQuery, GetVehiclesQueryVariables>;
 export const GetVehicleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetVehicle"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"vehicle"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"registrationPlate"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"parcelCapacity"}},{"kind":"Field","name":{"kind":"Name","value":"weightCapacityKg"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"depotId"}},{"kind":"Field","name":{"kind":"Name","value":"depot"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetVehicleQuery, GetVehicleQueryVariables>;

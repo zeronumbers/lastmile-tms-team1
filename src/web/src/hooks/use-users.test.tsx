@@ -3,11 +3,11 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUsers } from './use-users';
 import { apiFetch } from '@/lib/api';
-import type { UserDto } from '@/types/user';
+import type { User } from '@/types/user';
 
 vi.mock('@/lib/api');
 
-const mockUsers: UserDto[] = [
+const mockUsers: User[] = [
   {
     id: '1',
     firstName: 'John',
@@ -15,12 +15,12 @@ const mockUsers: UserDto[] = [
     email: 'john@example.com',
     phoneNumber: '1234567890',
     status: 'ACTIVE',
-    roleName: 'Admin',
     roleId: 'role-1',
+    role: { id: 'role-1', name: 'Admin' },
     zoneId: null,
-    zoneName: null,
+    zone: null,
     depotId: null,
-    depotName: null,
+    depot: null,
     createdAt: '2024-01-01T00:00:00Z',
   },
   {
@@ -30,12 +30,12 @@ const mockUsers: UserDto[] = [
     email: 'jane@example.com',
     phoneNumber: '0987654321',
     status: 'INACTIVE',
-    roleName: 'Dispatcher',
     roleId: 'role-2',
+    role: { id: 'role-2', name: 'Dispatcher' },
     zoneId: null,
-    zoneName: null,
+    zone: null,
     depotId: null,
-    depotName: null,
+    depot: null,
     createdAt: '2024-01-02T00:00:00Z',
   },
 ];

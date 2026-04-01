@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { UserDto, UsersFilter, PageInfo } from "@/types/user";
+import type { User, UserDto, UsersFilter, PageInfo } from "@/types/user";
 
 const GET_USERS_QUERY = `
   query GetUsers($first: Int, $after: String) {
@@ -11,12 +11,21 @@ const GET_USERS_QUERY = `
         email
         phoneNumber
         status
-        roleName
         roleId
+        role {
+          id
+          name
+        }
         zoneId
-        zoneName
+        zone {
+          id
+          name
+        }
         depotId
-        depotName
+        depot {
+          id
+          name
+        }
         createdAt
       }
       pageInfo {
@@ -39,10 +48,21 @@ const GET_USER_BY_ID_QUERY = `
       email
       phoneNumber
       status
-      roleName
       roleId
+      role {
+        id
+        name
+      }
       zoneId
+      zone {
+        id
+        name
+      }
       depotId
+      depot {
+        id
+        name
+      }
       createdAt
     }
   }
@@ -96,10 +116,12 @@ const CREATE_USER_MUTATION = `
       email
       phoneNumber
       status
-      roleName
       roleId
+      roleName
       zoneId
+      zoneName
       depotId
+      depotName
       createdAt
     }
   }
@@ -132,10 +154,12 @@ const UPDATE_USER_MUTATION = `
       email
       phoneNumber
       status
-      roleName
       roleId
+      roleName
       zoneId
+      zoneName
       depotId
+      depotName
       createdAt
     }
   }
@@ -150,10 +174,12 @@ const DEACTIVATE_USER_MUTATION = `
       email
       phoneNumber
       status
-      roleName
       roleId
+      roleName
       zoneId
+      zoneName
       depotId
+      depotName
       createdAt
     }
   }
@@ -168,10 +194,12 @@ const ACTIVATE_USER_MUTATION = `
       email
       phoneNumber
       status
-      roleName
       roleId
+      roleName
       zoneId
+      zoneName
       depotId
+      depotName
       createdAt
     }
   }
@@ -185,7 +213,7 @@ const RESET_PASSWORD_MUTATION = `
 
 interface UsersResponse {
   users: {
-    nodes: UserDto[];
+    nodes: User[];
     pageInfo: PageInfo;
     totalCount: number;
   };
@@ -214,7 +242,7 @@ export async function fetchUsers(
   token: string,
   filters?: UsersFilter,
   pageParams?: { first?: number; after?: string }
-): Promise<{ users: UserDto[]; pageInfo: PageInfo; totalCount: number }> {
+): Promise<{ users: User[]; pageInfo: PageInfo; totalCount: number }> {
   const where: Record<string, unknown> = {};
 
   if (filters?.where?.search) {

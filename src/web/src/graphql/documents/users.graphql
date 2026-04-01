@@ -1,4 +1,4 @@
-query GetUsers($first: Int, $after: String, $where: UserDtoFilterInput, $order: [UserDtoSortInput!]) {
+query GetUsers($first: Int, $after: String, $where: UserFilterInput, $order: [UserSortInput!]) {
   users(first: $first, after: $after, where: $where, order: $order) {
     nodes {
       id
@@ -7,12 +7,21 @@ query GetUsers($first: Int, $after: String, $where: UserDtoFilterInput, $order: 
       email
       phoneNumber
       status
-      roleName
       roleId
+      role {
+        id
+        name
+      }
       zoneId
-      zoneName
+      zone {
+        id
+        name
+      }
       depotId
-      depotName
+      depot {
+        id
+        name
+      }
       createdAt
     }
     pageInfo {
@@ -25,18 +34,29 @@ query GetUsers($first: Int, $after: String, $where: UserDtoFilterInput, $order: 
   }
 }
 
-query GetUserById($id: UUID!) {
-  userById(id: $id) {
+query GetUser($id: UUID!) {
+  user(id: $id) {
     id
     firstName
     lastName
     email
     phoneNumber
     status
-    roleName
     roleId
+    role {
+      id
+      name
+    }
     zoneId
+    zone {
+      id
+      name
+    }
     depotId
+    depot {
+      id
+      name
+    }
     createdAt
   }
 }
@@ -86,10 +106,12 @@ mutation CreateUser(
     email
     phoneNumber
     status
-    roleName
     roleId
+    roleName
     zoneId
+    zoneName
     depotId
+    depotName
     createdAt
   }
 }
@@ -120,10 +142,12 @@ mutation UpdateUser(
     email
     phoneNumber
     status
-    roleName
     roleId
+    roleName
     zoneId
+    zoneName
     depotId
+    depotName
     createdAt
   }
 }
@@ -136,10 +160,12 @@ mutation DeactivateUser($userId: UUID!) {
     email
     phoneNumber
     status
-    roleName
     roleId
+    roleName
     zoneId
+    zoneName
     depotId
+    depotName
     createdAt
   }
 }
@@ -152,10 +178,12 @@ mutation ActivateUser($userId: UUID!) {
     email
     phoneNumber
     status
-    roleName
     roleId
+    roleName
     zoneId
+    zoneName
     depotId
+    depotName
     createdAt
   }
 }
