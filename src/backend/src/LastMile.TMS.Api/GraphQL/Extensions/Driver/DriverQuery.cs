@@ -1,7 +1,6 @@
 using HotChocolate;
 using HotChocolate.Authorization;
 using HotChocolate.Data;
-using HotChocolate.Types;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
