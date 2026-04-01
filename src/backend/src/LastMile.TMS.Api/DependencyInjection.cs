@@ -3,6 +3,7 @@ using HotChocolate.Types;
 using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Api.GraphQL.Common;
 using LastMile.TMS.Api.GraphQL.Extensions.Depot;
+using LastMile.TMS.Api.GraphQL.Extensions.Driver;
 using LastMile.TMS.Api.GraphQL.Extensions.Route;
 using LastMile.TMS.Api.GraphQL.Extensions.Vehicle;
 using LastMile.TMS.Api.GraphQL.Extensions.Zone;
@@ -32,6 +33,10 @@ public static class DependencyInjection
             .AddType<VehicleMutation>()
             .AddType<RouteQuery>()
             .AddType<RouteMutation>()
+            .AddType<DriverQuery>()
+            .AddType<DriverMutation>()
+            .AddType<CreateDriverInput>()
+            .AddType<UpdateDriverInput>()
             .AddType<CreateDepotInput>()
             .AddType<AddressInputType>()
             .AddType<UpdateDepotInput>()
