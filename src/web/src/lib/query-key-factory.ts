@@ -40,3 +40,11 @@ export const zoneKeys = {
   details: () => [...zoneKeys.all, 'detail'] as const,
   detail: (id: string) => [...zoneKeys.details(), id] as const,
 };
+
+export const driverKeys = {
+  all: ['drivers'] as const,
+  lists: () => [...driverKeys.all, 'list'] as const,
+  list: () => [...driverKeys.lists()] as const,
+  details: () => [...driverKeys.all, 'detail'] as const,
+  detail: (id: string) => [...driverKeys.details(), id] as const,
+};

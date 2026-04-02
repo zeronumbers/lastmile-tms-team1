@@ -289,22 +289,6 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<Guid>("DepotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -316,11 +300,6 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTimeOffset>("LicenseExpiryDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -329,11 +308,6 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.Property<string>("Photo")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -341,22 +315,12 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ZoneId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("DepotId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("LicenseNumber");
 
                     b.HasIndex("UserId")
                         .IsUnique();
-
-                    b.HasIndex("ZoneId");
 
                     b.ToTable("Drivers", (string)null);
                 });
@@ -1633,29 +1597,13 @@ namespace LastMile.TMS.Persistence.Migrations
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Driver", b =>
                 {
-                    b.HasOne("LastMile.TMS.Domain.Entities.Depot", "Depot")
-                        .WithMany("Drivers")
-                        .HasForeignKey("DepotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("LastMile.TMS.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LastMile.TMS.Domain.Entities.Zone", "Zone")
-                        .WithMany("Drivers")
-                        .HasForeignKey("ZoneId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Depot");
-
                     b.Navigation("User");
-
-                    b.Navigation("Zone");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Parcel", b =>
@@ -1915,8 +1863,6 @@ namespace LastMile.TMS.Persistence.Migrations
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Depot", b =>
                 {
-                    b.Navigation("Drivers");
-
                     b.Navigation("ShiftSchedules");
 
                     b.Navigation("Zones");
@@ -1953,11 +1899,6 @@ namespace LastMile.TMS.Persistence.Migrations
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Route", b =>
                 {
                     b.Navigation("VehicleJourneys");
-                });
-
-            modelBuilder.Entity("LastMile.TMS.Domain.Entities.Zone", b =>
-                {
-                    b.Navigation("Drivers");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>
