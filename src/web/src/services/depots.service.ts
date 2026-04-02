@@ -19,6 +19,9 @@ const GET_DEPOTS_QUERY = `
           companyName
           phone
           email
+          geoLocation {
+            coordinates
+          }
         }
         isActive
         createdAt
@@ -44,6 +47,9 @@ const GET_DEPOT_QUERY = `
         companyName
         phone
         email
+        geoLocation {
+          coordinates
+        }
       }
       shiftSchedules {
         dayOfWeek

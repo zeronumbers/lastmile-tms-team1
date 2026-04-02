@@ -11,6 +11,6 @@ public record ZoneResult(
 
 public record CreateZoneCommand(
     string Name,
-    string GeoJson,
+    string? GeoJson,
     Guid DepotId,
     bool IsActive = true) : IRequest<ZoneResult>;

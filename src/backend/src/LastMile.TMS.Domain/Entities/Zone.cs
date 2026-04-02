@@ -12,7 +12,7 @@ public class Zone : BaseAuditableEntity
 
     public string Name { get; set; } = string.Empty;
 
-    public Geometry BoundaryGeometry { get; set; } = null!;
+    public Geometry? BoundaryGeometry { get; set; }
 
     public bool IsActive { get; set; } = true;
 

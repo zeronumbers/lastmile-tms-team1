@@ -81,7 +81,11 @@ public class CreateZoneHandler(IAppDbContext dbContext) : IRequestHandler<Create
             IsActive = request.IsActive
         };
 
-        zone.SetBoundaryFromGeoJson(request.GeoJson);
+        if (!string.IsNullOrWhiteSpace(request.GeoJson))
+        {
+            zone.SetBoundaryFromGeoJson(request.GeoJson);
+        }
+
         dbContext.Zones.Add(zone);
         await dbContext.SaveChangesAsync(cancellationToken);
 
