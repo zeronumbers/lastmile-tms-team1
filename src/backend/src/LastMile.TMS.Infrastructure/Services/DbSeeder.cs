@@ -3,6 +3,8 @@ using LastMile.TMS.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
 
 namespace LastMile.TMS.Infrastructure.Services;
 
@@ -10,17 +12,21 @@ public class DbSeeder : IDbSeeder
 {
     private readonly RoleManager<Role> _roleManager;
     private readonly UserManager<User> _userManager;
+    private readonly IAppDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DbSeeder> _logger;
+    private static readonly GeometryFactory GeometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
     public DbSeeder(
         RoleManager<Role> roleManager,
         UserManager<User> userManager,
+        IAppDbContext context,
         IConfiguration configuration,
         ILogger<DbSeeder> logger)
     {
         _roleManager = roleManager;
         _userManager = userManager;
+        _context = context;
         _configuration = configuration;
         _logger = logger;
     }
@@ -37,6 +43,9 @@ public class DbSeeder : IDbSeeder
 
         // Seed test users for each role (no zone/depot - assign manually via CRUD)
         await SeedTestUsersAsync();
+
+        // Seed depot and zone for Empire State Building
+        await SeedDepotAndZoneAsync();
 
         _logger.LogInformation("Database seeding completed.");
     }
@@ -292,5 +301,72 @@ public class DbSeeder : IDbSeeder
                 _logger.LogError(ex, "Exception while creating test user {Email}", email);
             }
         }
+    }
+
+    private async Task SeedDepotAndZoneAsync()
+    {
+        const string empireStateDepotName = "Empire State Building Depot";
+        const string zoneName = "Manhattan Zone";
+
+        // Check if depot already exists
+        var existingDepot = _context.Depots.FirstOrDefault(d => d.Name == empireStateDepotName);
+        if (existingDepot != null)
+        {
+            _logger.LogDebug("Depot {DepotName} already exists, skipping seed", empireStateDepotName);
+            return;
+        }
+
+        // Empire State Building coordinates (SRID 4326)
+        const double empireStateLng = -73.985428;
+        const double empireStateLat = 40.748817;
+
+        // Create address
+        var address = new Address
+        {
+            Street1 = "20 W 34th St",
+            City = "New York",
+            State = "NY",
+            PostalCode = "10001",
+            CountryCode = "US",
+            IsResidential = false,
+            GeoLocation = GeometryFactory.CreatePoint(new Coordinate(empireStateLng, empireStateLat))
+        };
+
+        // Create depot
+        var depot = new Depot
+        {
+            Name = empireStateDepotName,
+            Address = address,
+            IsActive = true
+        };
+
+        // Create a polygon zone around Empire State Building (roughly 500m radius)
+        // Coordinates forming a square around the Empire State Building
+        const double offset = 0.0045; // roughly 500m in degrees
+        var zonePolygon = GeometryFactory.CreatePolygon(new[]
+        {
+            new Coordinate(empireStateLng - offset, empireStateLat - offset),
+            new Coordinate(empireStateLng + offset, empireStateLat - offset),
+            new Coordinate(empireStateLng + offset, empireStateLat + offset),
+            new Coordinate(empireStateLng - offset, empireStateLat + offset),
+            new Coordinate(empireStateLng - offset, empireStateLat - offset) // close the ring
+        });
+
+        // Create zone
+        var zone = new Zone
+        {
+            Name = zoneName,
+            BoundaryGeometry = zonePolygon,
+            IsActive = true,
+            Depot = depot
+        };
+
+        // Add depot first (with its address), then zone separately
+        _context.Depots.Add(depot);
+        _context.Zones.Add(zone);
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        _logger.LogInformation("Seeded depot {DepotName} with zone {ZoneName} at Empire State Building",
+            empireStateDepotName, zoneName);
     }
 }

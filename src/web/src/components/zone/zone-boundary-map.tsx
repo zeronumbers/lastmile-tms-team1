@@ -56,6 +56,14 @@ export function ZoneBoundaryMap({
   const draw = useRef<MapboxDraw | null>(null);
   const depotMarker = useRef<mapboxgl.Marker | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const addedZoneLayersRef = useRef<Set<string>>(new Set());
+  const mapInitializedRef = useRef(false);
+
+  // Keep ref updated with latest existingZones to avoid stale closures
+  const existingZonesRef = useRef(existingZones);
+  useEffect(() => {
+    existingZonesRef.current = existingZones;
+  }, [existingZones]);
 
   const handleDrawCreate = useCallback(
     (e: { features: GeoJSON.Feature[] }) => {
@@ -99,6 +107,146 @@ export function ZoneBoundaryMap({
     onGeoJsonChange("");
   }, [onGeoJsonChange]);
 
+  // Helper to add a single zone's overlay layers
+  const addZoneOverlayLayer = useCallback(
+    (
+      currentMap: mapboxgl.Map,
+      zone: { id: string; name: string; boundaryGeometry: unknown },
+      index: number,
+      currentSelectedZoneId: string | null
+    ) => {
+      if (!zone.boundaryGeometry) return;
+
+      const geoJsonStr =
+        typeof zone.boundaryGeometry === "string"
+          ? zone.boundaryGeometry
+          : JSON.stringify(zone.boundaryGeometry);
+
+      const parsed = parseZoneGeoJson(geoJsonStr);
+      if (!parsed) return;
+
+      const feature = createPolygonFeature(parsed);
+      const color = getZoneColor(index);
+      const sourceId = `zone-overlay-${zone.id}`;
+      const fillLayerId = `zone-overlay-fill-${zone.id}`;
+      const strokeLayerId = `zone-overlay-stroke-${zone.id}`;
+      const labelLayerId = `zone-overlay-label-${zone.id}`;
+
+      // Skip if already added
+      if (currentMap.getSource(sourceId)) return;
+
+      // Add source
+      currentMap.addSource(sourceId, {
+        type: "geojson",
+        data: feature as GeoJSON.Feature,
+      });
+      addedZoneLayersRef.current.add(sourceId);
+
+      // Initial opacity based on selection state
+      const initialOpacity = currentSelectedZoneId === zone.id ? 0.5 : 0.2;
+
+      // Add fill layer
+      currentMap.addLayer({
+        id: fillLayerId,
+        type: "fill",
+        source: sourceId,
+        paint: {
+          "fill-color": color,
+          "fill-opacity": initialOpacity,
+        },
+      });
+      addedZoneLayersRef.current.add(fillLayerId);
+
+      // Add stroke layer
+      currentMap.addLayer({
+        id: strokeLayerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": color,
+          "line-width": 2,
+        },
+      });
+      addedZoneLayersRef.current.add(strokeLayerId);
+
+      // Add label
+      const center = getZoneCenter(geoJsonStr);
+      if (center) {
+        const labelSourceId = `zone-label-${zone.id}`;
+        currentMap.addSource(labelSourceId, {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: { name: zone.name },
+            geometry: {
+              type: "Point",
+              coordinates: center,
+            },
+          } as GeoJSON.Feature,
+        });
+        addedZoneLayersRef.current.add(labelSourceId);
+
+        currentMap.addLayer({
+          id: labelLayerId,
+          type: "symbol",
+          source: labelSourceId,
+          layout: {
+            "text-field": ["get", "name"],
+            "text-size": 12,
+            "text-font": ["DIN Pro Regular", "Arial Unicode MS Regular"],
+            "text-anchor": "center",
+          },
+          paint: {
+            "text-color": "#ffffff",
+            "text-halo-color": color,
+            "text-halo-width": 1.5,
+          },
+        });
+        addedZoneLayersRef.current.add(labelLayerId);
+      }
+
+      // Hover effects - use currentSelectedZoneId to avoid stale closure
+      currentMap.on("mouseenter", fillLayerId, () => {
+        currentMap.setPaintProperty(fillLayerId, "fill-opacity", 0.4);
+        currentMap.getCanvas().style.cursor = "pointer";
+      });
+
+      currentMap.on("mouseleave", fillLayerId, () => {
+        currentMap.setPaintProperty(
+          fillLayerId,
+          "fill-opacity",
+          currentSelectedZoneId === zone.id ? 0.5 : 0.2
+        );
+        currentMap.getCanvas().style.cursor = "";
+      });
+
+      // Click to select
+      currentMap.on("click", fillLayerId, () => {
+        setSelectedZoneId(zone.id);
+        currentMap.setPaintProperty(fillLayerId, "fill-opacity", 0.5);
+        onZoneSelect?.(zone.id);
+      });
+    },
+    [onZoneSelect, selectedZoneId]
+  );
+
+  // Cleanup zone layers from map
+  const cleanupZoneLayers = useCallback((currentMap: mapboxgl.Map) => {
+    addedZoneLayersRef.current.forEach((layerId) => {
+      if (currentMap.getLayer(layerId)) {
+        currentMap.removeLayer(layerId);
+      }
+      // Extract source ID from layer ID pattern
+      if (layerId.startsWith("zone-overlay-") || layerId.startsWith("zone-label-")) {
+        const sourceId = layerId.replace("-fill", "").replace("-stroke", "").replace("-label", "");
+        if (currentMap.getSource(sourceId)) {
+          currentMap.removeSource(sourceId);
+        }
+      }
+    });
+    addedZoneLayersRef.current.clear();
+  }, []);
+
   useEffect(() => {
     if (!mapContainer.current || !MAPBOX_TOKEN) return;
 
@@ -116,10 +264,13 @@ export function ZoneBoundaryMap({
     });
 
     if (!readOnly) {
+      // When editing (has initialGeoJson), don't show polygon control to prevent drawing new zones
+      const showPolygonControl = !initialGeoJson;
+
       draw.current = new MapboxDraw({
         displayControlsDefault: false,
         controls: {
-          polygon: true,
+          polygon: showPolygonControl,
           trash: true,
         },
         defaultMode: initialMode,
@@ -164,108 +315,11 @@ export function ZoneBoundaryMap({
     const currentDraw = draw.current;
 
     currentMap.on("load", () => {
+      mapInitializedRef.current = true;
+
       // Add existing zones as overlay layers
-      existingZones.forEach((zone, index) => {
-        if (!zone.boundaryGeometry) return;
-
-        const geoJsonStr =
-          typeof zone.boundaryGeometry === "string"
-            ? zone.boundaryGeometry
-            : JSON.stringify(zone.boundaryGeometry);
-
-        const parsed = parseZoneGeoJson(geoJsonStr);
-        if (!parsed) return;
-
-        const feature = createPolygonFeature(parsed);
-        const color = getZoneColor(index);
-        const sourceId = `zone-overlay-${zone.id}`;
-        const fillLayerId = `zone-overlay-fill-${zone.id}`;
-        const strokeLayerId = `zone-overlay-stroke-${zone.id}`;
-        const labelLayerId = `zone-overlay-label-${zone.id}`;
-
-        // Add source
-        currentMap.addSource(sourceId, {
-          type: "geojson",
-          data: feature as GeoJSON.Feature,
-        });
-
-        // Add fill layer
-        currentMap.addLayer({
-          id: fillLayerId,
-          type: "fill",
-          source: sourceId,
-          paint: {
-            "fill-color": color,
-            "fill-opacity": 0.2,
-          },
-        });
-
-        // Add stroke layer
-        currentMap.addLayer({
-          id: strokeLayerId,
-          type: "line",
-          source: sourceId,
-          paint: {
-            "line-color": color,
-            "line-width": 2,
-          },
-        });
-
-        // Add label
-        const center = getZoneCenter(geoJsonStr);
-        if (center) {
-          const labelSourceId = `zone-label-${zone.id}`;
-          currentMap.addSource(labelSourceId, {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: { name: zone.name },
-              geometry: {
-                type: "Point",
-                coordinates: center,
-              },
-            } as GeoJSON.Feature,
-          });
-
-          currentMap.addLayer({
-            id: labelLayerId,
-            type: "symbol",
-            source: labelSourceId,
-            layout: {
-              "text-field": ["get", "name"],
-              "text-size": 12,
-              "text-font": ["DIN Pro Regular", "Arial Unicode MS Regular"],
-              "text-anchor": "center",
-            },
-            paint: {
-              "text-color": "#ffffff",
-              "text-halo-color": color,
-              "text-halo-width": 1.5,
-            },
-          });
-        }
-
-        // Hover effects
-        currentMap.on("mouseenter", fillLayerId, () => {
-          currentMap.setPaintProperty(fillLayerId, "fill-opacity", 0.4);
-          currentMap.getCanvas().style.cursor = "pointer";
-        });
-
-        currentMap.on("mouseleave", fillLayerId, () => {
-          currentMap.setPaintProperty(
-            fillLayerId,
-            "fill-opacity",
-            selectedZoneId === zone.id ? 0.5 : 0.2
-          );
-          currentMap.getCanvas().style.cursor = "";
-        });
-
-        // Click to select
-        currentMap.on("click", fillLayerId, () => {
-          setSelectedZoneId(zone.id);
-          currentMap.setPaintProperty(fillLayerId, "fill-opacity", 0.5);
-          onZoneSelect?.(zone.id);
-        });
+      existingZonesRef.current.forEach((zone, index) => {
+        addZoneOverlayLayer(currentMap, zone, index, selectedZoneId);
       });
 
       // Add depot marker
@@ -348,6 +402,8 @@ export function ZoneBoundaryMap({
       if (depotMarker.current) {
         depotMarker.current.remove();
       }
+      // Cleanup zone overlay layers to prevent memory leaks and "Source already exists" errors
+      cleanupZoneLayers(currentMap);
       currentMap.remove();
     };
   }, [
@@ -356,11 +412,82 @@ export function ZoneBoundaryMap({
     handleDrawDelete,
     initialGeoJson,
     readOnly,
-    existingZones,
     depotLocation,
-    onZoneSelect,
-    selectedZoneId,
+    addZoneOverlayLayer,
+    cleanupZoneLayers,
   ]);
+
+  // Effect to handle existingZones changes after map is initialized (fixes stale closure)
+  useEffect(() => {
+    if (!map.current || !mapInitializedRef.current) return;
+
+    const currentMap = map.current;
+
+    // Wait for map to be idle before manipulating layers
+    const handleIdle = () => {
+      // Add any new zones that weren't added yet
+      existingZones.forEach((zone, index) => {
+        const sourceId = `zone-overlay-${zone.id}`;
+        if (!currentMap.getSource(sourceId)) {
+          addZoneOverlayLayer(currentMap, zone, index, selectedZoneId);
+        }
+      });
+
+      // Remove zones that no longer exist (only remove that zone's layers, not all)
+      const currentZoneIds = new Set(existingZones.map((z) => z.id));
+      const toRemove: string[] = [];
+
+      addedZoneLayersRef.current.forEach((layerId) => {
+        if (layerId.startsWith("zone-overlay-fill-")) {
+          const zoneId = layerId.replace("zone-overlay-fill-", "");
+          if (!currentZoneIds.has(zoneId)) {
+            toRemove.push(zoneId);
+          }
+        }
+      });
+
+      // Now remove the layers (outside of forEach to avoid mutation during iteration)
+      toRemove.forEach((zoneId) => {
+        const fillLayerId = `zone-overlay-fill-${zoneId}`;
+        const strokeLayerId = `zone-overlay-stroke-${zoneId}`;
+        const labelLayerId = `zone-overlay-label-${zoneId}`;
+        const sourceId = `zone-overlay-${zoneId}`;
+        const labelSourceId = `zone-label-${zoneId}`;
+
+        [fillLayerId, strokeLayerId, labelLayerId].forEach((id) => {
+          if (currentMap.getLayer(id)) currentMap.removeLayer(id);
+        });
+        if (currentMap.getSource(sourceId)) currentMap.removeSource(sourceId);
+        if (currentMap.getSource(labelSourceId)) currentMap.removeSource(labelSourceId);
+        addedZoneLayersRef.current.delete(fillLayerId);
+        addedZoneLayersRef.current.delete(strokeLayerId);
+        addedZoneLayersRef.current.delete(labelLayerId);
+        addedZoneLayersRef.current.delete(sourceId);
+        addedZoneLayersRef.current.delete(labelSourceId);
+      });
+
+      currentMap.off("idle", handleIdle);
+    };
+
+    if (currentMap.loaded() && !currentMap.isMoving()) {
+      handleIdle();
+    } else {
+      currentMap.on("idle", handleIdle);
+    }
+  }, [existingZones, selectedZoneId]);
+
+  // Effect to update zone opacities when selectedZoneId changes
+  useEffect(() => {
+    if (!map.current || !mapInitializedRef.current) return;
+
+    existingZones.forEach((zone) => {
+      const fillLayerId = `zone-overlay-fill-${zone.id}`;
+      if (map.current!.getLayer(fillLayerId)) {
+        const opacity = selectedZoneId === zone.id ? 0.5 : 0.2;
+        map.current!.setPaintProperty(fillLayerId, "fill-opacity", opacity);
+      }
+    });
+  }, [selectedZoneId, existingZones]);
 
   if (!MAPBOX_TOKEN) {
     return (
