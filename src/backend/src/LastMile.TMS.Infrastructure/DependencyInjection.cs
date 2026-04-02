@@ -11,7 +11,7 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-<        services.AddScoped<IEmailService, SendGridEmailService>();
+        services.AddScoped<IEmailService, SendGridEmailService>();
         services.AddScoped<ITokenRevocationService, TokenRevocationService>();
         services.AddScoped<IDbSeeder, DbSeeder>();
         services.AddScoped<ILabelService, LabelService>();
