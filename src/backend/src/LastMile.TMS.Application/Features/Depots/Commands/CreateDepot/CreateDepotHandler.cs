@@ -4,7 +4,7 @@ using MediatR;
 
 namespace LastMile.TMS.Application.Features.Depots.Commands.CreateDepot;
 
-public class CreateDepotHandler(IAppDbContext dbContext) : IRequestHandler<CreateDepotCommand, DepotResult>
+public class CreateDepotHandler(IAppDbContext dbContext, IGeocodingService geocodingService) : IRequestHandler<CreateDepotCommand, DepotResult>
 {
     public async Task<DepotResult> Handle(CreateDepotCommand request, CancellationToken cancellationToken)
     {
@@ -29,6 +29,13 @@ public class CreateDepotHandler(IAppDbContext dbContext) : IRequestHandler<Creat
             Email = request.Address.Email
         };
 
+        // Geocode the address to get coordinates
+        var fullAddress = BuildFullAddress(request.Address);
+        if (!string.IsNullOrWhiteSpace(fullAddress))
+        {
+            depot.Address.GeoLocation = await geocodingService.GeocodeAsync(fullAddress, cancellationToken);
+        }
+
         // Use provided operating hours or default to Mon-Fri 9:00-17:00
         var scheduleEntries = request.OperatingHours is { Count: > 0 }
             ? request.OperatingHours
@@ -50,6 +57,26 @@ public class CreateDepotHandler(IAppDbContext dbContext) : IRequestHandler<Creat
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return new DepotResult(depot.Id, depot.Name, depot.IsActive, depot.CreatedAt);
+    }
+
+    private static string BuildFullAddress(AddressInput address)
+    {
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(address.Street1))
+            parts.Add(address.Street1);
+        if (!string.IsNullOrWhiteSpace(address.Street2))
+            parts.Add(address.Street2);
+        if (!string.IsNullOrWhiteSpace(address.City))
+            parts.Add(address.City);
+        if (!string.IsNullOrWhiteSpace(address.State))
+            parts.Add(address.State);
+        if (!string.IsNullOrWhiteSpace(address.PostalCode))
+            parts.Add(address.PostalCode);
+        if (!string.IsNullOrWhiteSpace(address.CountryCode))
+            parts.Add(address.CountryCode);
+
+        return string.Join(", ", parts);
     }
 
     private static List<ShiftSchedule> CreateDefaultWeekdaySchedule()

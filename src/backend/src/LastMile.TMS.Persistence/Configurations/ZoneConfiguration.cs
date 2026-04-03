@@ -22,7 +22,6 @@ public class ZoneConfiguration : IEntityTypeConfiguration<Zone>
            .IsRequired();
 
         builder.Property(z => z.BoundaryGeometry)
-           .IsRequired()
            .HasColumnType("geometry (polygon)");
 
         builder.HasIndex(z => z.BoundaryGeometry)

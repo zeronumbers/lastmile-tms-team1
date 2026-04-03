@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,9 +25,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ZoneBoundaryMap } from "@/components/zone/zone-boundary-map";
-import { useZone, useCreateZone, useUpdateZone } from "@/hooks/use-zones";
+import { useZone, useZones, useCreateZone, useUpdateZone } from "@/hooks/use-zones";
 import { useDepots } from "@/hooks/use-depots";
-import { toast } from "sonner";
 
 const zoneFormSchema = z.object({
   name: z.string().min(1, "Zone name is required"),
@@ -48,6 +47,7 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
 
   const { data: zone, isLoading: zoneLoading } = useZone(zoneId!);
   const { data: depotsData, isLoading: depotsLoading } = useDepots();
+  const { data: zonesData } = useZones();
   const createZone = useCreateZone();
   const updateZone = useUpdateZone();
 
@@ -61,6 +61,30 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
     },
   });
 
+  const selectedDepotId = form.watch("depotId");
+
+  // Get depot location from selected depot
+  const depotLocation = useMemo(() => {
+    if (!selectedDepotId || !depotsData) return null;
+    const depot = depotsData.find((d) => d.id === selectedDepotId);
+    if (!depot?.address?.geoLocation?.coordinates) return null;
+    // coordinates are [longitude, latitude]
+    const [lng, lat] = depot.address.geoLocation.coordinates;
+    return { lng, lat };
+  }, [selectedDepotId, depotsData]);
+
+  // Get existing zones for the selected depot (excluding current zone when editing)
+  const existingZones = useMemo(() => {
+    if (!zonesData || !selectedDepotId) return [];
+    return zonesData
+      .filter((z) => z.depotId === selectedDepotId && z.id !== zoneId)
+      .map((z) => ({
+        id: z.id,
+        name: z.name,
+        boundaryGeometry: z.boundaryGeometry,
+      }));
+  }, [zonesData, selectedDepotId, zoneId]);
+
   useEffect(() => {
     if (zone && depotsData) {
       form.reset({
@@ -71,20 +95,16 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
       // Force Select to update by setting value explicitly
       form.setValue("depotId", zone.depotId, { shouldTouch: true });
       // Handle boundaryGeometry as object or string
-      const geoJsonValue: string = typeof zone.boundaryGeometry === 'string'
-        ? zone.boundaryGeometry
-        : JSON.stringify(zone.boundaryGeometry);
+      const geoJsonValue: string =
+        typeof zone.boundaryGeometry === "string"
+          ? zone.boundaryGeometry
+          : JSON.stringify(zone.boundaryGeometry);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGeoJson(geoJsonValue ?? "");
     }
   }, [zone, depotsData, form]);
 
   async function onSubmit(values: ZoneFormValues) {
-    if (!geoJson && !isEditing) {
-      toast.error("Please draw a zone boundary on the map");
-      return;
-    }
-
     try {
       if (isEditing && zoneId) {
         await updateZone.mutateAsync({
@@ -200,7 +220,9 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
               <ZoneBoundaryMap
                 initialGeoJson={geoJson}
                 onGeoJsonChange={setGeoJson}
-                readOnly={isEditing && !geoJson}
+                readOnly={false}
+                existingZones={existingZones}
+                depotLocation={depotLocation}
               />
             </div>
           </CardContent>

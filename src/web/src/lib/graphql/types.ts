@@ -10,6 +10,9 @@ export interface AddressDto {
   companyName?: string;
   phone?: string;
   email?: string;
+  geoLocation?: {
+    coordinates?: [number, number];
+  };
 }
 
 export interface DailyOperatingHoursDto {

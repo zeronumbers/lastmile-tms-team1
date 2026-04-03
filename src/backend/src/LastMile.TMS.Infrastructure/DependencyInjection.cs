@@ -10,6 +10,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddHttpClient<IGeocodingService, NominatimGeocodingService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IEmailService, SendGridEmailService>();
         services.AddScoped<ITokenRevocationService, TokenRevocationService>();

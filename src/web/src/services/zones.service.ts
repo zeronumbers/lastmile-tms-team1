@@ -101,7 +101,7 @@ export async function fetchZone(token: string, id: string): Promise<ZoneDto | nu
 
 export async function createZone(token: string, input: {
   name: string;
-  geoJson: string;
+  geoJson?: string;
   depotId: string;
   isActive?: boolean;
 }): Promise<ZoneSummaryDto> {
