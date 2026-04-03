@@ -1,5 +1,6 @@
 using LastMile.TMS.Application.Common.Interfaces;
 using LastMile.TMS.Domain.Entities;
+using LastMile.TMS.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -46,6 +47,9 @@ public class DbSeeder : IDbSeeder
 
         // Seed depot and zone for Empire State Building
         await SeedDepotAndZoneAsync();
+
+        // Seed parcels
+        await SeedParcelsAsync();
 
         _logger.LogInformation("Database seeding completed.");
     }
@@ -368,5 +372,170 @@ public class DbSeeder : IDbSeeder
 
         _logger.LogInformation("Seeded depot {DepotName} with zone {ZoneName} at Empire State Building",
             empireStateDepotName, zoneName);
+    }
+
+    private async Task SeedParcelsAsync()
+    {
+        // Skip if parcels already exist
+        if (_context.Parcels.Any())
+        {
+            _logger.LogDebug("Parcels already exist, skipping seed");
+            return;
+        }
+
+        // Get the existing depot and zone
+        var depot = _context.Depots.FirstOrDefault(d => d.Name == "Empire State Building Depot");
+        var zone = _context.Zones.FirstOrDefault(z => z.Name == "Manhattan Zone");
+
+        if (depot == null)
+        {
+            _logger.LogWarning("Depot not found, skipping parcel seeding");
+            return;
+        }
+
+        // Create shipper address (warehouse at depot)
+        var shipperAddress = new Address
+        {
+            Street1 = "20 W 34th St",
+            City = "New York",
+            State = "NY",
+            PostalCode = "10001",
+            CountryCode = "US",
+            IsResidential = false,
+            ContactName = "LastMile Warehouse",
+            CompanyName = "LastMile Logistics",
+            Phone = "+12125551234",
+            GeoLocation = GeometryFactory.CreatePoint(new Coordinate(-73.985428, 40.748817))
+        };
+
+        _context.Addresses.Add(shipperAddress);
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        // Recipient data pools
+        var firstNames = new[]
+        {
+            "James", "Maria", "Robert", "Jennifer", "Michael", "Linda", "David", "Patricia",
+            "William", "Elizabeth", "Richard", "Barbara", "Joseph", "Susan", "Thomas", "Jessica",
+            "Charles", "Sarah", "Christopher", "Karen", "Daniel", "Nancy", "Matthew", "Lisa",
+            "Anthony", "Betty", "Mark", "Margaret", "Donald", "Sandra", "Steven", "Ashley",
+            "Paul", "Dorothy", "Andrew", "Kimberly", "Joshua", "Emily", "Kenneth", "Donna"
+        };
+
+        var lastNames = new[]
+        {
+            "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+            "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+            "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+            "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
+            "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores"
+        };
+
+        var streets = new[]
+        {
+            "100 Broadway", "250 Park Ave", "55 Water St", "300 W 57th St", "150 E 34th St",
+            "88 Greenwich St", "420 Lexington Ave", "760 3rd Ave", "200 Chambers St",
+            "350 5th Ave", "1 Penn Plaza", "230 Park Ave", "450 W 33rd St",
+            "600 3rd Ave", "1350 Broadway", "40 Wall St", "1 World Trade Center",
+            "30 Rockefeller Plaza", "1271 6th Ave", "345 Park Ave South"
+        };
+
+        var cities = new[]
+        {
+            ("New York", "NY", "100"),
+            ("Brooklyn", "NY", "112"),
+            ("Queens", "NY", "113"),
+            ("Bronx", "NY", "104"),
+            ("Staten Island", "NY", "103"),
+            ("Jersey City", "NJ", "073"),
+            ("Hoboken", "NJ", "070"),
+            ("Newark", "NJ", "071"),
+        };
+
+        var descriptions = new[]
+        {
+            "Electronics", "Clothing", "Books", "Food items", "Office supplies",
+            "Medical supplies", "Furniture parts", "Personal effects", "Documents", "Gift package",
+            "Auto parts", "Sporting goods", "Cosmetics", "Toys", "Household items",
+        };
+
+        var parcelTypes = Enum.GetValues<ParcelType>();
+        var serviceTypes = Enum.GetValues<ServiceType>();
+        var statuses = Enum.GetValues<ParcelStatus>();
+
+        var random = new Random(42); // deterministic seed
+        var parcels = new List<Parcel>();
+
+        for (int i = 0; i < 100; i++)
+        {
+            var firstName = firstNames[random.Next(firstNames.Length)];
+            var lastName = lastNames[random.Next(lastNames.Length)];
+            var street = streets[random.Next(streets.Length)];
+            var (city, state, zipPrefix) = cities[random.Next(cities.Length)];
+
+            var lat = 40.748817 + (random.NextDouble() - 0.5) * 0.08;
+            var lng = -73.985428 + (random.NextDouble() - 0.5) * 0.08;
+
+            var recipientAddress = new Address
+            {
+                Street1 = $"{random.Next(1, 9999)} {street.Split(' ', 2)[1]}",
+                City = city,
+                State = state,
+                PostalCode = $"{zipPrefix}{random.Next(10, 99)}",
+                CountryCode = "US",
+                IsResidential = true,
+                ContactName = $"{firstName} {lastName}",
+                Phone = $"+1212555{i:D4}",
+                GeoLocation = GeometryFactory.CreatePoint(new Coordinate(lng, lat))
+            };
+
+            _context.Addresses.Add(recipientAddress);
+            await _context.SaveChangesAsync(CancellationToken.None);
+
+            var description = descriptions[random.Next(descriptions.Length)];
+            var serviceType = serviceTypes[random.Next(serviceTypes.Length)];
+
+            var parcel = Parcel.Create($"{description} — order #{1000 + i}", serviceType);
+            parcel.RecipientAddress = recipientAddress;
+            parcel.ShipperAddress = shipperAddress;
+            parcel.Weight = Math.Round((decimal)(random.NextDouble() * 20) + 0.5m, 2);
+            parcel.WeightUnit = WeightUnit.Lb;
+            parcel.Length = Math.Round((decimal)(random.NextDouble() * 30) + 5, 1);
+            parcel.Width = Math.Round((decimal)(random.NextDouble() * 20) + 5, 1);
+            parcel.Height = Math.Round((decimal)(random.NextDouble() * 15) + 2, 1);
+            parcel.DimensionUnit = DimensionUnit.In;
+            parcel.DeclaredValue = Math.Round((decimal)(random.NextDouble() * 500) + 10, 2);
+            parcel.ParcelType = parcelTypes[random.Next(parcelTypes.Length)];
+            parcel.EstimatedDeliveryDate = DateTimeOffset.UtcNow.AddDays(random.Next(1, 7));
+
+            // Distribute statuses realistically
+            var statusIndex = i switch
+            {
+                < 15 => 0,  // Registered
+                < 25 => 1,  // ReceivedAtDepot
+                < 35 => 2,  // Sorted
+                < 42 => 3,  // Staged
+                < 48 => 4,  // Loaded
+                < 55 => 5,  // OutForDelivery
+                < 75 => 6,  // Delivered
+                < 82 => 7,  // FailedAttempt
+                < 88 => 8,  // ReturnedToDepot
+                < 95 => 9,  // Cancelled
+                _ => 10     // Exception
+            };
+            parcel.Status = statuses[statusIndex];
+
+            if (parcel.Status == ParcelStatus.Delivered)
+            {
+                parcel.ActualDeliveryDate = DateTimeOffset.UtcNow.AddDays(-random.Next(0, 5));
+            }
+
+            parcel.Zone = zone;
+            parcels.Add(parcel);
+        }
+
+        _context.Parcels.AddRange(parcels);
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        _logger.LogInformation("Seeded {Count} parcels", parcels.Count);
     }
 }

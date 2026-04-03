@@ -2,6 +2,8 @@ using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Query.Expressions;
+using NpgsqlTypes;
 
 namespace LastMile.TMS.Persistence.Configurations;
 
@@ -11,6 +13,12 @@ public class ParcelConfiguration : IEntityTypeConfiguration<Parcel>
     {
         builder.ToTable("Parcel");
 
+        // Full-text search: stored generated tsvector column (shadow property)
+        builder.Property<NpgsqlTsVector>("SearchVector")
+            .HasComputedColumnSql(
+                @"to_tsvector('english', coalesce(""TrackingNumber"", '') || ' ' || coalesce(""Description"", ''))",
+                stored: true);
+        builder.HasIndex("SearchVector").HasMethod("GIN");
         // Tracking number
         builder.Property(p => p.TrackingNumber)
             .HasMaxLength(20)

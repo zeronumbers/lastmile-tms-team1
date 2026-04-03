@@ -4,6 +4,7 @@ using HotChocolate.Data;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
+using NpgsqlTypes;
 using DomainParcel = LastMile.TMS.Domain.Entities.Parcel;
 
 namespace LastMile.TMS.Api.GraphQL.Extensions.Parcel;
@@ -16,8 +17,21 @@ public class ParcelQuery
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<DomainParcel> GetParcels([Service] AppDbContext context)
-        => context.Parcels.AsNoTracking();
+    public IQueryable<DomainParcel> GetParcels(
+        string? search,
+        [Service] AppDbContext context)
+    {
+        var query = context.Parcels.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(p =>
+                EF.Property<NpgsqlTsVector>(p, "SearchVector").Matches(search)
+                || EF.Property<NpgsqlTsVector>(p.RecipientAddress, "SearchVector").Matches(search));
+        }
+
+        return query;
+    }
 
     [Authorize(Roles = new[] { Role.RoleNames.WarehouseOperator, Role.RoleNames.Admin })]
     [UseSingleOrDefault]

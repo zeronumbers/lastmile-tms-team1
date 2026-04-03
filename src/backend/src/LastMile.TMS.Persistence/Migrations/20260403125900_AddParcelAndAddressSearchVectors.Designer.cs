@@ -3,6 +3,7 @@ using System;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -13,9 +14,11 @@ using NpgsqlTypes;
 namespace LastMile.TMS.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403125900_AddParcelAndAddressSearchVectors")]
+    partial class AddParcelAndAddressSearchVectors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -123,7 +126,7 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
 
-                    b.ToTable("Addresses", (string)null);
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.DayOff", b =>
@@ -435,13 +438,9 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasPrecision(10, 3)
                         .HasColumnType("numeric(10,3)");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
                     b.Property<string>("ParcelType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("RecipientAddressId")
                         .HasColumnType("uuid");
@@ -504,7 +503,7 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     b.HasIndex("ZoneId");
 
-                    b.ToTable("Parcel", (string)null);
+                    b.ToTable("Parcels");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.ParcelContentItem", b =>
