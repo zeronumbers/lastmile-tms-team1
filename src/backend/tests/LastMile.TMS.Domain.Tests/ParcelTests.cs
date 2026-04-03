@@ -26,8 +26,8 @@ public class ParcelTests
         var trackingNumber = Parcel.GenerateTrackingNumber();
 
         // Assert
-        trackingNumber.Should().StartWith("LMTT1-");
-        trackingNumber.Length.Should().Be(21); // LMTT1-YYYYMMDD-XXXXXX
+        trackingNumber.Should().StartWith("LM-");
+        trackingNumber.Length.Should().Be(16); // LM-yyMMdd-XXXXXX (16 chars)
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class ParcelTests
         var parcel = Parcel.Create("Test description", ServiceType.Express);
 
         // Assert
-        parcel.TrackingNumber.Should().StartWith("LMTT1-");
+        parcel.TrackingNumber.Should().StartWith("LM-");
         parcel.Description.Should().Be("Test description");
         parcel.ServiceType.Should().Be(ServiceType.Express);
         parcel.Status.Should().Be(ParcelStatus.Registered);
