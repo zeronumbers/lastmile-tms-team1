@@ -2,7 +2,6 @@ using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Query.Expressions;
 using NpgsqlTypes;
 
 namespace LastMile.TMS.Persistence.Configurations;

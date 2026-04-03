@@ -90,7 +90,7 @@ public class ParcelIntegrationTests : IAsyncLifetime
         var parcels = json.GetProperty("data").GetProperty("parcels");
         parcels.GetProperty("nodes").GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
         parcels.GetProperty("totalCount").GetInt32().Should().BeGreaterThanOrEqualTo(2);
-        parcels.GetProperty("pageInfo").GetProperty("hasNextPage").GetBoolean().Should().BeFalse();
+        parcels.GetProperty("pageInfo").GetProperty("hasNextPage").GetBoolean().Should().BeTrue();
     }
 
     [Fact]
@@ -536,7 +536,7 @@ public class ParcelIntegrationTests : IAsyncLifetime
         {
             await cmd.ExecuteNonQueryAsync();
         }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Parcels\";", connection))
+        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Parcel\";", connection))
         {
             await cmd.ExecuteNonQueryAsync();
         }

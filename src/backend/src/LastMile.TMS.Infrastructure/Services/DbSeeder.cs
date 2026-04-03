@@ -409,7 +409,6 @@ public class DbSeeder : IDbSeeder
         };
 
         _context.Addresses.Add(shipperAddress);
-        await _context.SaveChangesAsync(CancellationToken.None);
 
         // Recipient data pools
         var firstNames = new[]
@@ -463,8 +462,9 @@ public class DbSeeder : IDbSeeder
         var statuses = Enum.GetValues<ParcelStatus>();
 
         var random = new Random(42); // deterministic seed
-        var parcels = new List<Parcel>();
+        var recipientAddresses = new Address[100];
 
+        // Create all recipient addresses first
         for (int i = 0; i < 100; i++)
         {
             var firstName = firstNames[random.Next(firstNames.Length)];
@@ -488,14 +488,23 @@ public class DbSeeder : IDbSeeder
                 GeoLocation = GeometryFactory.CreatePoint(new Coordinate(lng, lat))
             };
 
+            recipientAddresses[i] = recipientAddress;
             _context.Addresses.Add(recipientAddress);
-            await _context.SaveChangesAsync(CancellationToken.None);
+        }
 
+        // Save all addresses (shipper + 100 recipients) in one round-trip
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        // Create all parcels
+        var parcels = new List<Parcel>();
+
+        for (int i = 0; i < 100; i++)
+        {
             var description = descriptions[random.Next(descriptions.Length)];
             var serviceType = serviceTypes[random.Next(serviceTypes.Length)];
 
             var parcel = Parcel.Create($"{description} — order #{1000 + i}", serviceType);
-            parcel.RecipientAddress = recipientAddress;
+            parcel.RecipientAddress = recipientAddresses[i];
             parcel.ShipperAddress = shipperAddress;
             parcel.Weight = Math.Round((decimal)(random.NextDouble() * 20) + 0.5m, 2);
             parcel.WeightUnit = WeightUnit.Lb;
@@ -533,6 +542,7 @@ public class DbSeeder : IDbSeeder
             parcels.Add(parcel);
         }
 
+        // Save all parcels in one round-trip
         _context.Parcels.AddRange(parcels);
         await _context.SaveChangesAsync(CancellationToken.None);
 
