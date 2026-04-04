@@ -11,13 +11,18 @@ public class AddressConfiguration : IEntityTypeConfiguration<Address>
     {
         builder.ToTable("Addresses");
 
-        // Full-text search: stored generated tsvector column (shadow property)
-        builder.Property<NpgsqlTsVector>("SearchVector")
+        // Full-text search: separate tsvectors for recipient name and address
+        builder.Property<NpgsqlTsVector>("RecipientNameSearchVector")
             .HasComputedColumnSql(
-                @"to_tsvector('english', coalesce(""ContactName"", '') || ' ' || coalesce(""Street1"", '') || ' ' || coalesce(""City"", '') || ' ' || coalesce(""PostalCode"", ''))",
+                @"to_tsvector('english', coalesce(""ContactName"", ''))",
                 stored: true);
-        builder.HasIndex("SearchVector").HasMethod("GIN");
+        builder.HasIndex("RecipientNameSearchVector").HasMethod("GIN");
 
+        builder.Property<NpgsqlTsVector>("AddressSearchVector")
+            .HasComputedColumnSql(
+                @"to_tsvector('english', coalesce(""Street1"", '') || ' ' || coalesce(""City"", '') || ' ' || coalesce(""PostalCode"", ''))",
+                stored: true);
+        builder.HasIndex("AddressSearchVector").HasMethod("GIN");
 
         builder.Property(a => a.Street1).HasMaxLength(200).IsRequired();
         builder.Property(a => a.Street2).HasMaxLength(200);

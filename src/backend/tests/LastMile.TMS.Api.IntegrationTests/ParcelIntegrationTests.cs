@@ -94,10 +94,10 @@ public class ParcelIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetParcels_SearchByTrackingNumber_ReturnsMatchingParcel()
+    public async Task GetParcels_FilterByTrackingNumber_ReturnsMatchingParcel()
     {
         var query = @"query {
-            parcels(search: ""LMTT1-SEARCH"") {
+            parcels(where: { trackingNumber: { contains: ""LMTT1-SEARCH"" } }) {
                 nodes {
                     trackingNumber
                 }
@@ -119,10 +119,10 @@ public class ParcelIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetParcels_SearchByRecipientName_ReturnsMatchingParcel()
+    public async Task GetParcels_RecipientSearch_ReturnsMatchingParcel()
     {
         var query = @"query {
-            parcels(search: ""John"") {
+            parcels(recipientSearch: ""John"") {
                 nodes {
                     trackingNumber
                 }
@@ -138,6 +138,73 @@ public class ParcelIntegrationTests : IAsyncLifetime
 
         var parcels = json.GetProperty("data").GetProperty("parcels");
         parcels.GetProperty("nodes").GetArrayLength().Should().BeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task GetParcels_AddressSearch_ReturnsMatchingParcel()
+    {
+        var query = @"query {
+            parcels(addressSearch: ""RecipientCity"") {
+                nodes {
+                    trackingNumber
+                }
+            }
+        }";
+
+        var json = await GraphQLRequestAsync(query);
+
+        if (json.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"GraphQL errors: {errors.GetRawText()}");
+        }
+
+        var parcels = json.GetProperty("data").GetProperty("parcels");
+        parcels.GetProperty("nodes").GetArrayLength().Should().BeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task GetParcels_RecipientAndAddressSearch_ReturnsCombinedResults()
+    {
+        var query = @"query {
+            parcels(recipientSearch: ""John"", addressSearch: ""RecipientCity"") {
+                nodes {
+                    trackingNumber
+                }
+            }
+        }";
+
+        var json = await GraphQLRequestAsync(query);
+
+        if (json.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"GraphQL errors: {errors.GetRawText()}");
+        }
+
+        var parcels = json.GetProperty("data").GetProperty("parcels");
+        parcels.GetProperty("nodes").GetArrayLength().Should().BeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task GetParcels_NoSearchParams_ReturnsAllResults()
+    {
+        var query = @"query {
+            parcels {
+                nodes {
+                    trackingNumber
+                }
+                totalCount
+            }
+        }";
+
+        var json = await GraphQLRequestAsync(query);
+
+        if (json.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"GraphQL errors: {errors.GetRawText()}");
+        }
+
+        var parcels = json.GetProperty("data").GetProperty("parcels");
+        parcels.GetProperty("totalCount").GetInt32().Should().BeGreaterThanOrEqualTo(2);
     }
 
     [Fact]

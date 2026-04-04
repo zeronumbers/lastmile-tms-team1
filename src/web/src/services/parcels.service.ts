@@ -3,8 +3,8 @@ import type { ParcelSummaryDto, ParcelDto, CreateParcelInput } from "@/lib/graph
 import type { ParcelsResponse } from "@/types/parcel";
 
 const GET_PARCELS_QUERY = `
-  query GetParcels($search: String, $where: ParcelFilterInput, $order: [ParcelSortInput!], $first: Int, $after: String) {
-    parcels(search: $search, where: $where, order: $order, first: $first, after: $after) {
+  query GetParcels($recipientSearch: String, $addressSearch: String, $where: ParcelFilterInput, $order: [ParcelSortInput!], $first: Int, $after: String) {
+    parcels(recipientSearch: $recipientSearch, addressSearch: $addressSearch, where: $where, order: $order, first: $first, after: $after) {
       nodes {
         id
         trackingNumber
@@ -15,6 +15,7 @@ const GET_PARCELS_QUERY = `
         weightUnit
         parcelType
         estimatedDeliveryDate
+        actualDeliveryDate
         createdAt
         recipientAddress {
           contactName
@@ -118,11 +119,35 @@ interface CreateParcelResponse {
 }
 
 export interface FetchParcelsFilters {
-  search?: string;
+  recipientSearch?: string;
+  addressSearch?: string;
+  trackingNumber?: string;
   status?: string;
+  serviceType?: string;
   zoneId?: string;
   first?: number;
   after?: string;
+  order?: Record<string, string>;
+  createdAfter?: string;
+  createdBefore?: string;
+  estimatedDeliveryAfter?: string;
+  estimatedDeliveryBefore?: string;
+  actualDeliveryAfter?: string;
+  actualDeliveryBefore?: string;
+}
+
+function addDateRange(
+  where: Record<string, unknown>,
+  field: string,
+  after?: string,
+  before?: string,
+) {
+  if (after || before) {
+    const range: Record<string, string> = {};
+    if (after) range.gte = after;
+    if (before) range.lte = before;
+    where[field] = range;
+  }
 }
 
 export async function fetchParcels(
@@ -130,12 +155,39 @@ export async function fetchParcels(
   filters?: FetchParcelsFilters,
 ): Promise<ParcelsResponse["parcels"]> {
   const where: Record<string, unknown> = {};
+
+  if (filters?.trackingNumber) {
+    where.trackingNumber = { contains: filters.trackingNumber };
+  }
   if (filters?.status) {
     where.status = { eq: filters.status };
+  }
+  if (filters?.serviceType) {
+    where.serviceType = { eq: filters.serviceType };
   }
   if (filters?.zoneId) {
     where.zoneId = { eq: filters.zoneId };
   }
+
+  addDateRange(where, "createdAt", filters?.createdAfter, filters?.createdBefore);
+  addDateRange(
+    where,
+    "estimatedDeliveryDate",
+    filters?.estimatedDeliveryAfter,
+    filters?.estimatedDeliveryBefore,
+  );
+  addDateRange(
+    where,
+    "actualDeliveryDate",
+    filters?.actualDeliveryAfter,
+    filters?.actualDeliveryBefore,
+  );
+
+  const order = filters?.order
+    ? Object.entries(filters.order).map(([field, direction]) => ({
+        [field]: direction,
+      }))
+    : undefined;
 
   const response = await apiFetch<{ data: ParcelsResponse }>("/api/graphql", {
     method: "POST",
@@ -143,8 +195,10 @@ export async function fetchParcels(
     body: JSON.stringify({
       query: GET_PARCELS_QUERY,
       variables: {
-        search: filters?.search || null,
+        recipientSearch: filters?.recipientSearch || null,
+        addressSearch: filters?.addressSearch || null,
         where: Object.keys(where).length > 0 ? where : null,
+        order: order ?? null,
         first: filters?.first ?? 25,
         after: filters?.after || null,
       },
