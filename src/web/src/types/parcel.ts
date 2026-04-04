@@ -21,12 +21,21 @@ export interface ParcelSummaryDto {
   description?: string;
   status: ParcelStatus;
   serviceType: string;
-  weight: number;
-  weightUnit: string;
+  weight?: number;
+  weightUnit?: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  dimensionUnit?: string;
+  declaredValue?: number;
+  currency?: string;
   parcelType?: string;
   estimatedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  deliveryAttempts?: number;
   createdAt: string;
   recipientAddress?: AddressDto;
+  shipperAddress?: AddressDto;
   zone?: { id: string; name: string };
 }
 

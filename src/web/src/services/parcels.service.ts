@@ -1,44 +1,11 @@
 import { apiFetch } from "@/lib/api";
 import type { ParcelSummaryDto, ParcelDto, CreateParcelInput } from "@/lib/graphql/types";
 import type { ParcelsResponse } from "@/types/parcel";
-
-const GET_PARCELS_QUERY = `
-  query GetParcels($recipientSearch: String, $addressSearch: String, $where: ParcelFilterInput, $order: [ParcelSortInput!], $first: Int, $after: String) {
-    parcels(recipientSearch: $recipientSearch, addressSearch: $addressSearch, where: $where, order: $order, first: $first, after: $after) {
-      nodes {
-        id
-        trackingNumber
-        description
-        status
-        serviceType
-        weight
-        weightUnit
-        parcelType
-        estimatedDeliveryDate
-        actualDeliveryDate
-        createdAt
-        recipientAddress {
-          contactName
-          street1
-          city
-          state
-          postalCode
-        }
-        zone {
-          id
-          name
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      totalCount
-    }
-  }
-`;
+import { buildParcelsQuery } from "@/lib/build-parcels-query";
+import {
+  type ColumnKey,
+  DEFAULT_COLUMNS,
+} from "@/components/parcel/column-registry";
 
 const GET_PARCEL_QUERY = `
   query GetParcelByTrackingNumber($trackingNumber: String!) {
@@ -134,6 +101,7 @@ export interface FetchParcelsFilters {
   estimatedDeliveryBefore?: string;
   actualDeliveryAfter?: string;
   actualDeliveryBefore?: string;
+  columns?: ColumnKey[];
 }
 
 function addDateRange(
@@ -189,11 +157,13 @@ export async function fetchParcels(
       }))
     : undefined;
 
+  const query = buildParcelsQuery(filters?.columns ?? DEFAULT_COLUMNS);
+
   const response = await apiFetch<{ data: ParcelsResponse }>("/api/graphql", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      query: GET_PARCELS_QUERY,
+      query,
       variables: {
         recipientSearch: filters?.recipientSearch || null,
         addressSearch: filters?.addressSearch || null,

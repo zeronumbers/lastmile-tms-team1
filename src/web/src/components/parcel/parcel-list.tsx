@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useParcels } from "@/hooks/use-parcels";
 import { useZones } from "@/hooks/use-zones";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useColumnParams } from "@/hooks/use-column-params";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,9 +47,14 @@ import {
   CalendarIcon,
   X,
 } from "lucide-react";
-import { ParcelStatus } from "@/types/parcel";
+import { ParcelStatus, type ParcelSummaryDto } from "@/types/parcel";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
+import {
+  COLUMN_REGISTRY,
+  type ColumnKey,
+} from "@/components/parcel/column-registry";
+import { ColumnPicker } from "@/components/parcel/column-picker";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
@@ -104,6 +110,87 @@ function formatStatus(status: string): string {
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function renderCell(key: ColumnKey, parcel: ParcelSummaryDto): ReactNode {
+  switch (key) {
+    case "trackingNumber":
+      return <span className="font-mono font-medium">{parcel.trackingNumber}</span>;
+    case "status":
+      return (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClasses(parcel.status ?? "")}`}
+        >
+          {formatStatus(parcel.status ?? "")}
+        </span>
+      );
+    case "serviceType":
+      return parcel.serviceType ?? "\u2014";
+    case "description":
+      return parcel.description ?? "\u2014";
+    case "parcelType":
+      return parcel.parcelType ?? "\u2014";
+    case "weight":
+      return parcel.weight
+        ? `${parcel.weight} ${parcel.weightUnit ?? "lb"}`
+        : "\u2014";
+    case "length":
+      return parcel.length
+        ? `${parcel.length} ${parcel.dimensionUnit ?? "cm"}`
+        : "\u2014";
+    case "width":
+      return parcel.width
+        ? `${parcel.width} ${parcel.dimensionUnit ?? "cm"}`
+        : "\u2014";
+    case "height":
+      return parcel.height
+        ? `${parcel.height} ${parcel.dimensionUnit ?? "cm"}`
+        : "\u2014";
+    case "dimensionUnit":
+      return parcel.dimensionUnit ?? "\u2014";
+    case "declaredValue":
+      return parcel.declaredValue
+        ? `${parcel.declaredValue} ${parcel.currency ?? "USD"}`
+        : "\u2014";
+    case "currency":
+      return parcel.currency ?? "\u2014";
+    case "estimatedDeliveryDate":
+      return parcel.estimatedDeliveryDate
+        ? new Date(parcel.estimatedDeliveryDate).toLocaleDateString()
+        : "\u2014";
+    case "actualDeliveryDate":
+      return parcel.actualDeliveryDate
+        ? new Date(parcel.actualDeliveryDate).toLocaleDateString()
+        : "\u2014";
+    case "deliveryAttempts":
+      return String(parcel.deliveryAttempts ?? 0);
+    case "createdAt":
+      return new Date(parcel.createdAt).toLocaleDateString();
+    case "recipientContactName":
+      return parcel.recipientAddress?.contactName ?? "\u2014";
+    case "recipientPhone":
+      return parcel.recipientAddress?.phone ?? "\u2014";
+    case "recipientEmail":
+      return parcel.recipientAddress?.email ?? "\u2014";
+    case "recipientStreet":
+      return parcel.recipientAddress?.street1 ?? "\u2014";
+    case "recipientCity":
+      return parcel.recipientAddress?.city ?? "\u2014";
+    case "recipientState":
+      return parcel.recipientAddress?.state ?? "\u2014";
+    case "recipientPostalCode":
+      return parcel.recipientAddress?.postalCode ?? "\u2014";
+    case "recipientCountryCode":
+      return parcel.recipientAddress?.countryCode ?? "\u2014";
+    case "shipperContactName":
+      return parcel.shipperAddress?.contactName ?? "\u2014";
+    case "shipperCity":
+      return parcel.shipperAddress?.city ?? "\u2014";
+    case "zone":
+      return parcel.zone?.name ?? "\u2014";
+    default:
+      return "\u2014";
+  }
 }
 
 function SortIcon({ field, sort }: { field: string; sort: SortState | null }) {
@@ -182,17 +269,10 @@ function DateRangePicker({
   );
 }
 
-const SORTABLE_COLUMNS: { field: string; label: string }[] = [
-  { field: "trackingNumber", label: "Tracking #" },
-  { field: "status", label: "Status" },
-  { field: "serviceType", label: "Service" },
-  { field: "weight", label: "Weight" },
-  { field: "estimatedDeliveryDate", label: "Est. Delivery" },
-  { field: "createdAt", label: "Created" },
-];
-
 export function ParcelList() {
   const router = useRouter();
+  const { appliedColumns, applyColumns } = useColumnParams();
+
   const [recipientSearch, setRecipientSearch] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -237,6 +317,7 @@ export function ParcelList() {
     first: pageSize,
     after: cursor,
     order,
+    columns: appliedColumns,
     createdAfter: createdDateRange?.from?.toISOString(),
     createdBefore: createdDateRange?.to?.toISOString(),
     estimatedDeliveryAfter: estimatedDeliveryDateRange?.from?.toISOString(),
@@ -250,6 +331,11 @@ export function ParcelList() {
   const parcels = data?.nodes ?? [];
   const pageInfo = data?.pageInfo;
   const totalCount = data?.totalCount ?? 0;
+
+  const visibleColumns = useMemo(
+    () => COLUMN_REGISTRY.filter((c) => appliedColumns.includes(c.key)),
+    [appliedColumns],
+  );
 
   const handleNextPage = () => {
     if (pageInfo?.endCursor) {
@@ -353,7 +439,7 @@ export function ParcelList() {
           </div>
         </div>
 
-        {/* Row 2: Selects + page size */}
+        {/* Row 2: Selects + page size + column picker */}
         <div className="flex items-center gap-3 pt-2 flex-wrap">
           <Select
             value={statusFilter}
@@ -362,8 +448,8 @@ export function ParcelList() {
               resetPagination();
             }}
           >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
+            <SelectTrigger className="inline-flex shrink-0 items-center justify-center text-sm font-medium border border-input bg-transparent rounded-md h-9 px-3 w-[180px]">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((opt) => (
@@ -381,7 +467,7 @@ export function ParcelList() {
               resetPagination();
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="inline-flex shrink-0 items-center justify-center text-sm font-medium border border-input bg-transparent rounded-md h-9 px-3 w-[180px]">
               <SelectValue placeholder="Service type" />
             </SelectTrigger>
             <SelectContent>
@@ -400,7 +486,7 @@ export function ParcelList() {
               resetPagination();
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="inline-flex shrink-0 items-center justify-center text-sm font-medium border border-input bg-transparent rounded-md h-9 px-3 w-[180px]">
               <SelectValue placeholder="All Zones" />
             </SelectTrigger>
             <SelectContent>
@@ -420,7 +506,7 @@ export function ParcelList() {
               resetPagination();
             }}
           >
-            <SelectTrigger className="w-[100px]">
+            <SelectTrigger className="inline-flex shrink-0 items-center justify-center text-sm font-medium border border-input bg-transparent rounded-md h-9 px-3 w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -431,6 +517,11 @@ export function ParcelList() {
               ))}
             </SelectContent>
           </Select>
+
+          <ColumnPicker
+            appliedColumns={appliedColumns}
+            onApply={applyColumns}
+          />
 
           {hasActiveFilters && (
             <Button
@@ -504,20 +595,22 @@ export function ParcelList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {SORTABLE_COLUMNS.map((col) => (
-                    <TableHead
-                      key={col.field}
-                      className="cursor-pointer select-none hover:bg-muted/50"
-                      onClick={() => handleSort(col.field)}
-                    >
-                      <div className="flex items-center">
-                        {col.label}
-                        <SortIcon field={col.field} sort={sort} />
-                      </div>
-                    </TableHead>
-                  ))}
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Zone</TableHead>
+                  {visibleColumns.map((col) =>
+                    col.sortable ? (
+                      <TableHead
+                        key={col.key}
+                        className="cursor-pointer select-none hover:bg-muted/50"
+                        onClick={() => handleSort(col.key)}
+                      >
+                        <div className="flex items-center">
+                          {col.label}
+                          <SortIcon field={col.key} sort={sort} />
+                        </div>
+                      </TableHead>
+                    ) : (
+                      <TableHead key={col.key}>{col.label}</TableHead>
+                    ),
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -525,40 +618,15 @@ export function ParcelList() {
                   <TableRow
                     key={parcel.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/parcels/${parcel.trackingNumber}`)}
+                    onClick={() =>
+                      router.push(`/parcels/${parcel.trackingNumber}`)
+                    }
                   >
-                    <TableCell className="font-mono font-medium">
-                      {parcel.trackingNumber}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClasses(parcel.status)}`}
-                      >
-                        {formatStatus(parcel.status)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{parcel.serviceType ?? "—"}</TableCell>
-                    <TableCell>
-                      {parcel.weight
-                        ? `${parcel.weight} ${parcel.weightUnit ?? "lb"}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {parcel.estimatedDeliveryDate
-                        ? new Date(
-                            parcel.estimatedDeliveryDate,
-                          ).toLocaleDateString()
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(parcel.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {parcel.recipientAddress?.contactName ??
-                        parcel.recipientAddress?.street1 ??
-                        "—"}
-                    </TableCell>
-                    <TableCell>{parcel.zone?.name ?? "—"}</TableCell>
+                    {visibleColumns.map((col) => (
+                      <TableCell key={col.key}>
+                        {renderCell(col.key, parcel)}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>
