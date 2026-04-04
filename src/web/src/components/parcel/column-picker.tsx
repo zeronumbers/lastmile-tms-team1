@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -41,9 +41,14 @@ export function ColumnPicker({
   );
 
   // Sync pending state when applied columns change (e.g., URL navigation)
-  useEffect(() => {
+  const [prevApplied, setPrevApplied] = useState(appliedColumns);
+  if (
+    prevApplied.length !== appliedColumns.length ||
+    prevApplied.some((k, i) => k !== appliedColumns[i])
+  ) {
+    setPrevApplied(appliedColumns);
     setPendingKeys(new Set(appliedColumns));
-  }, [appliedColumns]);
+  }
 
   const isDirty = useMemo(() => {
     if (pendingKeys.size !== appliedColumns.length) return true;
