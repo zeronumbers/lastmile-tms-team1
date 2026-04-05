@@ -29,7 +29,7 @@ public record CreateParcelCommand(
     DimensionUnit DimensionUnit,
     decimal DeclaredValue,
     string Currency = "USD",
-    string? ParcelType = null,
+    ParcelType? ParcelType = null,
     string? Notes = null,
     DateTimeOffset? EstimatedDeliveryDate = null
 ) : IRequest<ParcelResult>;

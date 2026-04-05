@@ -206,9 +206,27 @@ export type CreateDepotCommandInput = {
   operatingHours?: InputMaybe<Array<InputMaybe<DailyOperatingHoursInput>>>;
 };
 
+export type CreateParcelCommandInput = {
+  currency?: InputMaybe<Scalars['String']['input']>;
+  declaredValue?: InputMaybe<Scalars['Decimal']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  dimensionUnit: Scalars['String']['input'];
+  estimatedDeliveryDate?: InputMaybe<Scalars['DateTime']['input']>;
+  height: Scalars['Decimal']['input'];
+  length: Scalars['Decimal']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  parcelType?: InputMaybe<ParcelType>;
+  recipientAddress: ParcelAddressInput;
+  serviceType: Scalars['String']['input'];
+  shipperAddress: ParcelAddressInput;
+  weight: Scalars['Decimal']['input'];
+  weightUnit: Scalars['String']['input'];
+  width: Scalars['Decimal']['input'];
+};
+
 export type CreateZoneCommandInput = {
   depotId: Scalars['UUID']['input'];
-  geoJson: Scalars['String']['input'];
+  geoJson?: InputMaybe<Scalars['String']['input']>;
   isActive?: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
 };
@@ -350,6 +368,25 @@ export type DeliveryConfirmationFilterInput = {
   photo?: InputMaybe<StringOperationFilterInput>;
   receivedBy?: InputMaybe<StringOperationFilterInput>;
   signatureImage?: InputMaybe<StringOperationFilterInput>;
+};
+
+export type DeliveryConfirmationSortInput = {
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  deliveredAt?: InputMaybe<SortEnumType>;
+  deliveryLocation?: InputMaybe<SortEnumType>;
+  deliveryLocationCoords?: InputMaybe<PointSortInput>;
+  id?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  parcel?: InputMaybe<ParcelSortInput>;
+  parcelId?: InputMaybe<SortEnumType>;
+  photo?: InputMaybe<SortEnumType>;
+  receivedBy?: InputMaybe<SortEnumType>;
+  signatureImage?: InputMaybe<SortEnumType>;
 };
 
 export type Depot = {
@@ -965,6 +1002,7 @@ export type Mutation = {
   changeVehicleStatus: VehicleDto;
   completePasswordReset: Scalars['Boolean']['output'];
   createDepot: DepotResult;
+  createParcel: ParcelResult;
   createRoute: RouteDto;
   createUser: UserDto;
   createVehicle: VehicleDto;
@@ -1010,6 +1048,11 @@ export type MutationCompletePasswordResetArgs = {
 
 export type MutationCreateDepotArgs = {
   input: CreateDepotCommandInput;
+};
+
+
+export type MutationCreateParcelArgs = {
+  input: CreateParcelCommandInput;
 };
 
 
@@ -1145,6 +1188,13 @@ export type NullableOfExceptionReasonOperationFilterInput = {
   nin?: InputMaybe<Array<InputMaybe<ExceptionReason>>>;
 };
 
+export type NullableOfParcelTypeOperationFilterInput = {
+  eq?: InputMaybe<ParcelType>;
+  in?: InputMaybe<Array<InputMaybe<ParcelType>>>;
+  neq?: InputMaybe<ParcelType>;
+  nin?: InputMaybe<Array<InputMaybe<ParcelType>>>;
+};
+
 export enum OgcGeometryType {
   CircularString = 'CIRCULAR_STRING',
   CompoundCurve = 'COMPOUND_CURVE',
@@ -1256,7 +1306,8 @@ export type Parcel = {
   lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
   lastModifiedBy?: Maybe<Scalars['String']['output']>;
   length: Scalars['Decimal']['output'];
-  parcelType?: Maybe<Scalars['String']['output']>;
+  notes?: Maybe<Scalars['String']['output']>;
+  parcelType?: Maybe<ParcelType>;
   parcelWatchers: Array<ParcelWatcher>;
   recipientAddress: Address;
   recipientAddressId: Scalars['UUID']['output'];
@@ -1276,6 +1327,20 @@ export type Parcel = {
 
 export type ParcelCanTransitionToArgs = {
   newStatus: ParcelStatus;
+};
+
+export type ParcelAddressInput = {
+  city: Scalars['String']['input'];
+  companyName?: InputMaybe<Scalars['String']['input']>;
+  contactName?: InputMaybe<Scalars['String']['input']>;
+  countryCode?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  isResidential?: Scalars['Boolean']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+  postalCode: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+  street1: Scalars['String']['input'];
+  street2?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ParcelContentItem = {
@@ -1344,8 +1409,9 @@ export type ParcelFilterInput = {
   lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
   lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
   length?: InputMaybe<DecimalOperationFilterInput>;
+  notes?: InputMaybe<StringOperationFilterInput>;
   or?: InputMaybe<Array<ParcelFilterInput>>;
-  parcelType?: InputMaybe<StringOperationFilterInput>;
+  parcelType?: InputMaybe<NullableOfParcelTypeOperationFilterInput>;
   parcelWatchers?: InputMaybe<ListFilterInputTypeOfParcelWatcherFilterInput>;
   recipientAddress?: InputMaybe<AddressFilterInput>;
   recipientAddressId?: InputMaybe<UuidOperationFilterInput>;
@@ -1360,6 +1426,50 @@ export type ParcelFilterInput = {
   width?: InputMaybe<DecimalOperationFilterInput>;
   zone?: InputMaybe<ZoneFilterInput>;
   zoneId?: InputMaybe<UuidOperationFilterInput>;
+};
+
+export type ParcelResult = {
+  __typename?: 'ParcelResult';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['UUID']['output'];
+  serviceType: ServiceType;
+  status: ParcelStatus;
+  trackingNumber: Scalars['String']['output'];
+};
+
+export type ParcelSortInput = {
+  actualDeliveryDate?: InputMaybe<SortEnumType>;
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  currency?: InputMaybe<SortEnumType>;
+  declaredValue?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  deliveryAttempts?: InputMaybe<SortEnumType>;
+  deliveryConfirmation?: InputMaybe<DeliveryConfirmationSortInput>;
+  description?: InputMaybe<SortEnumType>;
+  dimensionUnit?: InputMaybe<SortEnumType>;
+  estimatedDeliveryDate?: InputMaybe<SortEnumType>;
+  height?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  length?: InputMaybe<SortEnumType>;
+  notes?: InputMaybe<SortEnumType>;
+  parcelType?: InputMaybe<SortEnumType>;
+  recipientAddress?: InputMaybe<AddressSortInput>;
+  recipientAddressId?: InputMaybe<SortEnumType>;
+  serviceType?: InputMaybe<SortEnumType>;
+  shipperAddress?: InputMaybe<AddressSortInput>;
+  shipperAddressId?: InputMaybe<SortEnumType>;
+  status?: InputMaybe<SortEnumType>;
+  trackingNumber?: InputMaybe<SortEnumType>;
+  weight?: InputMaybe<SortEnumType>;
+  weightUnit?: InputMaybe<SortEnumType>;
+  width?: InputMaybe<SortEnumType>;
+  zone?: InputMaybe<ZoneSortInput>;
+  zoneId?: InputMaybe<SortEnumType>;
 };
 
 export enum ParcelStatus {
@@ -1382,6 +1492,13 @@ export type ParcelStatusOperationFilterInput = {
   neq?: InputMaybe<ParcelStatus>;
   nin?: InputMaybe<Array<ParcelStatus>>;
 };
+
+export enum ParcelType {
+  Bulk = 'BULK',
+  Envelope = 'ENVELOPE',
+  Package = 'PACKAGE',
+  Pallet = 'PALLET'
+}
 
 export type ParcelWatcher = {
   __typename?: 'ParcelWatcher';
@@ -1412,6 +1529,28 @@ export type ParcelWatcherFilterInput = {
   name?: InputMaybe<StringOperationFilterInput>;
   or?: InputMaybe<Array<ParcelWatcherFilterInput>>;
   parcels?: InputMaybe<ListFilterInputTypeOfParcelFilterInput>;
+};
+
+/** A connection to a list of items. */
+export type ParcelsConnection = {
+  __typename?: 'ParcelsConnection';
+  /** A list of edges. */
+  edges?: Maybe<Array<ParcelsEdge>>;
+  /** A flattened list of the nodes. */
+  nodes?: Maybe<Array<Parcel>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** An edge in a connection. */
+export type ParcelsEdge = {
+  __typename?: 'ParcelsEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge. */
+  node: Parcel;
 };
 
 export type Permission = {
@@ -1581,6 +1720,8 @@ export type Query = {
   __typename?: 'Query';
   depot?: Maybe<Depot>;
   depots?: Maybe<DepotsConnection>;
+  parcel?: Maybe<Parcel>;
+  parcels?: Maybe<ParcelsConnection>;
   route?: Maybe<Route>;
   routes: Array<Route>;
   sentinel?: Maybe<Scalars['String']['output']>;
@@ -1607,6 +1748,21 @@ export type QueryDepotsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   order?: InputMaybe<Array<DepotSortInput>>;
   where?: InputMaybe<DepotFilterInput>;
+};
+
+
+export type QueryParcelArgs = {
+  id: Scalars['UUID']['input'];
+};
+
+
+export type QueryParcelsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<Array<ParcelSortInput>>;
+  where?: InputMaybe<ParcelFilterInput>;
 };
 
 
@@ -2359,7 +2515,7 @@ export type WeightUnitOperationFilterInput = {
 
 export type Zone = {
   __typename?: 'Zone';
-  boundaryGeometry: Scalars['Geometry']['output'];
+  boundaryGeometry?: Maybe<Scalars['Geometry']['output']>;
   createdAt: Scalars['DateTime']['output'];
   createdBy?: Maybe<Scalars['String']['output']>;
   deletedAt?: Maybe<Scalars['DateTime']['output']>;
@@ -2451,14 +2607,14 @@ export type ZonesEdge = {
 export type GetDepotsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetDepotsQuery = { __typename?: 'Query', depots?: { __typename?: 'DepotsConnection', nodes?: Array<{ __typename?: 'Depot', id: any, name: string, isActive: boolean, createdAt: any, address: { __typename?: 'Address', street1: string, street2?: string | null, city: string, state: string, postalCode: string, countryCode: string, isResidential: boolean, contactName?: string | null, companyName?: string | null, phone?: string | null, email?: string | null } }> | null } | null };
+export type GetDepotsQuery = { __typename?: 'Query', depots?: { __typename?: 'DepotsConnection', nodes?: Array<{ __typename?: 'Depot', id: any, name: string, isActive: boolean, createdAt: any, address: { __typename?: 'Address', street1: string, street2?: string | null, city: string, state: string, postalCode: string, countryCode: string, isResidential: boolean, contactName?: string | null, companyName?: string | null, phone?: string | null, email?: string | null, geoLocation?: { __typename?: 'GeoJSONPointType', coordinates?: any | null } | null } }> | null } | null };
 
 export type GetDepotQueryVariables = Exact<{
   id: Scalars['UUID']['input'];
 }>;
 
 
-export type GetDepotQuery = { __typename?: 'Query', depot?: { __typename?: 'Depot', id: any, name: string, isActive: boolean, createdAt: any, address: { __typename?: 'Address', street1: string, street2?: string | null, city: string, state: string, postalCode: string, countryCode: string, isResidential: boolean, contactName?: string | null, companyName?: string | null, phone?: string | null, email?: string | null }, shiftSchedules: Array<{ __typename?: 'ShiftSchedule', dayOfWeek: DayOfWeek, openTime: any, closeTime: any }>, zones: Array<{ __typename?: 'Zone', id: any }> } | null };
+export type GetDepotQuery = { __typename?: 'Query', depot?: { __typename?: 'Depot', id: any, name: string, isActive: boolean, createdAt: any, address: { __typename?: 'Address', street1: string, street2?: string | null, city: string, state: string, postalCode: string, countryCode: string, isResidential: boolean, contactName?: string | null, companyName?: string | null, phone?: string | null, email?: string | null, geoLocation?: { __typename?: 'GeoJSONPointType', coordinates?: any | null } | null }, shiftSchedules: Array<{ __typename?: 'ShiftSchedule', dayOfWeek: DayOfWeek, openTime: any, closeTime: any }>, zones: Array<{ __typename?: 'Zone', id: any }> } | null };
 
 export type CreateDepotMutationVariables = Exact<{
   input: CreateDepotCommandInput;
@@ -2666,14 +2822,14 @@ export type ChangeVehicleStatusMutation = { __typename?: 'Mutation', changeVehic
 export type GetZonesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetZonesQuery = { __typename?: 'Query', zones?: { __typename?: 'ZonesConnection', nodes?: Array<{ __typename?: 'Zone', id: any, name: string, boundaryGeometry: any, depotId: any, isActive: boolean, createdAt: any, depot: { __typename?: 'Depot', name: string } }> | null } | null };
+export type GetZonesQuery = { __typename?: 'Query', zones?: { __typename?: 'ZonesConnection', nodes?: Array<{ __typename?: 'Zone', id: any, name: string, boundaryGeometry?: any | null, depotId: any, isActive: boolean, createdAt: any, depot: { __typename?: 'Depot', name: string } }> | null } | null };
 
 export type GetZoneQueryVariables = Exact<{
   id: Scalars['UUID']['input'];
 }>;
 
 
-export type GetZoneQuery = { __typename?: 'Query', zone?: { __typename?: 'Zone', id: any, name: string, boundaryGeometry: any, depotId: any, isActive: boolean, createdAt: any, lastModifiedAt?: any | null, depot: { __typename?: 'Depot', name: string } } | null };
+export type GetZoneQuery = { __typename?: 'Query', zone?: { __typename?: 'Zone', id: any, name: string, boundaryGeometry?: any | null, depotId: any, isActive: boolean, createdAt: any, lastModifiedAt?: any | null, depot: { __typename?: 'Depot', name: string } } | null };
 
 export type CreateZoneMutationVariables = Exact<{
   input: CreateZoneCommandInput;
@@ -2697,8 +2853,8 @@ export type DeleteZoneMutationVariables = Exact<{
 export type DeleteZoneMutation = { __typename?: 'Mutation', deleteZone: boolean };
 
 
-export const GetDepotsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDepots"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"depots"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"address"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"street1"}},{"kind":"Field","name":{"kind":"Name","value":"street2"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"postalCode"}},{"kind":"Field","name":{"kind":"Name","value":"countryCode"}},{"kind":"Field","name":{"kind":"Name","value":"isResidential"}},{"kind":"Field","name":{"kind":"Name","value":"contactName"}},{"kind":"Field","name":{"kind":"Name","value":"companyName"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]}}]} as unknown as DocumentNode<GetDepotsQuery, GetDepotsQueryVariables>;
-export const GetDepotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDepot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"depot"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"address"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"street1"}},{"kind":"Field","name":{"kind":"Name","value":"street2"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"postalCode"}},{"kind":"Field","name":{"kind":"Name","value":"countryCode"}},{"kind":"Field","name":{"kind":"Name","value":"isResidential"}},{"kind":"Field","name":{"kind":"Name","value":"contactName"}},{"kind":"Field","name":{"kind":"Name","value":"companyName"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}},{"kind":"Field","name":{"kind":"Name","value":"shiftSchedules"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dayOfWeek"}},{"kind":"Field","name":{"kind":"Name","value":"openTime"}},{"kind":"Field","name":{"kind":"Name","value":"closeTime"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"zones"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetDepotQuery, GetDepotQueryVariables>;
+export const GetDepotsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDepots"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"depots"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"address"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"street1"}},{"kind":"Field","name":{"kind":"Name","value":"street2"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"postalCode"}},{"kind":"Field","name":{"kind":"Name","value":"countryCode"}},{"kind":"Field","name":{"kind":"Name","value":"isResidential"}},{"kind":"Field","name":{"kind":"Name","value":"contactName"}},{"kind":"Field","name":{"kind":"Name","value":"companyName"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"geoLocation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"coordinates"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]}}]} as unknown as DocumentNode<GetDepotsQuery, GetDepotsQueryVariables>;
+export const GetDepotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDepot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"depot"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"address"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"street1"}},{"kind":"Field","name":{"kind":"Name","value":"street2"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"postalCode"}},{"kind":"Field","name":{"kind":"Name","value":"countryCode"}},{"kind":"Field","name":{"kind":"Name","value":"isResidential"}},{"kind":"Field","name":{"kind":"Name","value":"contactName"}},{"kind":"Field","name":{"kind":"Name","value":"companyName"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"geoLocation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"coordinates"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"shiftSchedules"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dayOfWeek"}},{"kind":"Field","name":{"kind":"Name","value":"openTime"}},{"kind":"Field","name":{"kind":"Name","value":"closeTime"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"zones"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetDepotQuery, GetDepotQueryVariables>;
 export const CreateDepotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateDepot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateDepotCommandInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createDepot"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<CreateDepotMutation, CreateDepotMutationVariables>;
 export const UpdateDepotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateDepot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateDepotCommandInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateDepot"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<UpdateDepotMutation, UpdateDepotMutationVariables>;
 export const DeleteDepotDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteDepot"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteDepot"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteDepotMutation, DeleteDepotMutationVariables>;

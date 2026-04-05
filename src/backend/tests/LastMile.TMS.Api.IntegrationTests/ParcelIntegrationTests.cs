@@ -119,7 +119,7 @@ public class ParcelIntegrationTests : IAsyncLifetime
                 dimensionUnit = "In",
                 declaredValue = 100.00,
                 currency = "USD",
-                parcelType = "General",
+                parcelType = "PACKAGE",
                 notes = "Handle with care"
             }
         };
