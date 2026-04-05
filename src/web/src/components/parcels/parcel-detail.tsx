@@ -1,13 +1,12 @@
 "use client";
 
-import { use } from "react";
 import Link from "next/link";
 import { useParcel } from "@/hooks/use-parcels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ParcelStatus } from "@/lib/graphql/types";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Plus } from "lucide-react";
 
 function formatStatus(status: ParcelStatus): string {
   return status.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
@@ -70,10 +69,19 @@ export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
         <Link href="/parcels" className="flex items-center gap-2 text-muted-foreground hover:underline">
           <ArrowLeft className="h-4 w-4" /> Back to Parcels
         </Link>
-        <Button onClick={reprintLabel}>
-          <Printer className="h-4 w-4 mr-2" />
-          Reprint Label
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/parcels/new"
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="size-4" />
+            New Parcel
+          </Link>
+          <Button onClick={reprintLabel}>
+            <Printer className="h-4 w-4 mr-2" />
+            Reprint Label
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

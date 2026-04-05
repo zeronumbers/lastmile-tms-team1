@@ -12,22 +12,30 @@ namespace LastMile.TMS.Api.GraphQL.Extensions.Parcel;
 [ExtendObjectType(typeof(Query))]
 public class ParcelQuery
 {
-    [Authorize(Roles = new[] { Role.RoleNames.WarehouseOperator, Role.RoleNames.Admin })]
-    [UsePaging(IncludeTotalCount = true)]
+    [Authorize]
+    [UsePaging(IncludeTotalCount = true, MaxPageSize = 100)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
     public IQueryable<DomainParcel> GetParcels(
-        string? search,
+        string? recipientSearch,
+        string? addressSearch,
         [Service] AppDbContext context)
     {
         var query = context.Parcels.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(recipientSearch))
         {
             query = query.Where(p =>
-                EF.Property<NpgsqlTsVector>(p, "SearchVector").Matches(search)
-                || EF.Property<NpgsqlTsVector>(p.RecipientAddress, "SearchVector").Matches(search));
+                EF.Property<NpgsqlTsVector>(p.RecipientAddress, "RecipientNameSearchVector")
+                    .Matches(recipientSearch));
+        }
+
+        if (!string.IsNullOrWhiteSpace(addressSearch))
+        {
+            query = query.Where(p =>
+                EF.Property<NpgsqlTsVector>(p.RecipientAddress, "AddressSearchVector")
+                    .Matches(addressSearch));
         }
 
         return query;

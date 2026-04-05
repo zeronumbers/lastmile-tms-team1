@@ -18,12 +18,11 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/parcels", label: "Parcels", icon: Package },
   { href: "/vehicles", label: "Vehicles", icon: Truck },
   { href: "/routes", label: "Routes", icon: Route },
   { href: "/depots", label: "Depots", icon: Building2 },
   { href: "/zones", label: "Zones", icon: MapPin },
-  { href: "/parcels", label: "Parcels", icon: Package, roles: ["WarehouseOperator", "Admin"] },
+  { href: "/parcels", label: "Parcels", icon: Package },
   { href: "/users", label: "Users", icon: Users, roles: ["Admin"] },
 ];
 

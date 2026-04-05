@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParcels } from "@/hooks/use-parcels";
 import { useZones } from "@/hooks/use-zones";
@@ -45,6 +46,7 @@ import {
   ArrowUp,
   ArrowDown,
   CalendarIcon,
+  Plus,
   X,
 } from "lucide-react";
 import { ParcelStatus, type ParcelSummaryDto } from "@/types/parcel";
@@ -395,6 +397,13 @@ export function ParcelList() {
             <CardTitle>Parcels</CardTitle>
             <CardDescription>Search and manage parcels</CardDescription>
           </div>
+          <Link
+            href="/parcels/new"
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="size-4" />
+            New Parcel
+          </Link>
         </div>
 
         {/* Row 1: Text search inputs */}
