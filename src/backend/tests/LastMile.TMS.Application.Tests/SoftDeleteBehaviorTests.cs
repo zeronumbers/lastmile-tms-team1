@@ -8,10 +8,24 @@ using NSubstitute;
 
 namespace LastMile.TMS.Application.Tests;
 
+public class TestDbContext : AppDbContext
+{
+    public TestDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService currentUserService)
+        : base(options, currentUserService) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Ignore Npgsql-specific shadow properties not supported by in-memory provider
+        modelBuilder.Entity<Address>().Ignore("RecipientNameSearchVector");
+        modelBuilder.Entity<Address>().Ignore("AddressSearchVector");
+    }
+}
+
 public class SoftDeleteBehaviorTests : IDisposable
 {
-    private readonly AppDbContext _context;
-    private readonly ICurrentUserService _currentUserService;
+    private readonly TestDbContext _context;
 
     public SoftDeleteBehaviorTests()
     {
@@ -19,10 +33,10 @@ public class SoftDeleteBehaviorTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _currentUserService = Substitute.For<ICurrentUserService>();
-        _currentUserService.UserId.Returns("test-user-123");
+        var currentUserService = Substitute.For<ICurrentUserService>();
+        currentUserService.UserId.Returns("test-user-123");
 
-        _context = new AppDbContext(options, _currentUserService);
+        _context = new TestDbContext(options, currentUserService);
     }
 
     public void Dispose()

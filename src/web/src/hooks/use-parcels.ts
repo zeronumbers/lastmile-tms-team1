@@ -6,12 +6,12 @@ import { parcelKeys } from "@/lib/query-key-factory";
 import * as parcelsService from "@/services/parcels.service";
 import { toast } from "sonner";
 
-export function useParcels() {
+export function useParcels(filters?: parcelsService.FetchParcelsFilters) {
   const { data: session } = useSession();
 
   return useQuery({
-    queryKey: parcelKeys.list(),
-    queryFn: () => parcelsService.fetchParcels(session!.user.accessToken),
+    queryKey: parcelKeys.list(filters),
+    queryFn: () => parcelsService.fetchParcels(session!.user.accessToken, filters),
     enabled: !!session?.user?.accessToken,
   });
 }

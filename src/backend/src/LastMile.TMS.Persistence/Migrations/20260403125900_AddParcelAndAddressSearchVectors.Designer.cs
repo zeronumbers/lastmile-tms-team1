@@ -3,6 +3,7 @@ using System;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -13,9 +14,11 @@ using NpgsqlTypes;
 namespace LastMile.TMS.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403125900_AddParcelAndAddressSearchVectors")]
+    partial class AddParcelAndAddressSearchVectors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,11 +33,6 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<NpgsqlTsVector>("AddressSearchVector")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("tsvector")
-                        .HasComputedColumnSql("to_tsvector('english', coalesce(\"Street1\", '') || ' ' || coalesce(\"City\", '') || ' ' || coalesce(\"PostalCode\", ''))", true);
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -99,10 +97,10 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<NpgsqlTsVector>("RecipientNameSearchVector")
+                    b.Property<NpgsqlTsVector>("SearchVector")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tsvector")
-                        .HasComputedColumnSql("to_tsvector('english', coalesce(\"ContactName\", ''))", true);
+                        .HasComputedColumnSql("to_tsvector('english', coalesce(\"ContactName\", '') || ' ' || coalesce(\"Street1\", '') || ' ' || coalesce(\"City\", '') || ' ' || coalesce(\"PostalCode\", ''))", true);
 
                     b.Property<string>("State")
                         .IsRequired()
@@ -120,19 +118,15 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AddressSearchVector");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("AddressSearchVector"), "GIN");
-
                     b.HasIndex("City");
 
                     b.HasIndex("PostalCode");
 
-                    b.HasIndex("RecipientNameSearchVector");
+                    b.HasIndex("SearchVector");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("RecipientNameSearchVector"), "GIN");
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
 
-                    b.ToTable("Addresses", (string)null);
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.DayOff", b =>
@@ -444,16 +438,17 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasPrecision(10, 3)
                         .HasColumnType("numeric(10,3)");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
                     b.Property<string>("ParcelType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("RecipientAddressId")
                         .HasColumnType("uuid");
+
+                    b.Property<NpgsqlTsVector>("SearchVector")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasComputedColumnSql("to_tsvector('english', coalesce(\"TrackingNumber\", '') || ' ' || coalesce(\"Description\", ''))", true);
 
                     b.Property<string>("ServiceType")
                         .IsRequired()
@@ -495,6 +490,10 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     b.HasIndex("RecipientAddressId");
 
+                    b.HasIndex("SearchVector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
+
                     b.HasIndex("ShipperAddressId");
 
                     b.HasIndex("Status");
@@ -504,7 +503,7 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     b.HasIndex("ZoneId");
 
-                    b.ToTable("Parcel", (string)null);
+                    b.ToTable("Parcels");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.ParcelContentItem", b =>

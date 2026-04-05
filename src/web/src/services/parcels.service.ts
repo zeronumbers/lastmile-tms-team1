@@ -1,19 +1,11 @@
 import { apiFetch } from "@/lib/api";
 import type { ParcelSummaryDto, ParcelDto, CreateParcelInput } from "@/lib/graphql/types";
-
-const GET_PARCELS_QUERY = `
-  query GetParcels {
-    parcels {
-      nodes {
-        id
-        trackingNumber
-        serviceType
-        status
-        createdAt
-      }
-    }
-  }
-`;
+import type { ParcelsResponse } from "@/types/parcel";
+import { buildParcelsQuery } from "@/lib/build-parcels-query";
+import {
+  type ColumnKey,
+  DEFAULT_COLUMNS,
+} from "@/components/parcel/column-registry";
 
 const GET_PARCEL_QUERY = `
   query GetParcelByTrackingNumber($trackingNumber: String!) {
@@ -85,12 +77,6 @@ const CREATE_PARCEL_MUTATION = `
   }
 `;
 
-interface ParcelsResponse {
-  parcels: {
-    nodes: ParcelSummaryDto[];
-  };
-}
-
 interface ParcelResponse {
   parcelByTrackingNumber: ParcelDto | null;
 }
@@ -99,15 +85,100 @@ interface CreateParcelResponse {
   createParcel: ParcelSummaryDto;
 }
 
-export async function fetchParcels(token: string): Promise<ParcelSummaryDto[]> {
+export interface FetchParcelsFilters {
+  recipientSearch?: string;
+  addressSearch?: string;
+  trackingNumber?: string;
+  status?: string;
+  serviceType?: string;
+  parcelType?: string;
+  zoneId?: string;
+  first?: number;
+  after?: string;
+  order?: Record<string, string>;
+  createdAfter?: string;
+  createdBefore?: string;
+  estimatedDeliveryAfter?: string;
+  estimatedDeliveryBefore?: string;
+  actualDeliveryAfter?: string;
+  actualDeliveryBefore?: string;
+  columns?: ColumnKey[];
+}
+
+function addDateRange(
+  where: Record<string, unknown>,
+  field: string,
+  after?: string,
+  before?: string,
+) {
+  if (after || before) {
+    const range: Record<string, string> = {};
+    if (after) range.gte = after;
+    if (before) range.lte = before;
+    where[field] = range;
+  }
+}
+
+export async function fetchParcels(
+  token: string,
+  filters?: FetchParcelsFilters,
+): Promise<ParcelsResponse["parcels"]> {
+  const where: Record<string, unknown> = {};
+
+  if (filters?.trackingNumber) {
+    where.trackingNumber = { contains: filters.trackingNumber };
+  }
+  if (filters?.status) {
+    where.status = { eq: filters.status };
+  }
+  if (filters?.serviceType) {
+    where.serviceType = { eq: filters.serviceType };
+  }
+  if (filters?.parcelType) {
+    where.parcelType = { eq: filters.parcelType };
+  }
+  if (filters?.zoneId) {
+    where.zoneId = { eq: filters.zoneId };
+  }
+
+  addDateRange(where, "createdAt", filters?.createdAfter, filters?.createdBefore);
+  addDateRange(
+    where,
+    "estimatedDeliveryDate",
+    filters?.estimatedDeliveryAfter,
+    filters?.estimatedDeliveryBefore,
+  );
+  addDateRange(
+    where,
+    "actualDeliveryDate",
+    filters?.actualDeliveryAfter,
+    filters?.actualDeliveryBefore,
+  );
+
+  const order = filters?.order
+    ? Object.entries(filters.order).map(([field, direction]) => ({
+        [field]: direction,
+      }))
+    : undefined;
+
+  const query = buildParcelsQuery(filters?.columns ?? DEFAULT_COLUMNS);
+
   const response = await apiFetch<{ data: ParcelsResponse }>("/api/graphql", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      query: GET_PARCELS_QUERY,
+      query,
+      variables: {
+        recipientSearch: filters?.recipientSearch || null,
+        addressSearch: filters?.addressSearch || null,
+        where: Object.keys(where).length > 0 ? where : null,
+        order: order ?? null,
+        first: filters?.first ?? 25,
+        after: filters?.after || null,
+      },
     }),
   });
-  return response.data.parcels.nodes;
+  return response.data.parcels;
 }
 
 export async function fetchParcel(token: string, trackingNumber: string): Promise<ParcelDto | null> {

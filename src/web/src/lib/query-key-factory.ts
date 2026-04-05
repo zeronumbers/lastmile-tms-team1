@@ -1,3 +1,5 @@
+import type { FetchParcelsFilters } from "@/services/parcels.service";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const userKeys = {
   all: ['users'] as const,
@@ -44,7 +46,7 @@ export const zoneKeys = {
 export const parcelKeys = {
   all: ['parcels'] as const,
   lists: () => [...parcelKeys.all, 'list'] as const,
-  list: () => [...parcelKeys.lists()] as const,
+  list: (filters?: FetchParcelsFilters) => [...parcelKeys.lists(), filters] as const,
   details: () => [...parcelKeys.all, 'detail'] as const,
   detail: (id: string) => [...parcelKeys.details(), id] as const,
 };
