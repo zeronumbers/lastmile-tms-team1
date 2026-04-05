@@ -13,12 +13,13 @@ public class CreateDriverCommandValidator : AbstractValidator<CreateDriverComman
             .NotEmpty().WithMessage("Email is required.")
             .MaximumLength(255).WithMessage("Email must not exceed 255 characters.")
             .EmailAddress().WithMessage("A valid email address is required.")
-            .MustAsync(async (email, cancellationToken) =>
+            .MustAsync(async (command, email, cancellationToken) =>
             {
                 var user = await dbContext.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted, cancellationToken);
                 if (user == null) return false;
                 if (user.Role?.Name != Role.RoleNames.Driver) return false;
                 if (await dbContext.Drivers.AnyAsync(d => d.UserId == user.Id && !d.IsDeleted, cancellationToken)) return false;
+                command.ResolvedUserId = user.Id;
                 return true;
             })
             .WithMessage("A user with this email must exist, have the Driver role, and not already have a driver entry.");

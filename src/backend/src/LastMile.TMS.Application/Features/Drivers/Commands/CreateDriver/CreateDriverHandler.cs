@@ -2,7 +2,6 @@ using LastMile.TMS.Application.Common.Interfaces;
 using LastMile.TMS.Application.Features.Drivers.Common;
 using LastMile.TMS.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace LastMile.TMS.Application.Features.Drivers.Commands.CreateDriver;
 
@@ -10,14 +9,12 @@ public class CreateDriverHandler(IAppDbContext dbContext) : IRequestHandler<Crea
 {
     public async Task<DriverResult> Handle(CreateDriverCommand request, CancellationToken cancellationToken)
     {
-        var user = await dbContext.Users
-            .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken)
+        var userId = request.ResolvedUserId
             ?? throw new InvalidOperationException($"No user found with email {request.Email}");
 
         var driver = new Driver
         {
-            UserId = user.Id,
+            UserId = userId,
             LicenseNumber = request.LicenseNumber,
             LicenseExpiryDate = request.LicenseExpiryDate,
             Photo = request.Photo

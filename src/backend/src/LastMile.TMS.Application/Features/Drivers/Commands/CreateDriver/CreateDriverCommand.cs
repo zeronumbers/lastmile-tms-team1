@@ -9,4 +9,7 @@ public record CreateDriverCommand(
     DateTimeOffset LicenseExpiryDate,
     string? Photo,
     List<ShiftScheduleInput>? ShiftSchedules = null,
-    List<DayOffInput>? DaysOff = null) : IRequest<DriverResult>;
+    List<DayOffInput>? DaysOff = null) : IRequest<DriverResult>
+{
+    internal Guid? ResolvedUserId { get; set; }
+}

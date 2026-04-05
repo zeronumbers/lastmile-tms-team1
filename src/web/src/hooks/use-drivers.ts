@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { driverKeys } from "@/lib/query-key-factory";
 import * as driversService from "@/services/driver.service";
-import { toast } from "sonner";
 
 export function useDrivers() {
   const { data: session } = useSession();
@@ -35,10 +34,6 @@ export function useCreateDriver() {
       driversService.createDriver(session!.user.accessToken, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
-      toast.success("Driver created successfully");
-    },
-    onError: () => {
-      toast.error("Failed to create driver");
     },
   });
 }
@@ -53,10 +48,6 @@ export function useUpdateDriver() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
       queryClient.invalidateQueries({ queryKey: driverKeys.detail(variables.id) });
-      toast.success("Driver updated successfully");
-    },
-    onError: () => {
-      toast.error("Failed to update driver");
     },
   });
 }
@@ -69,10 +60,6 @@ export function useDeleteDriver() {
     mutationFn: (id: string) => driversService.deleteDriver(session!.user.accessToken, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
-      toast.success("Driver deleted successfully");
-    },
-    onError: () => {
-      toast.error("Failed to delete driver");
     },
   });
 }
