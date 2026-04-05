@@ -91,6 +91,7 @@ export interface FetchParcelsFilters {
   trackingNumber?: string;
   status?: string;
   serviceType?: string;
+  parcelType?: string;
   zoneId?: string;
   first?: number;
   after?: string;
@@ -132,6 +133,9 @@ export async function fetchParcels(
   }
   if (filters?.serviceType) {
     where.serviceType = { eq: filters.serviceType };
+  }
+  if (filters?.parcelType) {
+    where.parcelType = { eq: filters.parcelType };
   }
   if (filters?.zoneId) {
     where.zoneId = { eq: filters.zoneId };

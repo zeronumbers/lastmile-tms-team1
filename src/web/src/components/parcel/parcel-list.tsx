@@ -84,6 +84,14 @@ const SERVICE_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: "OVERNIGHT", label: "Overnight" },
 ];
 
+const PARCEL_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "ALL", label: "All Parcel Types" },
+  { value: "PACKAGE", label: "Package" },
+  { value: "ENVELOPE", label: "Envelope" },
+  { value: "PALLET", label: "Pallet" },
+  { value: "BULK", label: "Bulk" },
+];
+
 type SortDirection = "ASC" | "DESC";
 
 interface SortState {
@@ -280,6 +288,7 @@ export function ParcelList() {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("ALL");
+  const [parcelTypeFilter, setParcelTypeFilter] = useState("ALL");
   const [zoneFilter, setZoneFilter] = useState("ALL");
   const [createdDateRange, setCreatedDateRange] = useState<
     DateRange | undefined
@@ -315,6 +324,7 @@ export function ParcelList() {
     trackingNumber: debouncedTrackingNumber || undefined,
     status: statusFilter !== "ALL" ? statusFilter : undefined,
     serviceType: serviceTypeFilter !== "ALL" ? serviceTypeFilter : undefined,
+    parcelType: parcelTypeFilter !== "ALL" ? parcelTypeFilter : undefined,
     zoneId: zoneFilter !== "ALL" ? zoneFilter : undefined,
     first: pageSize,
     after: cursor,
@@ -371,6 +381,7 @@ export function ParcelList() {
     debouncedTrackingNumber ||
     statusFilter !== "ALL" ||
     serviceTypeFilter !== "ALL" ||
+    parcelTypeFilter !== "ALL" ||
     zoneFilter !== "ALL" ||
     createdDateRange ||
     estimatedDeliveryDateRange ||
@@ -382,6 +393,7 @@ export function ParcelList() {
     setTrackingNumber("");
     setStatusFilter("ALL");
     setServiceTypeFilter("ALL");
+    setParcelTypeFilter("ALL");
     setZoneFilter("ALL");
     setCreatedDateRange(undefined);
     setEstimatedDeliveryDateRange(undefined);
@@ -481,6 +493,25 @@ export function ParcelList() {
             </SelectTrigger>
             <SelectContent>
               {SERVICE_TYPE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={parcelTypeFilter}
+            onValueChange={(value) => {
+              setParcelTypeFilter(value);
+              resetPagination();
+            }}
+          >
+            <SelectTrigger className="inline-flex shrink-0 items-center justify-center text-sm font-medium border border-input bg-transparent rounded-md h-9 px-3 w-[180px]">
+              <SelectValue placeholder="Parcel type" />
+            </SelectTrigger>
+            <SelectContent>
+              {PARCEL_TYPE_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
