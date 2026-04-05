@@ -377,7 +377,6 @@ public class DbSeeder : IDbSeeder
             empireStateDepotName, zoneName);
     }
 
-<<<<<<< HEAD
     private async Task SeedParcelsAsync()
     {
         // Skip if parcels already exist
