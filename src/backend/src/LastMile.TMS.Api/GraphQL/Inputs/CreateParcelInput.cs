@@ -23,6 +23,5 @@ public class CreateParcelInput : InputObjectType<CreateParcelCommand>
         descriptor.Field(d => d.Currency).DefaultValue("USD");
         descriptor.Field(d => d.ParcelType);
         descriptor.Field(d => d.Notes);
-        descriptor.Field(d => d.EstimatedDeliveryDate);
     }
 }

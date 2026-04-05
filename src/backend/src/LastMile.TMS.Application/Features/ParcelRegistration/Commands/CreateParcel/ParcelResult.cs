@@ -7,4 +7,5 @@ public record ParcelResult(
     string TrackingNumber,
     ParcelStatus Status,
     ServiceType ServiceType,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset EstimatedDeliveryDate);

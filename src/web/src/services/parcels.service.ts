@@ -16,8 +16,8 @@ const GET_PARCELS_QUERY = `
 `;
 
 const GET_PARCEL_QUERY = `
-  query GetParcel($id: UUID!) {
-    parcel(id: $id) {
+  query GetParcelByTrackingNumber($trackingNumber: String!) {
+    parcelByTrackingNumber(trackingNumber: $trackingNumber) {
       id
       trackingNumber
       description
@@ -80,6 +80,7 @@ const CREATE_PARCEL_MUTATION = `
       status
       serviceType
       createdAt
+      estimatedDeliveryDate
     }
   }
 `;
@@ -91,7 +92,7 @@ interface ParcelsResponse {
 }
 
 interface ParcelResponse {
-  parcel: ParcelDto | null;
+  parcelByTrackingNumber: ParcelDto | null;
 }
 
 interface CreateParcelResponse {
@@ -109,16 +110,16 @@ export async function fetchParcels(token: string): Promise<ParcelSummaryDto[]> {
   return response.data.parcels.nodes;
 }
 
-export async function fetchParcel(token: string, id: string): Promise<ParcelDto | null> {
+export async function fetchParcel(token: string, trackingNumber: string): Promise<ParcelDto | null> {
   const response = await apiFetch<{ data: ParcelResponse }>("/api/graphql", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       query: GET_PARCEL_QUERY,
-      variables: { id },
+      variables: { trackingNumber },
     }),
   });
-  return response.data.parcel;
+  return response.data.parcelByTrackingNumber;
 }
 
 export async function createParcel(

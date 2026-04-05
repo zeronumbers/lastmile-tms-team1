@@ -6,7 +6,10 @@ using NetTopologySuite.Geometries;
 
 namespace LastMile.TMS.Application.Features.ParcelRegistration.Commands.CreateParcel;
 
-public class CreateParcelHandler(IAppDbContext dbContext, IGeocodingService geocodingService)
+public class CreateParcelHandler(
+    IAppDbContext dbContext,
+    IGeocodingService geocodingService,
+    Domain.Services.IDeliveryDateCalculator deliveryDateCalculator)
     : IRequestHandler<CreateParcelCommand, ParcelResult>
 {
     public async Task<ParcelResult> Handle(CreateParcelCommand request, CancellationToken cancellationToken)
@@ -76,7 +79,8 @@ public class CreateParcelHandler(IAppDbContext dbContext, IGeocodingService geoc
         parcel.Currency = request.Currency;
         parcel.ParcelType = request.ParcelType;
         parcel.Notes = request.Notes;
-        parcel.EstimatedDeliveryDate = request.EstimatedDeliveryDate;
+        parcel.EstimatedDeliveryDate = deliveryDateCalculator.CalculateEstimatedDeliveryDate(
+            request.ServiceType, DateTimeOffset.UtcNow);
 
         // 6. Assign addresses (EF Core will set IDs after SaveChangesAsync)
         parcel.ShipperAddress = shipperAddress;
@@ -102,7 +106,8 @@ public class CreateParcelHandler(IAppDbContext dbContext, IGeocodingService geoc
             parcel.TrackingNumber,
             parcel.Status,
             parcel.ServiceType,
-            parcel.CreatedAt);
+            parcel.CreatedAt,
+            parcel.EstimatedDeliveryDate!.Value);
     }
 
     private static string BuildFullAddress(ParcelAddressInput address)

@@ -30,6 +30,5 @@ public record CreateParcelCommand(
     decimal DeclaredValue,
     string Currency = "USD",
     ParcelType? ParcelType = null,
-    string? Notes = null,
-    DateTimeOffset? EstimatedDeliveryDate = null
+    string? Notes = null
 ) : IRequest<ParcelResult>;

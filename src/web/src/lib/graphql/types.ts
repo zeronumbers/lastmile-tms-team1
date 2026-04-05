@@ -185,6 +185,13 @@ export enum ServiceType {
   OVERNIGHT = "OVERNIGHT",
 }
 
+export enum ParcelType {
+  PACKAGE = "PACKAGE",
+  ENVELOPE = "ENVELOPE",
+  PALLET = "PALLET",
+  BULK = "BULK",
+}
+
 export interface ParcelDto {
   id: string;
   trackingNumber: string;
@@ -217,6 +224,7 @@ export interface ParcelSummaryDto {
   serviceType: ServiceType;
   status: ParcelStatus;
   createdAt: string;
+  estimatedDeliveryDate: string;
 }
 
 export interface ParcelAddressInput {
@@ -246,9 +254,8 @@ export interface CreateParcelInput {
   dimensionUnit: DimensionUnit;
   declaredValue: number;
   currency?: string;
-  parcelType?: string;
+  parcelType?: ParcelType;
   notes?: string;
-  estimatedDeliveryDate?: string;
 }
 
 // ============================================

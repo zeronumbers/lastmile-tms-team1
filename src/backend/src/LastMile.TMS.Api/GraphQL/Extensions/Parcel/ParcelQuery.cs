@@ -24,4 +24,10 @@ public class ParcelQuery
     [UseProjection]
     public IQueryable<DomainParcel> GetParcel(Guid id, [Service] AppDbContext context)
         => context.Parcels.AsNoTracking().Where(d => d.Id == id);
+
+    [Authorize(Roles = new[] { Role.RoleNames.WarehouseOperator, Role.RoleNames.Admin })]
+    [UseSingleOrDefault]
+    [UseProjection]
+    public IQueryable<DomainParcel> GetParcelByTrackingNumber(string trackingNumber, [Service] AppDbContext context)
+        => context.Parcels.AsNoTracking().Where(d => d.TrackingNumber == trackingNumber);
 }

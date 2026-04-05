@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,27 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useCreateParcel } from "@/hooks/use-parcels";
-import { CreateParcelInput, ServiceType, WeightUnit, DimensionUnit } from "@/lib/graphql/types";
+import { CreateParcelInput, ServiceType, ParcelType, WeightUnit, DimensionUnit } from "@/lib/graphql/types";
+
+// Simple approximate delivery calculation (skips weekends only, no holidays)
+function getEstimatedDelivery(serviceType: ServiceType): string {
+  const businessDays = {
+    [ServiceType.ECONOMY]: 10,
+    [ServiceType.STANDARD]: 5,
+    [ServiceType.EXPRESS]: 2,
+    [ServiceType.OVERNIGHT]: 1,
+  }[serviceType] ?? 5;
+
+  let count = 0;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  while (count < businessDays) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
 
 const addressSchema = z.object({
   street1: z.string().min(1, "Street address is required"),
@@ -54,14 +74,6 @@ const parcelFormSchema = z.object({
   currency: z.string().min(3).max(3).optional(),
   parcelType: z.string().nullable().optional().transform((v) => v ?? ""),
   notes: z.string().nullable().optional().transform((v) => v ?? ""),
-  estimatedDeliveryDate: z
-    .string()
-    .nullable()
-    .optional()
-    .transform((v) => v ?? "")
-    .refine((val) => !val || new Date(val) >= new Date(new Date().toDateString()), {
-      message: "Estimated delivery date cannot be in the past",
-    }),
 });
 
 type ParcelFormValues = z.infer<typeof parcelFormSchema>;
@@ -251,7 +263,6 @@ export function ParcelForm() {
       currency: "USD",
       parcelType: "",
       notes: "",
-      estimatedDeliveryDate: "",
       shipperAddress: {
         street1: "",
         street2: "",
@@ -280,6 +291,11 @@ export function ParcelForm() {
       },
     },
   });
+
+  const serviceType = useWatch({ control: form.control, name: "serviceType" });
+  const estimatedDelivery = serviceType
+    ? getEstimatedDelivery(serviceType as ServiceType)
+    : "";
 
   async function onSubmit(values: ParcelFormValues) {
     try {
@@ -320,11 +336,8 @@ export function ParcelForm() {
         dimensionUnit: values.dimensionUnit as DimensionUnit,
         declaredValue: values.declaredValue,
         currency: values.currency || "USD",
-        parcelType: values.parcelType || undefined,
+        parcelType: (values.parcelType as ParcelType) || undefined,
         notes: values.notes || undefined,
-        estimatedDeliveryDate: values.estimatedDeliveryDate
-          ? `${values.estimatedDeliveryDate}T00:00:00Z`
-          : undefined,
       };
 
       await createParcel.mutateAsync(input);
@@ -547,26 +560,27 @@ export function ParcelForm() {
                     <FormItem>
                       <FormLabel>Parcel Type (optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Document, Electronics" {...field} value={field.value ?? ""} />
+                        <select
+                          className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value || undefined)}
+                        >
+                          <option value="">Select type...</option>
+                          <option value={ParcelType.PACKAGE}>Package</option>
+                          <option value={ParcelType.ENVELOPE}>Envelope</option>
+                          <option value={ParcelType.PALLET}>Pallet</option>
+                          <option value={ParcelType.BULK}>Bulk</option>
+                        </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="estimatedDeliveryDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Est. Delivery Date (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} value={field.value ?? ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex flex-col justify-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">Est. Delivery</span>
+                  <span className="font-medium">{estimatedDelivery || "—"}</span>
+                </div>
               </div>
 
               <FormField

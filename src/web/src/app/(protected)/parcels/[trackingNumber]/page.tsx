@@ -4,10 +4,10 @@ import { use } from "react";
 import { ParcelDetail } from "@/components/parcels/parcel-detail";
 
 interface ParcelDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ trackingNumber: string }>;
 }
 
 export default function ParcelDetailPage({ params }: ParcelDetailPageProps) {
-  const { id } = use(params);
-  return <ParcelDetail id={id} />;
+  const { trackingNumber } = use(params);
+  return <ParcelDetail trackingNumber={trackingNumber} />;
 }

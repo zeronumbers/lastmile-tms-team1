@@ -88,10 +88,5 @@ public class CreateParcelCommandValidator : AbstractValidator<CreateParcelComman
 
         RuleFor(x => x.Currency)
             .MaximumLength(3).WithMessage("Currency code must be 3 characters or less.");
-
-        RuleFor(x => x.EstimatedDeliveryDate)
-            .GreaterThanOrEqualTo(DateTimeOffset.UtcNow.Date)
-            .WithMessage("Estimated delivery date cannot be in the past.")
-            .When(x => x.EstimatedDeliveryDate.HasValue);
     }
 }

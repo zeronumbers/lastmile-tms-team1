@@ -32,11 +32,11 @@ function getStatusVariant(status: ParcelStatus): "default" | "secondary" | "succ
 }
 
 interface ParcelDetailProps {
-  id: string;
+  trackingNumber: string;
 }
 
-export function ParcelDetail({ id }: ParcelDetailProps) {
-  const { data: parcel, isLoading } = useParcel(id);
+export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
+  const { data: parcel, isLoading } = useParcel(trackingNumber);
 
   if (isLoading) {
     return (
@@ -61,7 +61,7 @@ export function ParcelDetail({ id }: ParcelDetailProps) {
   }
 
   function reprintLabel() {
-    window.open(`/api/labels/${id}/pdf`, "_blank");
+    window.open(`/api/labels/${parcel!.id}/pdf`, "_blank");
   }
 
   return (

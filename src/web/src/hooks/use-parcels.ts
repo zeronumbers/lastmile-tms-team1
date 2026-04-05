@@ -16,13 +16,13 @@ export function useParcels() {
   });
 }
 
-export function useParcel(id: string) {
+export function useParcel(trackingNumber: string) {
   const { data: session } = useSession();
 
   return useQuery({
-    queryKey: parcelKeys.detail(id),
-    queryFn: () => parcelsService.fetchParcel(session!.user.accessToken, id),
-    enabled: !!session?.user?.accessToken && !!id,
+    queryKey: parcelKeys.detail(trackingNumber),
+    queryFn: () => parcelsService.fetchParcel(session!.user.accessToken, trackingNumber),
+    enabled: !!session?.user?.accessToken && !!trackingNumber,
   });
 }
 

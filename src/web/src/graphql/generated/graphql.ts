@@ -211,7 +211,6 @@ export type CreateParcelCommandInput = {
   declaredValue?: InputMaybe<Scalars['Decimal']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   dimensionUnit: Scalars['String']['input'];
-  estimatedDeliveryDate?: InputMaybe<Scalars['DateTime']['input']>;
   height: Scalars['Decimal']['input'];
   length: Scalars['Decimal']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
@@ -1431,6 +1430,7 @@ export type ParcelFilterInput = {
 export type ParcelResult = {
   __typename?: 'ParcelResult';
   createdAt: Scalars['DateTime']['output'];
+  estimatedDeliveryDate: Scalars['DateTime']['output'];
   id: Scalars['UUID']['output'];
   serviceType: ServiceType;
   status: ParcelStatus;
