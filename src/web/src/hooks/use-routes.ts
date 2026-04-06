@@ -2,8 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { routeKeys } from "@/lib/query-key-factory";
-import { vehicleKeys } from "@/lib/query-key-factory";
+import { routeKeys, vehicleKeys, driverKeys } from "@/lib/query-key-factory";
 import * as routesService from "@/services/routes.service";
 import type { RouteStatus } from "@/types/route";
 import { toast } from "sonner";
@@ -28,6 +27,16 @@ export function useRoute(id: string) {
   });
 }
 
+export function useAvailableDrivers(date: string | undefined) {
+  const { data: session } = useSession();
+
+  return useQuery({
+    queryKey: routeKeys.availableDrivers(date ?? ""),
+    queryFn: () => routesService.fetchAvailableDrivers(session!.user.accessToken, date!),
+    enabled: !!session?.user?.accessToken && !!date,
+  });
+}
+
 export function useCreateRoute() {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
@@ -39,10 +48,12 @@ export function useCreateRoute() {
       totalDistanceKm: number;
       totalParcelCount: number;
       vehicleId?: string | null;
+      driverId?: string | null;
     }) => routesService.createRoute(session!.user.accessToken, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: routeKeys.all });
       queryClient.invalidateQueries({ queryKey: vehicleKeys.all });
+      queryClient.invalidateQueries({ queryKey: driverKeys.all });
       toast.success("Route created successfully");
     },
     onError: () => {
@@ -63,11 +74,13 @@ export function useUpdateRoute() {
       totalDistanceKm: number;
       totalParcelCount: number;
       vehicleId?: string | null;
+      driverId?: string | null;
     }) => routesService.updateRoute(session!.user.accessToken, input),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: routeKeys.all });
       queryClient.invalidateQueries({ queryKey: routeKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: vehicleKeys.all });
+      queryClient.invalidateQueries({ queryKey: driverKeys.all });
       toast.success("Route updated successfully");
     },
     onError: () => {
@@ -113,6 +126,25 @@ export function useChangeRouteStatus() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: routeKeys.all });
       queryClient.invalidateQueries({ queryKey: vehicleKeys.all });
+    },
+  });
+}
+
+export function useAssignDriverToRoute() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ routeId, driverId }: { routeId: string; driverId: string | null }) =>
+      routesService.assignDriverToRoute(session!.user.accessToken, routeId, driverId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: routeKeys.all });
+      queryClient.invalidateQueries({ queryKey: routeKeys.detail(variables.routeId) });
+      queryClient.invalidateQueries({ queryKey: driverKeys.all });
+      toast.success("Driver assigned successfully");
+    },
+    onError: () => {
+      toast.error("Failed to assign driver");
     },
   });
 }

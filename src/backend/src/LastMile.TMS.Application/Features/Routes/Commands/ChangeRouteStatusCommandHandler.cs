@@ -13,6 +13,7 @@ public class ChangeRouteStatusCommandHandler(IAppDbContext context) : IRequestHa
     {
         var route = await context.Routes
             .Include(r => r.Vehicle)
+            .Include(r => r.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
         if (route is null)
@@ -88,6 +89,10 @@ public class ChangeRouteStatusCommandHandler(IAppDbContext context) : IRequestHa
             TotalParcelCount = route.TotalParcelCount,
             VehicleId = route.VehicleId,
             VehiclePlate = route.Vehicle?.RegistrationPlate,
+            DriverId = route.DriverId,
+            DriverName = route.Driver != null
+                ? $"{route.Driver.User.FirstName} {route.Driver.User.LastName}"
+                : null,
             CreatedAt = route.CreatedAt
         };
     }

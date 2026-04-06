@@ -139,4 +139,101 @@ public class RouteTests
         route.ActualStartTime.Should().BeNull();
         route.ActualEndTime.Should().BeNull();
     }
+
+    [Fact]
+    public void AssignDriver_OnPlannedRoute_SetsDriverId()
+    {
+        // Arrange
+        var driverId = Guid.NewGuid();
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Planned
+        };
+
+        // Act
+        route.AssignDriver(driverId);
+
+        // Assert
+        route.DriverId.Should().Be(driverId);
+    }
+
+    [Fact]
+    public void AssignDriver_OnCompletedRoute_ThrowsException()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Completed
+        };
+
+        // Act
+        var act = () => route.AssignDriver(Guid.NewGuid());
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Planned*");
+    }
+
+    [Fact]
+    public void AssignDriver_OnCancelledRoute_ThrowsException()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Cancelled
+        };
+
+        // Act
+        var act = () => route.AssignDriver(Guid.NewGuid());
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Planned*");
+    }
+
+    [Fact]
+    public void ReassignDriver_OnPlannedRoute_Succeeds()
+    {
+        // Arrange
+        var driverA = Guid.NewGuid();
+        var driverB = Guid.NewGuid();
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Planned
+        };
+        route.AssignDriver(driverA);
+
+        // Act
+        route.AssignDriver(driverB);
+
+        // Assert
+        route.DriverId.Should().Be(driverB);
+    }
+
+    [Fact]
+    public void RemoveDriver_SetsDriverIdToNull()
+    {
+        // Arrange
+        var route = new Route
+        {
+            Name = "Test Route",
+            PlannedStartTime = DateTime.UtcNow,
+            Status = RouteStatus.Planned
+        };
+        route.AssignDriver(Guid.NewGuid());
+
+        // Act
+        route.AssignDriver(null);
+
+        // Assert
+        route.DriverId.Should().BeNull();
+    }
 }

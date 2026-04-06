@@ -10,7 +10,7 @@ namespace LastMile.TMS.Api.GraphQL.Extensions.Route;
 [ExtendObjectType(typeof(Mutation))]
 public class RouteMutation
 {
-    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
     public async Task<RouteDto> CreateRoute(
         [Service] IMediator mediator,
         string name,
@@ -18,14 +18,15 @@ public class RouteMutation
         decimal totalDistanceKm,
         int totalParcelCount,
         Guid? vehicleId = null,
+        Guid? driverId = null,
         CancellationToken cancellationToken = default)
     {
         return await mediator.Send(
-            new CreateRouteCommand(name, plannedStartTime, totalDistanceKm, totalParcelCount, vehicleId),
+            new CreateRouteCommand(name, plannedStartTime, totalDistanceKm, totalParcelCount, vehicleId, driverId),
             cancellationToken);
     }
 
-    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
     public async Task<RouteDto> UpdateRoute(
         [Service] IMediator mediator,
         Guid id,
@@ -34,14 +35,15 @@ public class RouteMutation
         decimal totalDistanceKm,
         int totalParcelCount,
         Guid? vehicleId = null,
+        Guid? driverId = null,
         CancellationToken cancellationToken = default)
     {
         return await mediator.Send(
-            new UpdateRouteCommand(id, name, plannedStartTime, totalDistanceKm, totalParcelCount, vehicleId),
+            new UpdateRouteCommand(id, name, plannedStartTime, totalDistanceKm, totalParcelCount, vehicleId, driverId),
             cancellationToken);
     }
 
-    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
     public async Task<bool> DeleteRoute(
         [Service] IMediator mediator,
         Guid id,
@@ -50,7 +52,7 @@ public class RouteMutation
         return await mediator.Send(new DeleteRouteCommand(id), cancellationToken);
     }
 
-    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager])]
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
     public async Task<RouteDto> ChangeRouteStatus(
         [Service] IMediator mediator,
         Guid id,
@@ -58,5 +60,17 @@ public class RouteMutation
         CancellationToken cancellationToken = default)
     {
         return await mediator.Send(new ChangeRouteStatusCommand(id, newStatus), cancellationToken);
+    }
+
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
+    public async Task<RouteDto> AssignDriverToRoute(
+        [Service] IMediator mediator,
+        Guid routeId,
+        Guid? driverId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await mediator.Send(
+            new AssignDriverToRouteCommand(routeId, driverId),
+            cancellationToken);
     }
 }

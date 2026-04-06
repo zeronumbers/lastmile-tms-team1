@@ -16,6 +16,9 @@ public class Route : BaseAuditableEntity
     public Guid? VehicleId { get; set; }
     public Vehicle? Vehicle { get; set; }
 
+    public Guid? DriverId { get; set; }
+    public Driver? Driver { get; set; }
+
     public ICollection<VehicleJourney> VehicleJourneys { get; set; } = [];
 
     // Status transition validation
@@ -50,5 +53,15 @@ public class Route : BaseAuditableEntity
         {
             ActualEndTime = DateTime.UtcNow;
         }
+    }
+
+    public void AssignDriver(Guid? driverId)
+    {
+        if (Status != RouteStatus.Planned)
+        {
+            throw new InvalidOperationException("Driver can only be assigned to routes in Planned status.");
+        }
+
+        DriverId = driverId;
     }
 }

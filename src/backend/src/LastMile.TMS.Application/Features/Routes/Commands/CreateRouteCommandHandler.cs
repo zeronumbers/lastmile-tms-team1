@@ -25,6 +25,28 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             }
         }
 
+        string? driverName = null;
+        if (request.DriverId.HasValue)
+        {
+            var driver = await context.Drivers
+                .Include(d => d.User)
+                .Include(d => d.DaysOff)
+                .FirstOrDefaultAsync(d => d.Id == request.DriverId.Value, cancellationToken);
+
+            if (driver == null)
+            {
+                throw new InvalidOperationException($"Driver with ID {request.DriverId.Value} not found.");
+            }
+
+            var routeDate = DateOnly.FromDateTime(request.PlannedStartTime);
+            if (driver.DaysOff.Any(d => DateOnly.FromDateTime(d.Date.DateTime) == routeDate))
+            {
+                throw new InvalidOperationException("Cannot assign driver who has a day off on the route date.");
+            }
+
+            driverName = $"{driver.User.FirstName} {driver.User.LastName}";
+        }
+
         var route = new Route
         {
             Name = request.Name,
@@ -32,7 +54,8 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             PlannedStartTime = request.PlannedStartTime,
             TotalDistanceKm = request.TotalDistanceKm,
             TotalParcelCount = request.TotalParcelCount,
-            VehicleId = request.VehicleId
+            VehicleId = request.VehicleId,
+            DriverId = request.DriverId
         };
 
         context.Routes.Add(route);
@@ -54,6 +77,8 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             TotalParcelCount = route.TotalParcelCount,
             VehicleId = route.VehicleId,
             VehiclePlate = vehiclePlate,
+            DriverId = route.DriverId,
+            DriverName = driverName,
             CreatedAt = route.CreatedAt
         };
     }

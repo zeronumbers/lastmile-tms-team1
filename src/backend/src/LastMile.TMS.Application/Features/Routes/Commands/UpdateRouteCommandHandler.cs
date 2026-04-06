@@ -12,6 +12,7 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
     {
         var route = await context.Routes
             .Include(r => r.Vehicle)
+            .Include(r => r.Driver).ThenInclude(d => d.User)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
         if (route is null)
@@ -84,6 +85,37 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             route.Vehicle = newVehicle;
         }
 
+        // Driver assignment — only allowed for Planned routes
+        if (route.DriverId != request.DriverId)
+        {
+            route.AssignDriver(request.DriverId);
+
+            if (request.DriverId.HasValue)
+            {
+                var driver = await context.Drivers
+                    .Include(d => d.User)
+                    .Include(d => d.DaysOff)
+                    .FirstOrDefaultAsync(d => d.Id == request.DriverId!.Value, cancellationToken);
+
+                if (driver == null)
+                {
+                    throw new InvalidOperationException($"Driver with ID {request.DriverId.Value} not found.");
+                }
+
+                var routeDate = DateOnly.FromDateTime(request.PlannedStartTime);
+                if (driver.DaysOff.Any(d => DateOnly.FromDateTime(d.Date.DateTime) == routeDate))
+                {
+                    throw new InvalidOperationException("Cannot assign driver who has a day off on the route date.");
+                }
+
+                route.Driver = driver;
+            }
+            else
+            {
+                route.Driver = null;
+            }
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return new RouteDto
@@ -98,6 +130,10 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             TotalParcelCount = route.TotalParcelCount,
             VehicleId = route.VehicleId,
             VehiclePlate = route.Vehicle?.RegistrationPlate,
+            DriverId = route.DriverId,
+            DriverName = route.Driver != null
+                ? $"{route.Driver.User.FirstName} {route.Driver.User.LastName}"
+                : null,
             CreatedAt = route.CreatedAt
         };
     }

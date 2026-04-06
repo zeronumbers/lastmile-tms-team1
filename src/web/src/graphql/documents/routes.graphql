@@ -8,6 +8,8 @@ query GetRoutes($where: RouteFilterInput) {
     vehicle {
       registrationPlate
     }
+    driverId
+    driverName
   }
 }
 
@@ -25,7 +27,25 @@ query GetRoute($id: UUID!) {
     vehicle {
       registrationPlate
     }
+    driverId
+    driverName
     createdAt
+  }
+}
+
+query GetAvailableDrivers($date: DateTime!) {
+  availableDrivers(date: $date) {
+    id
+    name
+    shift {
+      openTime
+      closeTime
+    }
+    assignedRoutes {
+      id
+      name
+      status
+    }
   }
 }
 
@@ -35,6 +55,7 @@ mutation CreateRoute(
   $totalDistanceKm: Decimal!
   $totalParcelCount: Int!
   $vehicleId: UUID
+  $driverId: UUID
 ) {
   createRoute(
     name: $name
@@ -42,6 +63,7 @@ mutation CreateRoute(
     totalDistanceKm: $totalDistanceKm
     totalParcelCount: $totalParcelCount
     vehicleId: $vehicleId
+    driverId: $driverId
   ) {
     id
     name
@@ -51,6 +73,8 @@ mutation CreateRoute(
     totalParcelCount
     vehicleId
     vehiclePlate
+    driverId
+    driverName
     createdAt
   }
 }
@@ -62,6 +86,7 @@ mutation UpdateRoute(
   $totalDistanceKm: Decimal!
   $totalParcelCount: Int!
   $vehicleId: UUID
+  $driverId: UUID
 ) {
   updateRoute(
     id: $id
@@ -70,6 +95,7 @@ mutation UpdateRoute(
     totalDistanceKm: $totalDistanceKm
     totalParcelCount: $totalParcelCount
     vehicleId: $vehicleId
+    driverId: $driverId
   ) {
     id
     name
@@ -79,6 +105,8 @@ mutation UpdateRoute(
     totalParcelCount
     vehicleId
     vehiclePlate
+    driverId
+    driverName
     createdAt
   }
 }
@@ -99,6 +127,20 @@ mutation ChangeRouteStatus($id: UUID!, $newStatus: RouteStatus!) {
     totalParcelCount
     vehicleId
     vehiclePlate
+    driverId
+    driverName
     createdAt
+  }
+}
+
+mutation AssignDriverToRoute($routeId: UUID!, $driverId: UUID) {
+  assignDriverToRoute(routeId: $routeId, driverId: $driverId) {
+    id
+    name
+    status
+    driverId
+    driverName
+    vehicleId
+    vehiclePlate
   }
 }

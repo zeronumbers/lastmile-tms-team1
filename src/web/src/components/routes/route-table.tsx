@@ -91,6 +91,11 @@ export function RouteTable({ data, onDelete, isDeleting }: RouteTableProps) {
       header: "Vehicle",
       cell: (info) => info.getValue() ?? <span className="text-muted-foreground">Unassigned</span>,
     }),
+    columnHelper.accessor("driverName", {
+      id: "driverName",
+      header: "Driver",
+      cell: (info) => info.getValue() ?? <span className="text-muted-foreground">Unassigned</span>,
+    }),
     columnHelper.display({
       id: "actions",
       header: "Actions",

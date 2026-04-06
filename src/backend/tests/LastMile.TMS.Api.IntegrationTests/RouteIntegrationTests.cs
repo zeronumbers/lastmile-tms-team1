@@ -15,6 +15,7 @@ public class RouteIntegrationTests : IAsyncLifetime
     private string _accessToken = null!;
     private Guid _vehicleId = Guid.Empty;
     private string _vehiclePlate = null!;
+    private Guid _driverId = Guid.Empty;
 
     private static string AdminUsername => Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? "admin";
     private static string AdminPassword => Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@123";
@@ -71,7 +72,48 @@ public class RouteIntegrationTests : IAsyncLifetime
         _vehiclePlate = createVehicle.TryGetProperty("registrationPlate", out var plateEl)
             ? plateEl.GetString()!
             : uniquePlate;
+
+        // Create a driver with a unique license number and a shift schedule for today
+        var uniqueLicense = $"DL-{Guid.NewGuid():N}".Substring(0, 12).ToUpperInvariant();
+        var nextWeek = DateTime.UtcNow.AddDays(7);
+        var dayOfWeek = nextWeek.DayOfWeek;
+        var driverMutation = $@"
+            mutation {{
+                createDriver(
+                    input: {{
+                        email: ""driver-route-test-{Guid.NewGuid():N}@test.com"",
+                        licenseNumber: ""{uniqueLicense}"",
+                        licenseExpiryDate: ""{DateTimeOffset.UtcNow.AddYears(1):O}"",
+                        shiftSchedules: [
+                            {{ dayOfWeek: {DayOfWeekToInt(dayOfWeek)}, openTime: ""08:00"", closeTime: ""17:00"" }}
+                        ]
+                    }}
+                ) {{ id }}
+            }}";
+        var driverResponse = await ExecuteGraphQLAsync(driverMutation);
+        var driverJson = await ReadJsonAsync(driverResponse);
+
+        if (driverJson.RootElement.TryGetProperty("errors", out var driverErrors) && driverErrors.GetArrayLength() > 0)
+        {
+            var errorMessage = driverErrors[0].GetProperty("message").GetString();
+            throw new InvalidOperationException($"Failed to create driver in InitializeAsync: {errorMessage}");
+        }
+
+        var driverData = driverJson.RootElement.GetProperty("data").GetProperty("createDriver");
+        _driverId = Guid.Parse(driverData.GetProperty("id").GetString()!);
     }
+
+    private static int DayOfWeekToInt(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Sunday => 0,
+        DayOfWeek.Monday => 1,
+        DayOfWeek.Tuesday => 2,
+        DayOfWeek.Wednesday => 3,
+        DayOfWeek.Thursday => 4,
+        DayOfWeek.Friday => 5,
+        DayOfWeek.Saturday => 6,
+        _ => 0
+    };
 
     public async Task DisposeAsync()
     {
@@ -676,6 +718,258 @@ public class RouteIntegrationTests : IAsyncLifetime
         routeJson.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
         errors.GetArrayLength().Should().BeGreaterThan(0);
         errors[0].GetProperty("message").GetString().Should().Contain("Reference:");
+    }
+
+    [Fact]
+    public async Task CreateRoute_WithDriverAssignment_ReturnsDriverFields()
+    {
+        // Arrange
+        var plannedDate = DateTime.UtcNow.AddDays(7);
+        var mutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Route With Driver"",
+                    plannedStartTime: ""{plannedDate:O}"",
+                    totalDistanceKm: 50.0,
+                    totalParcelCount: 25,
+                    driverId: ""{_driverId}""
+                ) {{
+                    id
+                    name
+                    driverId
+                    driverName
+                }}
+            }}";
+
+        // Act
+        var response = await ExecuteGraphQLAsync(mutation);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await ReadJsonAsync(response);
+        json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = json.RootElement.GetProperty("data").GetProperty("createRoute");
+        data.GetProperty("driverId").GetString().Should().Be(_driverId.ToString());
+        data.GetProperty("driverName").GetString().Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task AssignDriverToRoute_OnPlannedRoute_Succeeds()
+    {
+        // Arrange - Create a route without driver
+        var createMutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Assign Driver Test"",
+                    plannedStartTime: ""{DateTime.UtcNow.AddDays(8):O}"",
+                    totalDistanceKm: 40.0,
+                    totalParcelCount: 20
+                ) {{ id }}
+            }}";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Act - Assign driver
+        var assignMutation = $@"
+            mutation {{
+                assignDriverToRoute(
+                    routeId: ""{routeId}"",
+                    driverId: ""{_driverId}""
+                ) {{
+                    id
+                    driverId
+                    driverName
+                }}
+            }}";
+        var assignResponse = await ExecuteGraphQLAsync(assignMutation);
+
+        // Assert
+        assignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var assignJson = await ReadJsonAsync(assignResponse);
+        assignJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = assignJson.RootElement.GetProperty("data").GetProperty("assignDriverToRoute");
+        data.GetProperty("driverId").GetString().Should().Be(_driverId.ToString());
+        data.GetProperty("driverName").GetString().Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task AssignDriverToRoute_Reassignment_Succeeds()
+    {
+        // Arrange - Create route with first driver
+        var createMutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Reassign Driver Test"",
+                    plannedStartTime: ""{DateTime.UtcNow.AddDays(9):O}"",
+                    totalDistanceKm: 30.0,
+                    totalParcelCount: 15,
+                    driverId: ""{_driverId}""
+                ) {{ id }}
+            }}";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Create a second driver
+        var uniqueLicense2 = $"DL-{Guid.NewGuid():N}".Substring(0, 12).ToUpperInvariant();
+        var createDriver2Mutation = $@"
+            mutation {{
+                createDriver(
+                    input: {{
+                        email: ""driver-reassign-{Guid.NewGuid():N}@test.com"",
+                        licenseNumber: ""{uniqueLicense2}"",
+                        licenseExpiryDate: ""{DateTimeOffset.UtcNow.AddYears(1):O}""
+                    }}
+                ) {{ id }}
+            }}";
+        var driver2Response = await ExecuteGraphQLAsync(createDriver2Mutation);
+        var driver2Json = await ReadJsonAsync(driver2Response);
+        var driver2Id = driver2Json.RootElement.GetProperty("data").GetProperty("createDriver").GetProperty("id").GetString();
+
+        // Act - Reassign to second driver
+        var reassignMutation = $@"
+            mutation {{
+                assignDriverToRoute(
+                    routeId: ""{routeId}"",
+                    driverId: ""{driver2Id}""
+                ) {{
+                    id
+                    driverId
+                    driverName
+                }}
+            }}";
+        var reassignResponse = await ExecuteGraphQLAsync(reassignMutation);
+
+        // Assert
+        reassignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var reassignJson = await ReadJsonAsync(reassignResponse);
+        reassignJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = reassignJson.RootElement.GetProperty("data").GetProperty("assignDriverToRoute");
+        data.GetProperty("driverId").GetString().Should().Be(driver2Id);
+    }
+
+    [Fact]
+    public async Task AssignDriverToRoute_Unassign_SetsDriverToNull()
+    {
+        // Arrange - Create route with driver
+        var createMutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Unassign Driver Test"",
+                    plannedStartTime: ""{DateTime.UtcNow.AddDays(10):O}"",
+                    totalDistanceKm: 25.0,
+                    totalParcelCount: 10,
+                    driverId: ""{_driverId}""
+                ) {{ id }}
+            }}";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Act - Unassign driver by passing null
+        var unassignMutation = $@"
+            mutation {{
+                assignDriverToRoute(
+                    routeId: ""{routeId}""
+                ) {{
+                    id
+                    driverId
+                }}
+            }}";
+        var unassignResponse = await ExecuteGraphQLAsync(unassignMutation);
+
+        // Assert
+        unassignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var unassignJson = await ReadJsonAsync(unassignResponse);
+        unassignJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = unassignJson.RootElement.GetProperty("data").GetProperty("assignDriverToRoute");
+        data.TryGetProperty("driverId", out var driverIdProp).Should().BeTrue();
+        driverIdProp.ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task AssignDriverToRoute_OnCompletedRoute_ReturnsError()
+    {
+        // Arrange - Create route, start and complete it
+        var createMutation = $@"
+            mutation {{
+                createRoute(
+                    name: ""Completed Route Driver"",
+                    plannedStartTime: ""{DateTime.UtcNow.AddDays(11):O}"",
+                    totalDistanceKm: 35.0,
+                    totalParcelCount: 15
+                ) {{ id }}
+            }}";
+        var createResponse = await ExecuteGraphQLAsync(createMutation);
+        var createJson = await ReadJsonAsync(createResponse);
+        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
+
+        // Start the route
+        var startMutation = $@"
+            mutation {{
+                changeRouteStatus(id: ""{routeId}"", newStatus: IN_PROGRESS) {{ id }}
+            }}";
+        await ExecuteGraphQLAsync(startMutation);
+
+        // Complete the route
+        var completeMutation = $@"
+            mutation {{
+                changeRouteStatus(id: ""{routeId}"", newStatus: COMPLETED) {{ id }}
+            }}";
+        await ExecuteGraphQLAsync(completeMutation);
+
+        // Act - Try to assign driver to completed route
+        var assignMutation = $@"
+            mutation {{
+                assignDriverToRoute(
+                    routeId: ""{routeId}"",
+                    driverId: ""{_driverId}""
+                ) {{
+                    id
+                }}
+            }}";
+        var assignResponse = await ExecuteGraphQLAsync(assignMutation);
+
+        // Assert
+        assignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var assignJson = await ReadJsonAsync(assignResponse);
+        assignJson.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
+        errors[0].GetProperty("message").GetString().Should().Contain("Planned");
+    }
+
+    [Fact]
+    public async Task GetAvailableDrivers_ReturnsFilteredDrivers()
+    {
+        // Arrange - Query available drivers for a date
+        var queryDate = DateTime.UtcNow.AddDays(7);
+        var query = $@"
+            query {{
+                availableDrivers(date: ""{queryDate:O}"") {{
+                    id
+                    name
+                    shift {{
+                        openTime
+                        closeTime
+                    }}
+                    assignedRoutes {{
+                        id
+                        name
+                        status
+                    }}
+                }}
+            }}";
+
+        // Act
+        var response = await ExecuteGraphQLAsync(query);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await ReadJsonAsync(response);
+        json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
+        var drivers = json.RootElement.GetProperty("data").GetProperty("availableDrivers").EnumerateArray().ToList();
+        // Should contain at least our test driver (they have a shift schedule for that day)
+        drivers.Should().NotBeEmpty();
     }
 
     private async Task<HttpResponseMessage> ExecuteGraphQLAsync(string query)
