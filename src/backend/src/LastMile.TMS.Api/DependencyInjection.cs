@@ -3,6 +3,7 @@ using HotChocolate.Types;
 using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Api.GraphQL.Common;
 using LastMile.TMS.Api.GraphQL.Extensions.Depot;
+using LastMile.TMS.Api.GraphQL.Extensions.Driver;
 using LastMile.TMS.Api.GraphQL.Extensions.Parcel;
 using LastMile.TMS.Api.GraphQL.Extensions.Route;
 using LastMile.TMS.Api.GraphQL.Extensions.UserManagement;
@@ -36,6 +37,12 @@ public static class DependencyInjection
             .AddType<VehicleMutation>()
             .AddType<RouteQuery>()
             .AddType<RouteMutation>()
+            .AddType<DriverQuery>()
+            .AddType<DriverMutation>()
+            .AddType<UserManagementQuery>()
+            .AddType<UserManagementMutation>()
+            .AddType<CreateDriverInput>()
+            .AddType<UpdateDriverInput>()
             .AddType<CreateDepotInput>()
             .AddType<CreateParcelInput>()
             .AddType<ParcelAddressInputType>()
@@ -45,10 +52,10 @@ public static class DependencyInjection
             .AddType<DailyOperatingHoursInputType>()
             .AddType<CreateZoneInput>()
             .AddType<UpdateZoneInput>()
-            .AddType<UserManagementQuery>()
-            .AddType<UserManagementMutation>()
             .AddErrorFilter<DomainExceptionErrorFilter>()
-            .AddErrorFilter<ErrorFilter>();
+            .AddErrorFilter<ErrorFilter>()
+            .AddType<ShiftScheduleInputType>()
+            .AddType<DayOffInputType>();
 
         return services;
     }

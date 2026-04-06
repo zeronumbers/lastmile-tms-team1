@@ -11,6 +11,7 @@ import {
   MapPin,
   Users,
   Package,
+  CircleUser,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/zones", label: "Zones", icon: MapPin },
   { href: "/parcels", label: "Parcels", icon: Package },
   { href: "/users", label: "Users", icon: Users, roles: ["Admin"] },
+  { href: "/drivers", label: "Drivers", icon: CircleUser },
 ];
 
 export default function ProtectedLayout({

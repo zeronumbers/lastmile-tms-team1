@@ -4,24 +4,26 @@ using HotChocolate.Data;
 using LastMile.TMS.Domain.Entities;
 using LastMile.TMS.Persistence;
 using Microsoft.EntityFrameworkCore;
-using DomainZone = LastMile.TMS.Domain.Entities.Zone;
+using DomainDriver = LastMile.TMS.Domain.Entities.Driver;
 
-namespace LastMile.TMS.Api.GraphQL.Extensions.Zone;
+namespace LastMile.TMS.Api.GraphQL.Extensions.Driver;
 
 [ExtendObjectType(typeof(Query))]
-public class ZoneQuery
+public class DriverQuery
 {
     [Authorize(Roles = new[] { Role.RoleNames.Admin, Role.RoleNames.OperationsManager })]
     [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<DomainZone> GetZones([Service] AppDbContext context)
-        => context.Zones.AsNoTracking();
+    public IQueryable<DomainDriver> GetDrivers([Service] AppDbContext context)
+        => context.Drivers.AsNoTracking();
 
     [Authorize(Roles = new[] { Role.RoleNames.Admin, Role.RoleNames.OperationsManager })]
     [UseSingleOrDefault]
     [UseProjection]
-    public IQueryable<DomainZone> GetZone(Guid id, [Service] AppDbContext context)
-        => context.Zones.AsNoTracking().Where(z => z.Id == id);
+    public IQueryable<DomainDriver> GetDriver(Guid id, [Service] AppDbContext context)
+        => context.Drivers
+            .AsNoTracking()
+            .Where(d => d.Id == id);
 }

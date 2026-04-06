@@ -276,3 +276,98 @@ export interface UpdateZoneInput {
   depotId: string;
   isActive: boolean;
 }
+
+// Driver types
+export interface ShiftScheduleDto {
+  dayOfWeek: string;
+  openTime: string;
+  closeTime: string;
+}
+
+export interface DayOffDto {
+  date: string;
+}
+
+export interface DriverDto {
+  id: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  photo?: string;
+  userId: string;
+  createdAt: string;
+  lastModifiedAt?: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phoneNumber?: string;
+    isActive: boolean;
+    zone?: { id: string; name: string };
+    depot?: { id: string; name: string };
+  };
+  shiftSchedules?: ShiftScheduleDto[];
+  daysOff?: DayOffDto[];
+}
+
+export interface DriverSummaryDto {
+  id: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  photo?: string;
+  userId: string;
+  createdAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phoneNumber?: string;
+    isActive: boolean;
+    zone?: { id: string; name: string };
+    depot?: { id: string; name: string };
+  };
+}
+
+export interface DriversResponse {
+  drivers: {
+    nodes: DriverSummaryDto[];
+  };
+}
+
+export interface DriverResult {
+  id: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  photo?: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface ShiftScheduleInput {
+  dayOfWeek: string;
+  openTime: string | null;
+  closeTime: string | null;
+}
+
+export interface DayOffInput {
+  date: string;
+}
+
+export interface CreateDriverInput {
+  email: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  photo?: string;
+  shiftSchedules?: ShiftScheduleInput[];
+  daysOff?: DayOffInput[];
+}
+
+export interface UpdateDriverInput {
+  id: string;
+  licenseNumber: string;
+  licenseExpiryDate: string;
+  photo?: string;
+  shiftSchedules?: ShiftScheduleInput[];
+  daysOff?: DayOffInput[];
+}
