@@ -50,7 +50,7 @@ public class CreateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         var route = new Route
         {
             Name = request.Name,
-            Status = RouteStatus.Planned,
+            Status = RouteStatus.Draft,
             PlannedStartTime = request.PlannedStartTime,
             TotalDistanceKm = request.TotalDistanceKm,
             TotalParcelCount = request.TotalParcelCount,

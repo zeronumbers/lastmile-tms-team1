@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { driverKeys } from "@/lib/query-key-factory";
+import { driverKeys, routeKeys } from "@/lib/query-key-factory";
 import * as driversService from "@/services/driver.service";
 
 export function useDrivers() {
@@ -34,6 +34,7 @@ export function useCreateDriver() {
       driversService.createDriver(session!.user.accessToken, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
+      queryClient.invalidateQueries({ queryKey: routeKeys.all });
     },
   });
 }
@@ -48,6 +49,7 @@ export function useUpdateDriver() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
       queryClient.invalidateQueries({ queryKey: driverKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: routeKeys.all });
     },
   });
 }
@@ -60,6 +62,7 @@ export function useDeleteDriver() {
     mutationFn: (id: string) => driversService.deleteDriver(session!.user.accessToken, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: driverKeys.all });
+      queryClient.invalidateQueries({ queryKey: routeKeys.all });
     },
   });
 }

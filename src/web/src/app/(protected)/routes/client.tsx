@@ -53,10 +53,9 @@ export function RouteListClient() {
           onChange={(e) => handleStatusFilter(e.target.value)}
         >
           <option value="all">All Statuses</option>
-          <option value={RouteStatus.PLANNED}>Planned</option>
+          <option value={RouteStatus.DRAFT}>Draft</option>
           <option value={RouteStatus.IN_PROGRESS}>In Progress</option>
           <option value={RouteStatus.COMPLETED}>Completed</option>
-          <option value={RouteStatus.CANCELLED}>Cancelled</option>
         </select>
       </div>
 

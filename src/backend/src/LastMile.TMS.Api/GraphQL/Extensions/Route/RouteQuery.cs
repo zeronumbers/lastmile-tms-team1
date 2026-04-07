@@ -36,13 +36,15 @@ public class RouteQuery
     {
         var dayOfWeek = date.DayOfWeek;
         var dateOnly = DateOnly.FromDateTime(date);
+        var startOfDay = date.Date;
+        var endOfDay = startOfDay.AddDays(1);
 
         return context.Drivers
             .Include(d => d.User)
             .Include(d => d.ShiftSchedules)
             .Include(d => d.DaysOff)
             .Include(d => d.Routes)
-            .Where(d => d.User.IsActive)
+            .Where(d => d.User.Status == UserStatus.Active)
             .Where(d => !d.DaysOff.Any(dto => DateOnly.FromDateTime(dto.Date.DateTime) == dateOnly))
             .Where(d => d.ShiftSchedules.Any(s => s.DayOfWeek == dayOfWeek && s.DriverId == d.Id))
             .Select(d => new AvailableDriverDto(
@@ -53,9 +55,8 @@ public class RouteQuery
                     .Select(s => new ShiftInfoDto(s.OpenTime, s.CloseTime))
                     .FirstOrDefault(),
                 d.Routes
-                    .Where(r => r.PlannedStartTime.Date == date.Date
-                        && r.Status != RouteStatus.Cancelled
-                        && r.Status != RouteStatus.Completed)
+                    .Where(r => r.PlannedStartTime >= startOfDay && r.PlannedStartTime < endOfDay
+                        && (r.Status == RouteStatus.Draft || r.Status == RouteStatus.InProgress))
                     .Select(r => new DriverRouteSummaryDto(r.Id, r.Name, r.Status))
                     .ToList()))
             .AsNoTracking();

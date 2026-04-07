@@ -2082,10 +2082,9 @@ export type RouteSortInput = {
 };
 
 export enum RouteStatus {
-  Cancelled = 'CANCELLED',
   Completed = 'COMPLETED',
-  InProgress = 'IN_PROGRESS',
-  Planned = 'PLANNED'
+  Draft = 'DRAFT',
+  InProgress = 'IN_PROGRESS'
 }
 
 export type RouteStatusOperationFilterInput = {

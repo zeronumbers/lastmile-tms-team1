@@ -13,14 +13,12 @@ import { toast } from "sonner";
 
 function getStatusBadgeVariant(status: RouteStatus) {
   switch (status) {
-    case RouteStatus.PLANNED:
+    case RouteStatus.DRAFT:
       return "default";
     case RouteStatus.IN_PROGRESS:
       return "warning";
     case RouteStatus.COMPLETED:
       return "success";
-    case RouteStatus.CANCELLED:
-      return "secondary";
     default:
       return "outline";
   }

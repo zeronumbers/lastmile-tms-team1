@@ -1,8 +1,7 @@
 export enum RouteStatus {
-  PLANNED = "PLANNED",
+  DRAFT = "DRAFT",
   IN_PROGRESS = "IN_PROGRESS",
   COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED",
 }
 
 export interface RouteSummary {
@@ -15,7 +14,12 @@ export interface RouteSummary {
     registrationPlate: string | null;
   } | null;
   driverId: string | null;
-  driverName: string | null;
+  driver: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+  } | null;
 }
 
 export interface Route {
@@ -32,7 +36,12 @@ export interface Route {
     registrationPlate: string | null;
   } | null;
   driverId: string | null;
-  driverName: string | null;
+  driver: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+  } | null;
   createdAt: string;
 }
 

@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using LastMile.TMS.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LastMile.TMS.Api.IntegrationTests;
@@ -73,7 +75,8 @@ public class RouteIntegrationTests : IAsyncLifetime
             ? plateEl.GetString()!
             : uniquePlate;
 
-        // Create a driver with a unique license number and a shift schedule for today
+        // Create a driver with a unique license number and a shift schedule for next week
+        var driverEmail = await CreateDriverUserAsync($"driver-route-test-{Guid.NewGuid():N}@test.com");
         var uniqueLicense = $"DL-{Guid.NewGuid():N}".Substring(0, 12).ToUpperInvariant();
         var nextWeek = DateTime.UtcNow.AddDays(7);
         var dayOfWeek = nextWeek.DayOfWeek;
@@ -81,11 +84,11 @@ public class RouteIntegrationTests : IAsyncLifetime
             mutation {{
                 createDriver(
                     input: {{
-                        email: ""driver-route-test-{Guid.NewGuid():N}@test.com"",
+                        email: ""{driverEmail}"",
                         licenseNumber: ""{uniqueLicense}"",
                         licenseExpiryDate: ""{DateTimeOffset.UtcNow.AddYears(1):O}"",
                         shiftSchedules: [
-                            {{ dayOfWeek: {DayOfWeekToInt(dayOfWeek)}, openTime: ""08:00"", closeTime: ""17:00"" }}
+                            {{ dayOfWeek: {dayOfWeek.ToString().ToUpperInvariant()}, openTime: ""08:00:00"", closeTime: ""17:00:00"" }}
                         ]
                     }}
                 ) {{ id }}
@@ -96,24 +99,13 @@ public class RouteIntegrationTests : IAsyncLifetime
         if (driverJson.RootElement.TryGetProperty("errors", out var driverErrors) && driverErrors.GetArrayLength() > 0)
         {
             var errorMessage = driverErrors[0].GetProperty("message").GetString();
-            throw new InvalidOperationException($"Failed to create driver in InitializeAsync: {errorMessage}");
+            var fullResponse = driverJson.RootElement.GetRawText();
+            throw new InvalidOperationException($"Failed to create driver in InitializeAsync: {errorMessage}. Response: {fullResponse}");
         }
 
         var driverData = driverJson.RootElement.GetProperty("data").GetProperty("createDriver");
         _driverId = Guid.Parse(driverData.GetProperty("id").GetString()!);
     }
-
-    private static int DayOfWeekToInt(DayOfWeek day) => day switch
-    {
-        DayOfWeek.Sunday => 0,
-        DayOfWeek.Monday => 1,
-        DayOfWeek.Tuesday => 2,
-        DayOfWeek.Wednesday => 3,
-        DayOfWeek.Thursday => 4,
-        DayOfWeek.Friday => 5,
-        DayOfWeek.Saturday => 6,
-        _ => 0
-    };
 
     public async Task DisposeAsync()
     {
@@ -167,7 +159,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
         var data = json.RootElement.GetProperty("data").GetProperty("createRoute");
         data.GetProperty("name").GetString().Should().Be("Test Route 001");
-        data.GetProperty("status").GetString().Should().Be("PLANNED");
+        data.GetProperty("status").GetString().Should().Be("DRAFT");
         data.GetProperty("totalDistanceKm").GetDecimal().Should().Be(50.5m);
         data.GetProperty("totalParcelCount").GetInt32().Should().Be(25);
     }
@@ -313,7 +305,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
         var route = json.RootElement.GetProperty("data").GetProperty("route");
         route.GetProperty("name").GetString().Should().Be("Get Route By ID");
-        route.GetProperty("status").GetString().Should().Be("PLANNED");
+        route.GetProperty("status").GetString().Should().Be("DRAFT");
     }
 
     [Fact]
@@ -539,7 +531,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         var createJson = await ReadJsonAsync(createResponse);
         var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
 
-        // Start the route first (Required: Planned -> InProgress -> Completed)
+        // Start the route first (Required: Draft -> InProgress -> Completed)
         var startMutation = $@"
             mutation {{
                 changeRouteStatus(id: ""{routeId}"", newStatus: IN_PROGRESS) {{
@@ -634,44 +626,6 @@ public class RouteIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ChangeRouteStatus_ToCancelled_ReleasesVehicle()
-    {
-        // Arrange - Create a route with vehicle
-        var createMutation = $@"
-            mutation {{
-                createRoute(
-                    name: ""Cancel With Vehicle"",
-                    plannedStartTime: ""{DateTime.UtcNow.AddDays(22):O}"",
-                    totalDistanceKm: 45.0,
-                    totalParcelCount: 20,
-                    vehicleId: ""{_vehicleId}""
-                ) {{ id }}
-            }}";
-        var createResponse = await ExecuteGraphQLAsync(createMutation);
-        var createJson = await ReadJsonAsync(createResponse);
-        var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
-
-        // Act - Cancel the route
-        var cancelMutation = $@"
-            mutation {{
-                changeRouteStatus(id: ""{routeId}"", newStatus: CANCELLED) {{
-                    id
-                    status
-                    vehiclePlate
-                }}
-            }}";
-        var cancelResponse = await ExecuteGraphQLAsync(cancelMutation);
-
-        // Assert
-        cancelResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var cancelJson = await ReadJsonAsync(cancelResponse);
-        cancelJson.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
-        var data = cancelJson.RootElement.GetProperty("data").GetProperty("changeRouteStatus");
-        data.GetProperty("status").GetString().Should().Be("CANCELLED");
-        // Vehicle should be released (plate still returned but vehicle status updated to Available)
-    }
-
-    [Fact]
     public async Task CreateRoute_WithRetiredVehicle_ReturnsError()
     {
         // Arrange - Create a retired vehicle first
@@ -717,7 +671,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         var routeJson = await ReadJsonAsync(routeResponse);
         routeJson.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
         errors.GetArrayLength().Should().BeGreaterThan(0);
-        errors[0].GetProperty("message").GetString().Should().Contain("Reference:");
+        errors[0].GetProperty("message").GetString().Should().Contain("retired vehicle");
     }
 
     [Fact]
@@ -812,12 +766,13 @@ public class RouteIntegrationTests : IAsyncLifetime
         var routeId = createJson.RootElement.GetProperty("data").GetProperty("createRoute").GetProperty("id").GetString();
 
         // Create a second driver
+        var driver2Email = await CreateDriverUserAsync($"driver-reassign-{Guid.NewGuid():N}@test.com");
         var uniqueLicense2 = $"DL-{Guid.NewGuid():N}".Substring(0, 12).ToUpperInvariant();
         var createDriver2Mutation = $@"
             mutation {{
                 createDriver(
                     input: {{
-                        email: ""driver-reassign-{Guid.NewGuid():N}@test.com"",
+                        email: ""{driver2Email}"",
                         licenseNumber: ""{uniqueLicense2}"",
                         licenseExpiryDate: ""{DateTimeOffset.UtcNow.AddYears(1):O}""
                     }}
@@ -935,7 +890,7 @@ public class RouteIntegrationTests : IAsyncLifetime
         assignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var assignJson = await ReadJsonAsync(assignResponse);
         assignJson.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
-        errors[0].GetProperty("message").GetString().Should().Contain("Planned");
+        errors[0].GetProperty("message").GetString().Should().Contain("Draft");
     }
 
     [Fact]
@@ -978,6 +933,26 @@ public class RouteIntegrationTests : IAsyncLifetime
         request.Content = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
         return await _client.SendAsync(request);
+    }
+
+    private async Task<string> CreateDriverUserAsync(string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
+
+        var driverRole = await roleManager.FindByNameAsync("Driver")
+            ?? throw new InvalidOperationException("Driver role not found");
+
+        var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        var user = User.Create("Test", "Driver", email, $"driver.{uniqueId}");
+        user.RoleId = driverRole.Id;
+        var result = await userManager.CreateAsync(user, "Test@1234");
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"Failed to create driver user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+
+        return email;
     }
 
     private static async Task<JsonDocument> ReadJsonAsync(HttpResponseMessage response)

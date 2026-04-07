@@ -9,7 +9,12 @@ query GetRoutes($where: RouteFilterInput) {
       registrationPlate
     }
     driverId
-    driverName
+    driver {
+      user {
+        firstName
+        lastName
+      }
+    }
   }
 }
 
@@ -28,7 +33,12 @@ query GetRoute($id: UUID!) {
       registrationPlate
     }
     driverId
-    driverName
+    driver {
+      user {
+        firstName
+        lastName
+      }
+    }
     createdAt
   }
 }

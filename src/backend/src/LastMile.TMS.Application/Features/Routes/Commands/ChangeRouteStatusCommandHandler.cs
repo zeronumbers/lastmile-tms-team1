@@ -23,7 +23,7 @@ public class ChangeRouteStatusCommandHandler(IAppDbContext context) : IRequestHa
 
         var oldVehicleId = route.VehicleId;
 
-        // Handle vehicle release when route completes or cancels
+        // Handle vehicle release when route completes
         if (request.NewStatus == RouteStatus.Completed && oldVehicleId.HasValue)
         {
             // Create/update VehicleJourney for history tracking
@@ -38,11 +38,6 @@ public class ChangeRouteStatusCommandHandler(IAppDbContext context) : IRequestHa
             }
 
             // Release vehicle when route is completed
-            await ReleaseVehicleIfNotUsedAsync(oldVehicleId.Value, request.Id, cancellationToken);
-        }
-        else if (request.NewStatus == RouteStatus.Cancelled && oldVehicleId.HasValue)
-        {
-            // Release vehicle when route is cancelled
             await ReleaseVehicleIfNotUsedAsync(oldVehicleId.Value, request.Id, cancellationToken);
         }
         else if (request.NewStatus == RouteStatus.InProgress && oldVehicleId.HasValue)

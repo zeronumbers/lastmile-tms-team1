@@ -13,7 +13,12 @@ const GET_ROUTES_QUERY = `
         registrationPlate
       }
       driverId
-      driverName
+      driver {
+        user {
+          firstName
+          lastName
+        }
+      }
     }
   }
 `;
@@ -34,7 +39,12 @@ const GET_ROUTE_QUERY = `
         registrationPlate
       }
       driverId
-      driverName
+      driver {
+        user {
+          firstName
+          lastName
+        }
+      }
       createdAt
     }
   }
@@ -215,7 +225,7 @@ export async function fetchAvailableDrivers(
     token,
     body: JSON.stringify({
       query: GET_AVAILABLE_DRIVERS_QUERY,
-      variables: { date },
+      variables: { date: date.includes("T") ? date : `${date}T00:00:00.000Z` },
     }),
   });
   return response.data.availableDrivers;

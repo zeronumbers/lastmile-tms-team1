@@ -30,7 +30,7 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         route.VehicleId = request.VehicleId;
 
         // Only update vehicle assignment when route is InProgress
-        // For Planned routes, just validate vehicle exists - assignment happens when route starts
+        // For Draft routes, just validate vehicle exists - assignment happens when route starts
         if (route.Status == RouteStatus.InProgress)
         {
             if (oldVehicleId != request.VehicleId)
@@ -72,7 +72,7 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         }
         else if (oldVehicleId != request.VehicleId && request.VehicleId.HasValue)
         {
-            // For Planned routes, validate vehicle exists and load it for response
+            // For Draft routes, validate vehicle exists and load it for response
             var newVehicle = await context.Vehicles.FirstOrDefaultAsync(v => v.Id == request.VehicleId.Value, cancellationToken);
             if (newVehicle == null)
             {
@@ -85,7 +85,7 @@ public class UpdateRouteCommandHandler(IAppDbContext context) : IRequestHandler<
             route.Vehicle = newVehicle;
         }
 
-        // Driver assignment — only allowed for Planned routes
+        // Driver assignment — only allowed for Draft routes
         if (route.DriverId != request.DriverId)
         {
             route.AssignDriver(request.DriverId);

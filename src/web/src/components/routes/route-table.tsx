@@ -34,14 +34,12 @@ const columnHelper = createColumnHelper<RouteSummary>();
 
 function getStatusBadgeVariant(status: RouteStatus) {
   switch (status) {
-    case RouteStatus.PLANNED:
+    case RouteStatus.DRAFT:
       return "default";
     case RouteStatus.IN_PROGRESS:
       return "warning";
     case RouteStatus.COMPLETED:
       return "success";
-    case RouteStatus.CANCELLED:
-      return "secondary";
     default:
       return "outline";
   }
@@ -91,7 +89,7 @@ export function RouteTable({ data, onDelete, isDeleting }: RouteTableProps) {
       header: "Vehicle",
       cell: (info) => info.getValue() ?? <span className="text-muted-foreground">Unassigned</span>,
     }),
-    columnHelper.accessor("driverName", {
+    columnHelper.accessor((row) => row.driver ? `${row.driver.user.firstName} ${row.driver.user.lastName}` : null, {
       id: "driverName",
       header: "Driver",
       cell: (info) => info.getValue() ?? <span className="text-muted-foreground">Unassigned</span>,
