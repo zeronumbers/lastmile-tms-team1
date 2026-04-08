@@ -60,14 +60,15 @@ public class BinQuery
         }
 
         var parcelCounts = await parcelCountsQuery
-            .GroupBy(p => p.ZoneId)
-            .Select(g => new { ZoneId = g.Key, Count = g.Count() })
+            .Where(p => p.BinId != null)
+            .GroupBy(p => p.BinId)
+            .Select(g => new { BinId = g.Key!.Value, Count = g.Count() })
             .ToListAsync(cancellationToken);
 
         return bins.Select(b =>
         {
             var totalParcels = parcelCounts
-                .FirstOrDefault(pc => pc.ZoneId == b.ZoneId)?.Count ?? 0;
+                .FirstOrDefault(pc => pc.BinId == b.Id)?.Count ?? 0;
             
             var utilization = b.Capacity > 0 ? (double)totalParcels / b.Capacity * 100 : 0;
             return new BinDto(
