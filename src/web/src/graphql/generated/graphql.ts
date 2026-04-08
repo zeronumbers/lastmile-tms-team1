@@ -137,6 +137,119 @@ export type AvailableDriverDto = {
   shift?: Maybe<ShiftInfoDto>;
 };
 
+export type Bin = {
+  __typename?: 'Bin';
+  aisle: Scalars['Int']['output'];
+  capacity: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  deletedAt?: Maybe<Scalars['DateTime']['output']>;
+  deletedBy?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
+  lastModifiedBy?: Maybe<Scalars['String']['output']>;
+  slot: Scalars['Int']['output'];
+  zone: Zone;
+  zoneId: Scalars['UUID']['output'];
+};
+
+export type BinDto = {
+  __typename?: 'BinDto';
+  aisle: Scalars['Int']['output'];
+  capacity: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  currentParcelCount: Scalars['Int']['output'];
+  depotName: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  slot: Scalars['Int']['output'];
+  utilizationPercent: Scalars['Float']['output'];
+  zoneId: Scalars['UUID']['output'];
+  zoneName: Scalars['String']['output'];
+};
+
+export type BinFilterInput = {
+  aisle?: InputMaybe<IntOperationFilterInput>;
+  and?: InputMaybe<Array<BinFilterInput>>;
+  capacity?: InputMaybe<IntOperationFilterInput>;
+  createdAt?: InputMaybe<DateTimeOperationFilterInput>;
+  createdBy?: InputMaybe<StringOperationFilterInput>;
+  deletedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  deletedBy?: InputMaybe<StringOperationFilterInput>;
+  description?: InputMaybe<StringOperationFilterInput>;
+  id?: InputMaybe<UuidOperationFilterInput>;
+  isActive?: InputMaybe<BooleanOperationFilterInput>;
+  isDeleted?: InputMaybe<BooleanOperationFilterInput>;
+  label?: InputMaybe<StringOperationFilterInput>;
+  lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
+  or?: InputMaybe<Array<BinFilterInput>>;
+  slot?: InputMaybe<IntOperationFilterInput>;
+  zone?: InputMaybe<ZoneFilterInput>;
+  zoneId?: InputMaybe<UuidOperationFilterInput>;
+};
+
+export type BinResult = {
+  __typename?: 'BinResult';
+  aisle: Scalars['Int']['output'];
+  capacity: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  slot: Scalars['Int']['output'];
+  zoneId: Scalars['UUID']['output'];
+  zoneName: Scalars['String']['output'];
+};
+
+export type BinSortInput = {
+  aisle?: InputMaybe<SortEnumType>;
+  capacity?: InputMaybe<SortEnumType>;
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  description?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isActive?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  label?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  slot?: InputMaybe<SortEnumType>;
+  zone?: InputMaybe<ZoneSortInput>;
+  zoneId?: InputMaybe<SortEnumType>;
+};
+
+/** A connection to a list of items. */
+export type BinsConnection = {
+  __typename?: 'BinsConnection';
+  /** A list of edges. */
+  edges?: Maybe<Array<BinsEdge>>;
+  /** A flattened list of the nodes. */
+  nodes?: Maybe<Array<Bin>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** An edge in a connection. */
+export type BinsEdge = {
+  __typename?: 'BinsEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge. */
+  node: Bin;
+};
+
 export type BooleanOperationFilterInput = {
   eq?: InputMaybe<Scalars['Boolean']['input']>;
   neq?: InputMaybe<Scalars['Boolean']['input']>;
@@ -205,6 +318,15 @@ export type CoordinateSortInput = {
   x?: InputMaybe<SortEnumType>;
   y?: InputMaybe<SortEnumType>;
   z?: InputMaybe<SortEnumType>;
+};
+
+export type CreateBinCommandInput = {
+  aisle: Scalars['Int']['input'];
+  capacity: Scalars['Int']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  isActive?: Scalars['Boolean']['input'];
+  slot: Scalars['Int']['input'];
+  zoneId: Scalars['UUID']['input'];
 };
 
 export type CreateDepotCommandInput = {
@@ -971,6 +1093,13 @@ export type IntOperationFilterInput = {
   nlte?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type ListFilterInputTypeOfBinFilterInput = {
+  all?: InputMaybe<BinFilterInput>;
+  any?: InputMaybe<Scalars['Boolean']['input']>;
+  none?: InputMaybe<BinFilterInput>;
+  some?: InputMaybe<BinFilterInput>;
+};
+
 export type ListFilterInputTypeOfCoordinateFilterInput = {
   all?: InputMaybe<CoordinateFilterInput>;
   any?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1077,6 +1206,7 @@ export type Mutation = {
   changeRouteStatus: RouteDto;
   changeVehicleStatus: VehicleDto;
   completePasswordReset: Scalars['Boolean']['output'];
+  createBin: BinResult;
   createDepot: DepotResult;
   createDriver: DriverResult;
   createParcel: ParcelResult;
@@ -1085,6 +1215,7 @@ export type Mutation = {
   createVehicle: VehicleDto;
   createZone: ZoneResult;
   deactivateUser: UserDto;
+  deleteBin: Scalars['Boolean']['output'];
   deleteDepot: Scalars['Boolean']['output'];
   deleteDriver: Scalars['Boolean']['output'];
   deleteRoute: Scalars['Boolean']['output'];
@@ -1092,6 +1223,7 @@ export type Mutation = {
   deleteZone: Scalars['Boolean']['output'];
   resetPassword: Scalars['Boolean']['output'];
   sentinel?: Maybe<Scalars['String']['output']>;
+  updateBin: BinResult;
   updateDepot: DepotResult;
   updateDriver: DriverResult;
   updateRoute: RouteDto;
@@ -1128,6 +1260,11 @@ export type MutationCompletePasswordResetArgs = {
   email: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
   token: Scalars['String']['input'];
+};
+
+
+export type MutationCreateBinArgs = {
+  input: CreateBinCommandInput;
 };
 
 
@@ -1182,6 +1319,11 @@ export type MutationDeactivateUserArgs = {
 };
 
 
+export type MutationDeleteBinArgs = {
+  id: Scalars['UUID']['input'];
+};
+
+
 export type MutationDeleteDepotArgs = {
   id: Scalars['UUID']['input'];
 };
@@ -1209,6 +1351,11 @@ export type MutationDeleteZoneArgs = {
 
 export type MutationResetPasswordArgs = {
   email: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateBinArgs = {
+  input: UpdateBinCommandInput;
 };
 
 
@@ -1811,6 +1958,9 @@ export type PrecisionModelsOperationFilterInput = {
 export type Query = {
   __typename?: 'Query';
   availableDrivers: Array<AvailableDriverDto>;
+  bin?: Maybe<Bin>;
+  binUtilizations: Array<BinDto>;
+  bins?: Maybe<BinsConnection>;
   depot?: Maybe<Depot>;
   depots?: Maybe<DepotsConnection>;
   driver?: Maybe<Driver>;
@@ -1834,6 +1984,26 @@ export type Query = {
 
 export type QueryAvailableDriversArgs = {
   date: Scalars['DateTime']['input'];
+};
+
+
+export type QueryBinArgs = {
+  id: Scalars['UUID']['input'];
+};
+
+
+export type QueryBinUtilizationsArgs = {
+  zoneId: Scalars['UUID']['input'];
+};
+
+
+export type QueryBinsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<Array<BinSortInput>>;
+  where?: InputMaybe<BinFilterInput>;
 };
 
 
@@ -2316,6 +2486,16 @@ export type UpdateAddressInput = {
   street2?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateBinCommandInput = {
+  aisle: Scalars['Int']['input'];
+  capacity: Scalars['Int']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['UUID']['input'];
+  isActive: Scalars['Boolean']['input'];
+  slot: Scalars['Int']['input'];
+  zoneId: Scalars['UUID']['input'];
+};
+
 export type UpdateDepotCommandInput = {
   address: UpdateAddressInput;
   id: Scalars['UUID']['input'];
@@ -2709,6 +2889,7 @@ export type WeightUnitOperationFilterInput = {
 
 export type Zone = {
   __typename?: 'Zone';
+  bins: Array<Bin>;
   boundaryGeometry?: Maybe<Scalars['Geometry']['output']>;
   createdAt: Scalars['DateTime']['output'];
   createdBy?: Maybe<Scalars['String']['output']>;
@@ -2726,6 +2907,7 @@ export type Zone = {
 
 export type ZoneFilterInput = {
   and?: InputMaybe<Array<ZoneFilterInput>>;
+  bins?: InputMaybe<ListFilterInputTypeOfBinFilterInput>;
   boundaryGeometry?: InputMaybe<GeometryFilterInput>;
   createdAt?: InputMaybe<DateTimeOperationFilterInput>;
   createdBy?: InputMaybe<StringOperationFilterInput>;

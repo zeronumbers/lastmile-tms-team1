@@ -59,3 +59,13 @@ export const driverKeys = {
   details: () => [...driverKeys.all, 'detail'] as const,
   detail: (id: string) => [...driverKeys.details(), id] as const,
 };
+
+export const binKeys = {
+  all: ['bins'] as const,
+  lists: () => [...binKeys.all, 'list'] as const,
+  list: (zoneId?: string) => [...binKeys.lists(), { zoneId }] as const,
+  details: () => [...binKeys.all, 'detail'] as const,
+  detail: (id: string) => [...binKeys.details(), id] as const,
+  utilizations: () => [...binKeys.all, 'utilizations'] as const,
+  utilizationsByZone: (zoneId: string) => [...binKeys.utilizations(), { zoneId }] as const,
+};
