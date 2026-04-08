@@ -571,11 +571,16 @@ public class BinIntegrationTests : IAsyncLifetime
         }}";
         
         // Assert - GraphQL should return errors
-        var secondResponse = await _client.PostAsync("/api/graphql", new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(new { query = createMutation2 }),
-            System.Text.Encoding.UTF8,
-            "application/json"));
+        var request = new HttpRequestMessage(HttpMethod.Post, "/graphql")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(new { query = createMutation2 }),
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
 
+        var secondResponse = await _client.SendAsync(request);
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK); // GraphQL usually returns 200 with errors array
         var secondJsonString = await secondResponse.Content.ReadAsStringAsync();
         var secondJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(secondJsonString);
