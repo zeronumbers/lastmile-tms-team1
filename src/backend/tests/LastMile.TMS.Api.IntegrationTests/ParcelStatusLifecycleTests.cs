@@ -1,68 +1,25 @@
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace LastMile.TMS.Api.IntegrationTests;
 
 [Collection("Integration")]
 public class ParcelStatusLifecycleTests : IAsyncLifetime
 {
-    private readonly IntegrationTestWebApplicationFactory _factory;
-    private HttpClient _client = null!;
-    private string _accessToken = null!;
+    private readonly IntegrationFixture _fx;
 
-    private static string AdminUsername => Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? "admin";
-    private static string AdminPassword => Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@123";
-
-    public ParcelStatusLifecycleTests(PostgreSqlContainerFixture postgreSqlFixture)
+    public ParcelStatusLifecycleTests(IntegrationFixture fx)
     {
-        _factory = new IntegrationTestWebApplicationFactory(postgreSqlFixture);
+        _fx = fx;
     }
 
-    public async Task InitializeAsync()
-    {
-        await _factory.InitializeAsync();
-        _client = _factory.CreateClient();
-
-        using var scope = _factory.Services.CreateScope();
-        var dbSeeder = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Application.Common.Interfaces.IDbSeeder>();
-        await dbSeeder.SeedAsync();
-
-        _accessToken = await GetAccessTokenAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        _client.Dispose();
-        await _factory.DisposeAsync();
-    }
-
-    private async Task<string> GetAccessTokenAsync()
-    {
-        var formData = new Dictionary<string, string>
-        {
-            { "grant_type", "password" },
-            { "username", AdminUsername },
-            { "password", AdminPassword }
-        };
-        var content = new FormUrlEncodedContent(formData);
-        var response = await _client.PostAsync("/connect/token", content);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var tokenResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        return tokenResponse.GetProperty("access_token").GetString()!;
-    }
+    public Task InitializeAsync() => Task.CompletedTask;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task<Guid> CreateTestParcelAsync()
     {
         var mutation = @"mutation CreateParcel($input: CreateParcelCommandInput!) {
-            createParcel(input: $input) {
-                id
-                trackingNumber
-                status
-            }
+            createParcel(input: $input) { id }
         }";
 
         var variables = new
@@ -97,15 +54,14 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
             }
         };
 
-        var json = await GraphQLRequestAsync(mutation, variables);
+        var json = await _fx.GraphQLRequestAsync(mutation, variables);
 
         if (json.TryGetProperty("errors", out var errors))
         {
             throw new InvalidOperationException($"CreateParcel failed: {errors.GetRawText()}");
         }
 
-        var data = json.GetProperty("data").GetProperty("createParcel");
-        return Guid.Parse(data.GetProperty("id").GetString()!);
+        return Guid.Parse(json.GetProperty("data").GetProperty("createParcel").GetProperty("id").GetString()!);
     }
 
     [Fact]
@@ -137,7 +93,7 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         };
 
         // Act
-        var json = await GraphQLRequestAsync(mutation, variables);
+        var json = await _fx.GraphQLRequestAsync(mutation, variables);
 
         // Assert
         json.TryGetProperty("errors", out _).Should().BeFalse();
@@ -169,7 +125,7 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         };
 
         // Act
-        var json = await GraphQLRequestAsync(mutation, variables);
+        var json = await _fx.GraphQLRequestAsync(mutation, variables);
 
         // Assert
         json.TryGetProperty("errors", out var errors).Should().BeTrue();
@@ -188,7 +144,7 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         }";
 
         // Advance to ReceivedAtDepot
-        await GraphQLRequestAsync(changeStatusMutation, new
+        await _fx.GraphQLRequestAsync(changeStatusMutation, new
         {
             input = new
             {
@@ -199,7 +155,7 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         });
 
         // Advance to Sorted
-        await GraphQLRequestAsync(changeStatusMutation, new
+        await _fx.GraphQLRequestAsync(changeStatusMutation, new
         {
             input = new
             {
@@ -221,7 +177,7 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
             }
         }";
 
-        var json = await GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
+        var json = await _fx.GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
 
         // Assert
         json.TryGetProperty("errors", out _).Should().BeFalse();
@@ -246,24 +202,12 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
             }
         }";
 
-        var json = await GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
+        var json = await _fx.GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
 
         // Assert - Should have LABEL_CREATED event
         json.TryGetProperty("errors", out _).Should().BeFalse();
         var events = json.GetProperty("data").GetProperty("trackingEvents")
             .GetProperty("nodes").EnumerateArray().ToList();
         events.Should().Contain(e => e.GetProperty("eventType").GetString() == "LABEL_CREATED");
-    }
-
-    private async Task<JsonElement> GraphQLRequestAsync(string query, object? variables = null)
-    {
-        var requestBody = new { query, variables };
-        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var request = new HttpRequestMessage(HttpMethod.Post, "/graphql") { Content = content };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-        var response = await _client.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<JsonElement>(responseContent);
     }
 }

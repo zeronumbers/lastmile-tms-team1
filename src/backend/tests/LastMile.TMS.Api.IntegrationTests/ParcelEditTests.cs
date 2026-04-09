@@ -1,9 +1,8 @@
-using System.Net;
-using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using LastMile.TMS.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
+using LastMile.TMS.Persistence;
 using Npgsql;
 
 namespace LastMile.TMS.Api.IntegrationTests;
@@ -11,71 +10,25 @@ namespace LastMile.TMS.Api.IntegrationTests;
 [Collection("Integration")]
 public class ParcelEditTests : IAsyncLifetime
 {
-    private readonly IntegrationTestWebApplicationFactory _factory;
-    private HttpClient _client = null!;
-    private string _accessToken = null!;
+    private readonly IntegrationFixture _fx;
 
-    public ParcelEditTests(PostgreSqlContainerFixture postgreSqlFixture)
+    public ParcelEditTests(IntegrationFixture fx)
     {
-        _factory = new IntegrationTestWebApplicationFactory(postgreSqlFixture);
+        _fx = fx;
     }
 
     public async Task InitializeAsync()
     {
-        await _factory.InitializeAsync();
-        await CleanupTestDataAsync(_factory.GetConnectionString());
-
-        _client = _factory.CreateClient();
-
-        using var scope = _factory.Services.CreateScope();
-        var dbSeeder = scope.ServiceProvider.GetRequiredService<LastMile.TMS.Application.Common.Interfaces.IDbSeeder>();
-        await dbSeeder.SeedAsync();
-
-        // Login to get access token
-        var username = Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? "admin";
-        var password = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin@123";
-
-        var tokenResponse = await _client.PostAsync("/connect/token", new FormUrlEncodedContent(new[]
-        {
-            new KeyValuePair<string, string>("grant_type", "password"),
-            new KeyValuePair<string, string>("username", username),
-            new KeyValuePair<string, string>("password", password)
-        }));
-
-        var tokenContent = await tokenResponse.Content.ReadAsStringAsync();
-        var tokenJson = JsonSerializer.Deserialize<JsonElement>(tokenContent);
-
-        if (!tokenResponse.IsSuccessStatusCode || !tokenJson.TryGetProperty("access_token", out _))
-        {
-            throw new Exception($"Token request failed: {tokenContent}");
-        }
-
-        _accessToken = tokenJson.GetProperty("access_token").GetString()!;
-
-        // Seed test data
+        await CleanupTestDataAsync();
         await SeedTestDataAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        _client.Dispose();
-        await _factory.DisposeAsync();
-    }
-
-    private async Task<JsonElement> GraphQLRequestAsync(string query)
-    {
-        var content = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
-        var request = new HttpRequestMessage(HttpMethod.Post, "/graphql") { Content = content };
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _accessToken);
-
-        var response = await _client.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<JsonElement>(responseContent)!;
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task SeedTestDataAsync()
     {
-        await using var connection = new NpgsqlConnection(_factory.GetConnectionString());
+        var connectionString = _fx.ConnectionString;
+        await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();
 
         // Create test addresses
@@ -102,6 +55,30 @@ public class ParcelEditTests : IAsyncLifetime
                 ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'LMTT1-0403-0002', 'Sorted', 'Test Parcel - Sorted', 'Express', 2.0, 'Kg', 40, 30, 20, 'Cm', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 150.00, 'USD', 0, NOW(), 'test-seeder', false),
                 ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'LMTT1-0403-0003', 'Loaded', 'Test Parcel - Loaded', 'Standard', 1.8, 'Kg', 35, 25, 18, 'Cm', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 120.00, 'USD', 0, NOW(), 'test-seeder', false)
             ON CONFLICT (""Id"") DO NOTHING;", connection))
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    private async Task CleanupTestDataAsync()
+    {
+        var connectionString = _fx.ConnectionString;
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using (var cmd = new NpgsqlCommand("DELETE FROM \"TrackingEvents\" WHERE \"ParcelId\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+        await using (var cmd = new NpgsqlCommand("DELETE FROM \"ParcelAuditLogs\" WHERE \"ParcelId\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Parcel\" WHERE \"Id\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Addresses\" WHERE \"Id\" IN ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222');", connection))
         {
             await cmd.ExecuteNonQueryAsync();
         }
@@ -141,7 +118,7 @@ public class ParcelEditTests : IAsyncLifetime
         }";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -185,7 +162,7 @@ public class ParcelEditTests : IAsyncLifetime
         }";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -222,7 +199,7 @@ public class ParcelEditTests : IAsyncLifetime
         }";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -257,17 +234,15 @@ public class ParcelEditTests : IAsyncLifetime
         }}";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         if (expectedStatus == "Sorted")
         {
-            // Should succeed for Sorted
             jsonResponse.TryGetProperty("errors", out var errors).Should().BeFalse("Update should succeed for Sorted status");
         }
         else // Loaded
         {
-            // Should fail for Loaded
             jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue("Update should fail for Loaded status");
             errors[0].GetProperty("message").GetString().Should().Contain("Cannot edit parcel in status");
         }
@@ -291,7 +266,7 @@ public class ParcelEditTests : IAsyncLifetime
         }";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue();
@@ -320,7 +295,7 @@ public class ParcelEditTests : IAsyncLifetime
         }}";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -348,7 +323,7 @@ public class ParcelEditTests : IAsyncLifetime
         }}";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue($"Cancel should fail for {status} status");
@@ -368,12 +343,12 @@ public class ParcelEditTests : IAsyncLifetime
         }";
 
         // Act
-        var jsonResponse = await GraphQLRequestAsync(mutation);
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
         jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue();
         var errorMessage = errors[0].GetProperty("message").GetString();
-        errorMessage.Should().Match("*eason*"); // Matches "Reason" or "reason"
+        errorMessage.Should().Match("*eason*");
     }
 
     [Fact]
@@ -392,8 +367,8 @@ public class ParcelEditTests : IAsyncLifetime
             }}
         }}";
 
-        // Act - Cancel the parcel
-        await GraphQLRequestAsync(mutation);
+        // Act
+        await _fx.GraphQLRequestAsync(mutation);
 
         // Query audit logs
         var query = $@"query {{
@@ -408,7 +383,7 @@ public class ParcelEditTests : IAsyncLifetime
             }}
         }}";
 
-        var jsonResponse = await GraphQLRequestAsync(query);
+        var jsonResponse = await _fx.GraphQLRequestAsync(query);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -419,7 +394,6 @@ public class ParcelEditTests : IAsyncLifetime
         var auditLogs = jsonResponse.GetProperty("data").GetProperty("parcelAuditLogs").GetProperty("nodes");
         auditLogs.GetArrayLength().Should().BeGreaterThan(0);
 
-        // Find the status change audit log
         var statusAuditLog = auditLogs.EnumerateArray()
             .FirstOrDefault(log => log.GetProperty("propertyName").GetString() == "Status");
 
@@ -453,8 +427,8 @@ public class ParcelEditTests : IAsyncLifetime
             }}
         }}";
 
-        // Act - Update the parcel
-        await GraphQLRequestAsync(mutation);
+        // Act
+        await _fx.GraphQLRequestAsync(mutation);
 
         // Query audit logs
         var query = $@"query {{
@@ -469,7 +443,7 @@ public class ParcelEditTests : IAsyncLifetime
             }}
         }}";
 
-        var jsonResponse = await GraphQLRequestAsync(query);
+        var jsonResponse = await _fx.GraphQLRequestAsync(query);
 
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
@@ -480,7 +454,6 @@ public class ParcelEditTests : IAsyncLifetime
         var auditLogs = jsonResponse.GetProperty("data").GetProperty("parcelAuditLogs").GetProperty("nodes");
         auditLogs.GetArrayLength().Should().BeGreaterThan(0);
 
-        // Verify specific changes were logged
         var loggedProperties = new HashSet<string>();
         foreach (var log in auditLogs.EnumerateArray())
         {
@@ -493,24 +466,4 @@ public class ParcelEditTests : IAsyncLifetime
     }
 
     #endregion
-
-    private static async Task CleanupTestDataAsync(string connectionString)
-    {
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-
-        // Clean up in correct order due to FK constraints
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"ParcelAuditLogs\";", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Parcel\";", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Addresses\" WHERE \"Id\" IN ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222');", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-    }
 }
