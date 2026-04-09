@@ -114,31 +114,34 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         // Arrange
         var parcelId = await CreateTestParcelAsync();
 
-        var mutation = $@"
-            mutation {{
-                changeParcelStatus(
-                    id: ""{parcelId}"",
-                    newStatus: RECEIVED_AT_DEPOT,
-                    locationCity: ""Almaty"",
-                    locationState: ""Almaty"",
-                    locationCountry: ""KZ"",
-                    description: ""Received at depot""
-                ) {{
-                    id
-                    status
-                    trackingNumber
-                    deliveryAttempts
-                }}
-            }}";
+        var mutation = @"mutation ChangeStatus($input: ChangeParcelStatusCommandInput!) {
+            changeParcelStatus(input: $input) {
+                id
+                status
+                trackingNumber
+                deliveryAttempts
+            }
+        }";
+
+        var variables = new
+        {
+            input = new
+            {
+                id = parcelId.ToString(),
+                newStatus = "RECEIVED_AT_DEPOT",
+                locationCity = "Almaty",
+                locationState = "Almaty",
+                locationCountry = "KZ",
+                description = "Received at depot"
+            }
+        };
 
         // Act
-        var response = await ExecuteGraphQLAsync(mutation);
+        var json = await GraphQLRequestAsync(mutation, variables);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await ReadJsonAsync(response);
-        json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
-        var data = json.RootElement.GetProperty("data").GetProperty("changeParcelStatus");
+        json.TryGetProperty("errors", out _).Should().BeFalse();
+        var data = json.GetProperty("data").GetProperty("changeParcelStatus");
         data.GetProperty("status").GetString().Should().Be("RECEIVED_AT_DEPOT");
         data.GetProperty("id").GetString().Should().Be(parcelId.ToString());
     }
@@ -149,24 +152,27 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         // Arrange - Registered cannot go directly to Delivered
         var parcelId = await CreateTestParcelAsync();
 
-        var mutation = $@"
-            mutation {{
-                changeParcelStatus(
-                    id: ""{parcelId}"",
-                    newStatus: DELIVERED
-                ) {{
-                    id
-                    status
-                }}
-            }}";
+        var mutation = @"mutation ChangeStatus($input: ChangeParcelStatusCommandInput!) {
+            changeParcelStatus(input: $input) {
+                id
+                status
+            }
+        }";
+
+        var variables = new
+        {
+            input = new
+            {
+                id = parcelId.ToString(),
+                newStatus = "DELIVERED"
+            }
+        };
 
         // Act
-        var response = await ExecuteGraphQLAsync(mutation);
+        var json = await GraphQLRequestAsync(mutation, variables);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await ReadJsonAsync(response);
-        json.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
+        json.TryGetProperty("errors", out var errors).Should().BeTrue();
         errors.GetArrayLength().Should().BeGreaterThan(0);
         errors[0].GetProperty("message").GetString().Should().Contain("Cannot transition");
     }
@@ -177,50 +183,49 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         // Arrange - Create parcel and advance through 2 statuses
         var parcelId = await CreateTestParcelAsync();
 
+        var changeStatusMutation = @"mutation ChangeStatus($input: ChangeParcelStatusCommandInput!) {
+            changeParcelStatus(input: $input) { id }
+        }";
+
         // Advance to ReceivedAtDepot
-        var transition1 = $@"
-            mutation {{
-                changeParcelStatus(
-                    id: ""{parcelId}"",
-                    newStatus: RECEIVED_AT_DEPOT,
-                    description: ""Arrived at facility""
-                ) {{ id }}
-            }}";
-        await ExecuteGraphQLAsync(transition1);
+        await GraphQLRequestAsync(changeStatusMutation, new
+        {
+            input = new
+            {
+                id = parcelId.ToString(),
+                newStatus = "RECEIVED_AT_DEPOT",
+                description = "Arrived at facility"
+            }
+        });
 
         // Advance to Sorted
-        var transition2 = $@"
-            mutation {{
-                changeParcelStatus(
-                    id: ""{parcelId}"",
-                    newStatus: SORTED,
-                    description: ""Sorted for dispatch""
-                ) {{ id }}
-            }}";
-        await ExecuteGraphQLAsync(transition2);
+        await GraphQLRequestAsync(changeStatusMutation, new
+        {
+            input = new
+            {
+                id = parcelId.ToString(),
+                newStatus = "SORTED",
+                description = "Sorted for dispatch"
+            }
+        });
 
         // Act - Query tracking events
-        var query = $@"
-            query {{
-                trackingEvents(
-                    parcelId: ""{parcelId}"",
-                    first: 10
-                ) {{
-                    nodes {{
-                        eventType
-                        description
-                        operator
-                        timestamp
-                    }}
-                }}
-            }}";
-        var response = await ExecuteGraphQLAsync(query);
+        var query = @"query TrackingEvents($parcelId: UUID!) {
+            trackingEvents(parcelId: $parcelId, first: 10, order: { timestamp: DESC }) {
+                nodes {
+                    eventType
+                    description
+                    operator
+                    timestamp
+                }
+            }
+        }";
+
+        var json = await GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await ReadJsonAsync(response);
-        json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
-        var events = json.RootElement.GetProperty("data").GetProperty("trackingEvents")
+        json.TryGetProperty("errors", out _).Should().BeFalse();
+        var events = json.GetProperty("data").GetProperty("trackingEvents")
             .GetProperty("nodes").EnumerateArray().ToList();
         events.Should().HaveCountGreaterThanOrEqualTo(2);
     }
@@ -232,35 +237,22 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         var parcelId = await CreateTestParcelAsync();
 
         // Query tracking events
-        var query = $@"
-            query {{
-                trackingEvents(
-                    parcelId: ""{parcelId}"",
-                    first: 10
-                ) {{
-                    nodes {{
-                        eventType
-                        description
-                    }}
-                }}
-            }}";
-        var response = await ExecuteGraphQLAsync(query);
+        var query = @"query TrackingEvents($parcelId: UUID!) {
+            trackingEvents(parcelId: $parcelId, first: 10, order: { timestamp: DESC }) {
+                nodes {
+                    eventType
+                    description
+                }
+            }
+        }";
+
+        var json = await GraphQLRequestAsync(query, new { parcelId = parcelId.ToString() });
 
         // Assert - Should have LABEL_CREATED event
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await ReadJsonAsync(response);
-        json.RootElement.TryGetProperty("errors", out _).Should().BeFalse();
-        var events = json.RootElement.GetProperty("data").GetProperty("trackingEvents")
+        json.TryGetProperty("errors", out _).Should().BeFalse();
+        var events = json.GetProperty("data").GetProperty("trackingEvents")
             .GetProperty("nodes").EnumerateArray().ToList();
         events.Should().Contain(e => e.GetProperty("eventType").GetString() == "LABEL_CREATED");
-    }
-
-    private async Task<HttpResponseMessage> ExecuteGraphQLAsync(string query)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/graphql");
-        request.Content = new StringContent(JsonSerializer.Serialize(new { query }), Encoding.UTF8, "application/json");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-        return await _client.SendAsync(request);
     }
 
     private async Task<JsonElement> GraphQLRequestAsync(string query, object? variables = null)
@@ -273,11 +265,5 @@ public class ParcelStatusLifecycleTests : IAsyncLifetime
         var response = await _client.SendAsync(request);
         var responseContent = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<JsonElement>(responseContent);
-    }
-
-    private static async Task<JsonDocument> ReadJsonAsync(HttpResponseMessage response)
-    {
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<JsonDocument>(content)!;
     }
 }

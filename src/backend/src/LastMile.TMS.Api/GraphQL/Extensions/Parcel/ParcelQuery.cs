@@ -70,6 +70,5 @@ public class ParcelQuery
     public IQueryable<TrackingEvent> GetTrackingEvents(
         Guid parcelId, [Service] AppDbContext context)
         => context.TrackingEvents.AsNoTracking()
-            .Where(te => te.ParcelId == parcelId)
-            .OrderByDescending(te => te.Timestamp);
+            .Where(te => te.ParcelId == parcelId);
 }
