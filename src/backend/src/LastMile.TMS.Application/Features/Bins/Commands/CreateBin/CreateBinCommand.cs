@@ -4,7 +4,7 @@ namespace LastMile.TMS.Application.Features.Bins.Commands.CreateBin;
 
 public record CreateBinCommand(
     string? Description,
-    int Aisle,
+    Guid AisleId,
     int Slot,
     int Capacity,
     Guid ZoneId,

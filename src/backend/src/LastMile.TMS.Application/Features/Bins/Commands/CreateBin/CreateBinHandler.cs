@@ -11,28 +11,35 @@ public class CreateBinHandler(IAppDbContext dbContext) : IRequestHandler<CreateB
     public async Task<BinResult> Handle(CreateBinCommand request, CancellationToken cancellationToken)
     {
         var zone = await dbContext.Zones
-            .Include(z => z.Depot)
             .FirstOrDefaultAsync(z => z.Id == request.ZoneId, cancellationToken)
             ?? throw new InvalidOperationException($"Zone with ID {request.ZoneId} not found.");
 
-        var depotNumber = zone.Depot.Name.Length > 0 ? zone.Depot.Name[0].ToString() : "1"; // first char only to keep label <= 20 chars
-        var zoneLetter = zone.Name.Length > 0 ? zone.Name[0].ToString().ToUpperInvariant() : "X";
+        var aisle = await dbContext.Aisles
+            .FirstOrDefaultAsync(a => a.Id == request.AisleId, cancellationToken)
+            ?? throw new InvalidOperationException($"Aisle with ID {request.AisleId} not found.");
+
+        // Validate that the aisle belongs to the specified zone
+        if (aisle.ZoneId != request.ZoneId)
+        {
+            throw new InvalidOperationException($"Aisle with ID {request.AisleId} does not belong to Zone with ID {request.ZoneId}.");
+        }
 
         var bin = new Bin
         {
             Description = request.Description,
-            Aisle = request.Aisle,
+            AisleId = request.AisleId,
             Slot = request.Slot,
             Capacity = request.Capacity,
             IsActive = request.IsActive,
-            ZoneId = request.ZoneId
+            ZoneId = request.ZoneId,
+            Aisle = aisle
         };
 
-        bin.SetLabel(depotNumber, zoneLetter);
-        
+        bin.SetLabel(aisle.Label);
+
         var exists = await dbContext.Bins
             .AnyAsync(b => b.Label == bin.Label, cancellationToken);
-            
+
         if (exists)
         {
             throw new InvalidOperationException($"Bin with label {bin.Label} already exists.");
@@ -45,12 +52,12 @@ public class CreateBinHandler(IAppDbContext dbContext) : IRequestHandler<CreateB
             bin.Id,
             bin.Label,
             bin.Description,
-            bin.Aisle,
             bin.Slot,
             bin.Capacity,
             bin.IsActive,
             bin.ZoneId,
             zone.Name,
+            aisle.Label,
             bin.CreatedAt);
     }
 }

@@ -2,6 +2,7 @@ using HotChocolate;
 using HotChocolate.Types;
 using LastMile.TMS.Api.GraphQL;
 using LastMile.TMS.Api.GraphQL.Common;
+using LastMile.TMS.Api.GraphQL.Extensions.Aisle;
 using LastMile.TMS.Api.GraphQL.Extensions.Bin;
 using LastMile.TMS.Api.GraphQL.Extensions.Depot;
 using LastMile.TMS.Api.GraphQL.Extensions.Driver;
@@ -56,6 +57,10 @@ public static class DependencyInjection
             .AddType<DailyOperatingHoursInputType>()
             .AddType<CreateBinInput>()
             .AddType<UpdateBinInput>()
+            .AddType<AisleQuery>()
+            .AddType<AisleMutation>()
+            .AddType<CreateAisleInput>()
+            .AddType<UpdateAisleInput>()
             .AddType<CreateZoneInput>()
             .AddType<UpdateZoneInput>()
             .AddType<UpdateParcelInput>()

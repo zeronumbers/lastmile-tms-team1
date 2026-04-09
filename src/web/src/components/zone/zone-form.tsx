@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ZoneBoundaryMap } from "@/components/zone/zone-boundary-map";
+import { AisleList } from "@/components/zone/aisle-list";
 import { useZone, useZones, useCreateZone, useUpdateZone } from "@/hooks/use-zones";
 import { useDepots } from "@/hooks/use-depots";
 
@@ -121,8 +122,8 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
           geoJson,
           isActive: values.isActive,
         });
+        router.push("/zones");
       }
-      router.push("/zones");
     } catch (err) {
       console.error(err);
     }
@@ -225,7 +226,12 @@ export function ZoneForm({ zoneId }: ZoneFormProps) {
                 depotLocation={depotLocation}
               />
             </div>
-          </CardContent>
+            </CardContent>
+          {isEditing && zoneId && (
+            <div className="px-6 pb-6">
+              <AisleList zoneId={zoneId} />
+            </div>
+          )}
           <CardFooter className="flex justify-between">
             <Button variant="outline" type="button" onClick={() => router.push("/zones")}>
               Cancel

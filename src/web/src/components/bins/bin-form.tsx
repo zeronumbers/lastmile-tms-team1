@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/form";
 import { useBin, useCreateBin, useUpdateBin } from "@/hooks/use-bins";
 import { useZones } from "@/hooks/use-zones";
+import { useAislesByZone } from "@/hooks/use-aisles";
 
 const binFormSchema = z.object({
   zoneId: z.string().min(1, "Zone is required"),
-  aisle: z.coerce.number().int().min(1, "Aisle must be at least 1"),
+  aisleId: z.string().min(1, "Aisle is required"),
   slot: z.coerce.number().int().min(1, "Slot must be at least 1"),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1").max(10000, "Capacity cannot exceed 10000"),
   description: z.string().optional(),
@@ -56,7 +57,7 @@ export function BinForm({ binId }: BinFormProps) {
     resolver: zodResolver(binFormSchema) as any,
     defaultValues: {
       zoneId: "",
-      aisle: 1,
+      aisleId: "",
       slot: 1,
       capacity: 50,
       description: "",
@@ -65,24 +66,32 @@ export function BinForm({ binId }: BinFormProps) {
   });
 
   const selectedZoneId = form.watch("zoneId");
-  const selectedAisle = form.watch("aisle");
+  const selectedAisleId = form.watch("aisleId");
   const selectedSlot = form.watch("slot");
+
+  // Load aisles for the selected zone
+  const { data: aislesData } = useAislesByZone(selectedZoneId);
+
+  // Clear aisleId when zone changes
+  useEffect(() => {
+    if (!isEditing) {
+      form.setValue("aisleId", "");
+    }
+  }, [selectedZoneId, isEditing, form]);
+
+  const selectedAisle = aislesData?.find((a) => a.id === selectedAisleId);
 
   // Generate preview label based on form values
   const previewLabel = (() => {
-    if (!selectedZoneId || !selectedAisle || !selectedSlot) return null;
-    const zone = zonesData?.find((z) => z.id === selectedZoneId);
-    if (!zone) return null;
-    const depotLetter = zone.depot?.name?.[0] ?? "X";
-    const zoneLetter = zone.name[0]?.toUpperCase() ?? "X";
-    return `D${depotLetter}-${zoneLetter}-A${selectedAisle}-${String(selectedSlot).padStart(2, "0")}`;
+    if (!selectedAisle || !selectedSlot) return null;
+    return `${selectedAisle.label}-${String(selectedSlot).padStart(2, "0")}`;
   })();
 
   useEffect(() => {
     if (bin && zonesData) {
       form.reset({
         zoneId: bin.zoneId,
-        aisle: bin.aisle,
+        aisleId: bin.aisleId,
         slot: bin.slot,
         capacity: bin.capacity,
         description: bin.description ?? "",
@@ -97,7 +106,7 @@ export function BinForm({ binId }: BinFormProps) {
         await updateBin.mutateAsync({
           id: binId,
           zoneId: values.zoneId,
-          aisle: values.aisle,
+          aisleId: values.aisleId,
           slot: values.slot,
           capacity: values.capacity,
           description: values.description,
@@ -106,7 +115,7 @@ export function BinForm({ binId }: BinFormProps) {
       } else {
         await createBin.mutateAsync({
           zoneId: values.zoneId,
-          aisle: values.aisle,
+          aisleId: values.aisleId,
           slot: values.slot,
           capacity: values.capacity,
           description: values.description,
@@ -130,6 +139,7 @@ export function BinForm({ binId }: BinFormProps) {
   }
 
   const zones = zonesData ?? [];
+  const activeAisles = (aislesData ?? []).filter((a) => a.isActive);
 
   return (
     <Card>
@@ -173,17 +183,26 @@ export function BinForm({ binId }: BinFormProps) {
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="aisle"
+                name="aisleId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Aisle</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
-                      />
+                      <select
+                        className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        disabled={!selectedZoneId}
+                      >
+                        <option value="">
+                          {selectedZoneId ? "Select an aisle" : "Select a zone first"}
+                        </option>
+                        {activeAisles.map((aisle) => (
+                          <option key={aisle.id} value={aisle.id}>
+                            {aisle.label} ({aisle.name})
+                          </option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

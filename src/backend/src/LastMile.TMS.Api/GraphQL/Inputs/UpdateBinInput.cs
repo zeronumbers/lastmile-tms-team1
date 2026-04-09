@@ -11,7 +11,7 @@ public class UpdateBinInput : InputObjectType<UpdateBinCommand>
 
         descriptor.Field(b => b.Id).Type<NonNullType<UuidType>>();
         descriptor.Field(b => b.Description).Type<StringType>();
-        descriptor.Field(b => b.Aisle).Type<NonNullType<IntType>>();
+        descriptor.Field(b => b.AisleId).Type<NonNullType<UuidType>>();
         descriptor.Field(b => b.Slot).Type<NonNullType<IntType>>();
         descriptor.Field(b => b.Capacity).Type<NonNullType<IntType>>();
         descriptor.Field(b => b.ZoneId).Type<NonNullType<UuidType>>();

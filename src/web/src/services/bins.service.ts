@@ -14,7 +14,10 @@ const GET_BINS_QUERY = `
       nodes {
         id
         label
-        aisle
+        aisleId
+        aisle {
+          label
+        }
         slot
         capacity
         isActive
@@ -33,7 +36,10 @@ const GET_BINS_BY_ZONE_QUERY = `
       nodes {
         id
         label
-        aisle
+        aisleId
+        aisle {
+          label
+        }
         slot
         capacity
         isActive
@@ -52,7 +58,11 @@ const GET_BIN_QUERY = `
       id
       label
       description
-      aisle
+      aisleId
+      aisle {
+        label
+        name
+      }
       slot
       capacity
       isActive
@@ -74,7 +84,7 @@ const GET_BIN_UTILIZATIONS_QUERY = `
     binUtilizations(zoneId: $zoneId) {
       id
       label
-      aisle
+      aisleLabel
       slot
       capacity
       currentParcelCount
@@ -92,7 +102,7 @@ const CREATE_BIN_MUTATION = `
       id
       label
       description
-      aisle
+      aisleLabel
       slot
       capacity
       isActive
@@ -109,7 +119,7 @@ const UPDATE_BIN_MUTATION = `
       id
       label
       description
-      aisle
+      aisleLabel
       slot
       capacity
       isActive

@@ -151,7 +151,7 @@ export function BinList() {
                       {bin.label}
                     </TableCell>
                     <TableCell>{bin.zone?.name}</TableCell>
-                    <TableCell>{bin.aisle}</TableCell>
+                    <TableCell>{bin.aisle?.label ?? "—"}</TableCell>
                     <TableCell>{bin.slot}</TableCell>
                     <TableCell>{bin.capacity}</TableCell>
                     <TableCell className="w-[200px]">

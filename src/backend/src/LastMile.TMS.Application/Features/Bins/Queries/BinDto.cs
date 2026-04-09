@@ -4,7 +4,6 @@ public record BinDto(
     Guid Id,
     string Label,
     string? Description,
-    int Aisle,
     int Slot,
     int Capacity,
     int CurrentParcelCount,
@@ -13,4 +12,5 @@ public record BinDto(
     Guid ZoneId,
     string ZoneName,
     string DepotName,
+    string AisleLabel,
     DateTimeOffset CreatedAt);

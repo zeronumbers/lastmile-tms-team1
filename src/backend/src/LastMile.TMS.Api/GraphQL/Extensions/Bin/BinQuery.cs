@@ -39,6 +39,7 @@ public class BinQuery
     {
         var binsQuery = context.Bins
             .AsNoTracking()
+            .Include(b => b.Aisle)
             .Include(b => b.Zone)
             .ThenInclude(z => z.Depot)
             .AsQueryable();
@@ -75,7 +76,6 @@ public class BinQuery
                 b.Id,
                 b.Label,
                 b.Description,
-                b.Aisle,
                 b.Slot,
                 b.Capacity,
                 totalParcels,
@@ -84,6 +84,7 @@ public class BinQuery
                 b.ZoneId,
                 b.Zone?.Name ?? "Unknown",
                 b.Zone?.Depot?.Name ?? "Unknown",
+                b.Aisle?.Label ?? "Unknown",
                 b.CreatedAt);
         }).ToList();
     }

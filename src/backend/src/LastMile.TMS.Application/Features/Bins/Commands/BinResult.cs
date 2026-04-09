@@ -4,10 +4,10 @@ public record BinResult(
     Guid Id,
     string Label,
     string? Description,
-    int Aisle,
     int Slot,
     int Capacity,
     bool IsActive,
     Guid ZoneId,
     string ZoneName,
+    string AisleLabel,
     DateTimeOffset CreatedAt);

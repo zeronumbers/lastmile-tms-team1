@@ -66,6 +66,8 @@ public class LabelController(
     {
         var bin = await context.Bins
             .Include(b => b.Zone)
+            .ThenInclude(z => z.Depot)
+            .Include(b => b.Aisle)
             .FirstOrDefaultAsync(b => b.Id == binId);
 
         if (bin == null)
@@ -80,6 +82,8 @@ public class LabelController(
     {
         var bin = await context.Bins
             .Include(b => b.Zone)
+            .ThenInclude(z => z.Depot)
+            .Include(b => b.Aisle)
             .FirstOrDefaultAsync(b => b.Id == binId);
 
         if (bin == null)
@@ -94,6 +98,8 @@ public class LabelController(
     {
         var bin = await context.Bins
             .Include(b => b.Zone)
+            .ThenInclude(z => z.Depot)
+            .Include(b => b.Aisle)
             .FirstOrDefaultAsync(b => b.Id == binId);
 
         if (bin == null)

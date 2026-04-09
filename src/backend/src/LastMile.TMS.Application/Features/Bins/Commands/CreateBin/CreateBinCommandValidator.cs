@@ -6,8 +6,8 @@ public class CreateBinCommandValidator : AbstractValidator<CreateBinCommand>
 {
     public CreateBinCommandValidator()
     {
-        RuleFor(x => x.Aisle)
-            .GreaterThan(0).WithMessage("Aisle must be a positive number.");
+        RuleFor(x => x.AisleId)
+            .NotEmpty().WithMessage("AisleId is required.");
 
         RuleFor(x => x.Slot)
             .GreaterThan(0).WithMessage("Slot must be a positive number.");

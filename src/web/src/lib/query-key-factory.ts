@@ -69,3 +69,9 @@ export const binKeys = {
   utilizations: () => [...binKeys.all, 'utilizations'] as const,
   utilizationsByZone: (zoneId: string) => [...binKeys.utilizations(), { zoneId }] as const,
 };
+
+export const aisleKeys = {
+  all: ['aisles'] as const,
+  lists: () => [...aisleKeys.all, 'list'] as const,
+  list: (zoneId: string) => [...aisleKeys.lists(), { zoneId }] as const,
+};

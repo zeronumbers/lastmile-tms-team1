@@ -17,15 +17,16 @@ public class BinLabelServiceTests
     {
         var depot = new Depot { Name = "1" };
         var zone = new Zone { Name = "B", Depot = depot };
+        var aisle = new Aisle { Name = "A3", Zone = zone };
         var bin = new Bin
         {
-            Aisle = 3,
+            Aisle = aisle,
             Slot = 2,
             Capacity = 50,
             IsActive = true,
             Zone = zone
         };
-        bin.SetLabel("1", "B");
+        bin.SetLabel("D1-B-A3");
         return bin;
     }
 
@@ -58,7 +59,7 @@ public class BinLabelServiceTests
         zpl.Should().Contain("D1-B-A3-02");
         zpl.Should().Contain("Zone: B");
         zpl.Should().Contain("Depot: 1");
-        zpl.Should().Contain("Aisle: 3");
+        zpl.Should().Contain("Aisle: A3");
         zpl.Should().Contain("Slot: 2");
         zpl.Should().Contain("Capacity: 50");
     }

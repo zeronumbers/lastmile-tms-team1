@@ -380,7 +380,11 @@ export interface BinDto {
   id: string;
   label: string;
   description?: string;
-  aisle: number;
+  aisleId: string;
+  aisle: {
+    label: string;
+    name: string;
+  };
   slot: number;
   capacity: number;
   currentParcelCount: number;
@@ -400,7 +404,10 @@ export interface BinDto {
 export interface BinSummaryDto {
   id: string;
   label: string;
-  aisle: number;
+  aisleId: string;
+  aisle: {
+    label: string;
+  };
   slot: number;
   capacity: number;
   isActive: boolean;
@@ -420,7 +427,7 @@ export interface BinResult {
   id: string;
   label: string;
   description?: string;
-  aisle: number;
+  aisleLabel: string;
   slot: number;
   capacity: number;
   isActive: boolean;
@@ -432,7 +439,7 @@ export interface BinResult {
 export interface BinUtilizationDto {
   id: string;
   label: string;
-  aisle: number;
+  aisleLabel: string;
   slot: number;
   capacity: number;
   utilizationPercent: number;
@@ -444,7 +451,7 @@ export interface BinUtilizationDto {
 
 export interface CreateBinInput {
   description?: string;
-  aisle: number;
+  aisleId: string;
   slot: number;
   capacity: number;
   zoneId: string;
@@ -454,9 +461,33 @@ export interface CreateBinInput {
 export interface UpdateBinInput {
   id: string;
   description?: string;
-  aisle: number;
+  aisleId: string;
   slot: number;
   capacity: number;
   zoneId: string;
   isActive: boolean;
+}
+
+// ============================================
+// Aisle
+// ============================================
+
+export interface AisleDto {
+  id: string;
+  name: string;
+  label: string;
+  order: number;
+  isActive: boolean;
+  zoneId: string;
+}
+
+export interface AisleResult {
+  id: string;
+  name: string;
+  label: string;
+  order: number;
+  isActive: boolean;
+  zoneId: string;
+  zoneName: string;
+  createdAt: string;
 }

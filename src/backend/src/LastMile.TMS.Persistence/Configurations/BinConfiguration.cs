@@ -17,9 +17,6 @@ public class BinConfiguration : IEntityTypeConfiguration<Bin>
         builder.Property(b => b.Description)
             .HasMaxLength(500);
 
-        builder.Property(b => b.Aisle)
-            .IsRequired();
-
         builder.Property(b => b.Slot)
             .IsRequired();
 
@@ -32,10 +29,16 @@ public class BinConfiguration : IEntityTypeConfiguration<Bin>
 
         builder.HasIndex(b => b.Label).IsUnique();
         builder.HasIndex(b => b.ZoneId);
+        builder.HasIndex(b => b.AisleId);
+
+        builder.HasOne(b => b.Aisle)
+            .WithMany(a => a.Bins)
+            .HasForeignKey(b => b.AisleId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(b => b.Zone)
-            .WithMany(z => z.Bins)
+            .WithMany()
             .HasForeignKey(b => b.ZoneId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
