@@ -1,14 +1,10 @@
 using System.Text.Json;
 using FluentAssertions;
-using LastMile.TMS.Domain.Enums;
-using Microsoft.Extensions.DependencyInjection;
-using LastMile.TMS.Persistence;
-using Npgsql;
 
 namespace LastMile.TMS.Api.IntegrationTests;
 
 [Collection("Integration")]
-public class ParcelEditTests : IAsyncLifetime
+public class ParcelEditTests
 {
     private readonly IntegrationFixture _fx;
 
@@ -17,71 +13,82 @@ public class ParcelEditTests : IAsyncLifetime
         _fx = fx;
     }
 
-    public async Task InitializeAsync()
+    private async Task<Guid> CreateTestParcelAsync()
     {
-        await CleanupTestDataAsync();
-        await SeedTestDataAsync();
+        var mutation = @"mutation CreateParcel($input: CreateParcelCommandInput!) {
+            createParcel(input: $input) { id }
+        }";
+
+        var variables = new
+        {
+            input = new
+            {
+                description = "Edit test parcel",
+                serviceType = "Standard",
+                shipperAddress = new
+                {
+                    street1 = "123 Shipper St",
+                    city = "Almaty",
+                    state = "Almaty",
+                    postalCode = "050000",
+                    countryCode = "KZ"
+                },
+                recipientAddress = new
+                {
+                    street1 = "456 Recipient Ave",
+                    city = "Almaty",
+                    state = "Almaty",
+                    postalCode = "050000",
+                    countryCode = "KZ"
+                },
+                weight = 1.5,
+                weightUnit = "Kg",
+                length = 30.0,
+                width = 20.0,
+                height = 15.0,
+                dimensionUnit = "Cm",
+                declaredValue = 100.00
+            }
+        };
+
+        var json = await _fx.GraphQLRequestAsync(mutation, variables);
+
+        if (json.TryGetProperty("errors", out var errors))
+        {
+            throw new InvalidOperationException($"CreateParcel failed: {errors.GetRawText()}");
+        }
+
+        return Guid.Parse(json.GetProperty("data").GetProperty("createParcel").GetProperty("id").GetString()!);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
-
-    private async Task SeedTestDataAsync()
+    private async Task<Guid> CreateParcelWithStatusAsync(params string[] statuses)
     {
-        var connectionString = _fx.ConnectionString;
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
+        var parcelId = await CreateTestParcelAsync();
 
-        // Create test addresses
-        await using (var cmd = new NpgsqlCommand(@"
-            INSERT INTO ""Addresses"" (""Id"", ""Street1"", ""City"", ""State"", ""PostalCode"", ""CountryCode"", ""CreatedAt"", ""CreatedBy"", ""IsDeleted"")
-            VALUES
-                ('11111111-1111-1111-1111-111111111111', '123 Shipper St', 'Almaty', 'Almaty', '050000', 'KZ', NOW(), 'test-seeder', false),
-                ('22222222-2222-2222-2222-222222222222', '456 Recipient Ave', 'Almaty', 'Almaty', '050000', 'KZ', NOW(), 'test-seeder', false)
-            ON CONFLICT (""Id"") DO NOTHING;", connection))
+        var mutation = @"mutation ChangeStatus($input: ChangeParcelStatusCommandInput!) {
+            changeParcelStatus(input: $input) { id }
+        }";
+
+        foreach (var status in statuses)
         {
-            await cmd.ExecuteNonQueryAsync();
+            var variables = new
+            {
+                input = new
+                {
+                    id = parcelId.ToString(),
+                    newStatus = status
+                }
+            };
+
+            var json = await _fx.GraphQLRequestAsync(mutation, variables);
+
+            if (json.TryGetProperty("errors", out var errors))
+            {
+                throw new InvalidOperationException($"ChangeParcelStatus to {status} failed: {errors.GetRawText()}");
+            }
         }
 
-        // Create test parcels with different statuses
-        await using (var cmd = new NpgsqlCommand(@"
-            INSERT INTO ""Parcel"" (
-                ""Id"", ""TrackingNumber"", ""Status"", ""Description"", ""ServiceType"",
-                ""Weight"", ""WeightUnit"", ""Length"", ""Width"", ""Height"", ""DimensionUnit"",
-                ""ShipperAddressId"", ""RecipientAddressId"", ""DeclaredValue"", ""Currency"",
-                ""DeliveryAttempts"", ""CreatedAt"", ""CreatedBy"", ""IsDeleted""
-            )
-            VALUES
-                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'LMTT1-0403-0001', 'Registered', 'Test Parcel - Registered', 'Standard', 1.5, 'Kg', 30, 20, 15, 'Cm', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 100.00, 'USD', 0, NOW(), 'test-seeder', false),
-                ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'LMTT1-0403-0002', 'Sorted', 'Test Parcel - Sorted', 'Express', 2.0, 'Kg', 40, 30, 20, 'Cm', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 150.00, 'USD', 0, NOW(), 'test-seeder', false),
-                ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'LMTT1-0403-0003', 'Loaded', 'Test Parcel - Loaded', 'Standard', 1.8, 'Kg', 35, 25, 18, 'Cm', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 120.00, 'USD', 0, NOW(), 'test-seeder', false)
-            ON CONFLICT (""Id"") DO NOTHING;", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-    }
-
-    private async Task CleanupTestDataAsync()
-    {
-        var connectionString = _fx.ConnectionString;
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"TrackingEvents\" WHERE \"ParcelId\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"ParcelAuditLogs\" WHERE \"ParcelId\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Parcel\" WHERE \"Id\" IN ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cccccccc-cccc-cccc-cccc-cccccccccccc');", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new NpgsqlCommand("DELETE FROM \"Addresses\" WHERE \"Id\" IN ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222');", connection))
-        {
-            await cmd.ExecuteNonQueryAsync();
-        }
+        return parcelId;
     }
 
     #region UpdateParcel Tests
@@ -90,10 +97,12 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task UpdateParcel_ShipperAddress_ShouldUpdateAddressInPlace()
     {
         // Arrange
-        var mutation = @"mutation {
-            updateParcel(input: {
-                id: ""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"",
-                shipperAddress: {
+        var parcelId = await CreateTestParcelAsync();
+
+        var mutation = $@"mutation {{
+            updateParcel(input: {{
+                id: ""{parcelId}"",
+                shipperAddress: {{
                     street1: ""789 New Shipper Blvd"",
                     street2: ""Apt 5"",
                     city: ""Almaty"",
@@ -105,17 +114,17 @@ public class ParcelEditTests : IAsyncLifetime
                     companyName: ""New Shipper Co"",
                     phone: ""+77771234567"",
                     email: ""newshipper@example.com""
-                }
-            }) {
+                }}
+            }}) {{
                 id
-                shipperAddress {
+                shipperAddress {{
                     id
                     street1
                     city
                     postalCode
-                }
-            }
-        }";
+                }}
+            }}
+        }}";
 
         // Act
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
@@ -137,10 +146,12 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task UpdateParcel_RecipientAddress_ShouldUpdateAddressInPlace()
     {
         // Arrange
-        var mutation = @"mutation {
-            updateParcel(input: {
-                id: ""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"",
-                recipientAddress: {
+        var parcelId = await CreateTestParcelAsync();
+
+        var mutation = $@"mutation {{
+            updateParcel(input: {{
+                id: ""{parcelId}"",
+                recipientAddress: {{
                     street1: ""999 New Recipient Way"",
                     city: ""Almaty"",
                     state: ""Almaty"",
@@ -149,17 +160,17 @@ public class ParcelEditTests : IAsyncLifetime
                     isResidential: true,
                     contactName: ""New Recipient Person"",
                     phone: ""+77779876543""
-                }
-            }) {
+                }}
+            }}) {{
                 id
-                recipientAddress {
+                recipientAddress {{
                     id
                     street1
                     contactName
                     postalCode
-                }
-            }
-        }";
+                }}
+            }}
+        }}";
 
         // Act
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
@@ -180,23 +191,25 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task UpdateParcel_WithValidData_OnRegisteredParcel_ShouldUpdateAndLogChanges()
     {
         // Arrange
-        var mutation = @"mutation {
-            updateParcel(input: {
-                id: ""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"",
+        var parcelId = await CreateTestParcelAsync();
+
+        var mutation = $@"mutation {{
+            updateParcel(input: {{
+                id: ""{parcelId}"",
                 description: ""UPDATED - Registered Parcel"",
                 weight: 2.5,
                 length: 35,
                 width: 25,
                 height: 20,
                 parcelType: PACKAGE
-            }) {
+            }}) {{
                 id
                 trackingNumber
                 status
                 description
                 weight
-            }
-        }";
+            }}
+        }}";
 
         // Act
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
@@ -212,12 +225,12 @@ public class ParcelEditTests : IAsyncLifetime
         result.GetProperty("weight").GetDecimal().Should().Be(2.5m);
     }
 
-    [Theory]
-    [InlineData("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "Sorted")]  // Allowed
-    [InlineData("cccccccc-cccc-cccc-cccc-cccccccccccc", "Loaded")]   // Not allowed
-    public async Task UpdateParcel_Validation_ShouldOnlyAllowEditableStatuses(string parcelId, string expectedStatus)
+    [Fact]
+    public async Task UpdateParcel_OnSortedParcel_ShouldSucceed()
     {
-        // Arrange
+        // Arrange - Registered → ReceivedAtDepot → Sorted
+        var parcelId = await CreateParcelWithStatusAsync("RECEIVED_AT_DEPOT", "SORTED");
+
         var mutation = $@"mutation {{
             updateParcel(input: {{
                 id: ""{parcelId}"",
@@ -237,33 +250,56 @@ public class ParcelEditTests : IAsyncLifetime
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
-        if (expectedStatus == "Sorted")
-        {
-            jsonResponse.TryGetProperty("errors", out var errors).Should().BeFalse("Update should succeed for Sorted status");
-        }
-        else // Loaded
-        {
-            jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue("Update should fail for Loaded status");
-            errors[0].GetProperty("message").GetString().Should().Contain("Cannot edit parcel in status");
-        }
+        jsonResponse.TryGetProperty("errors", out var errors).Should().BeFalse("Update should succeed for Sorted status");
+    }
+
+    [Fact]
+    public async Task UpdateParcel_OnLoadedParcel_ShouldFail()
+    {
+        // Arrange - Registered → ReceivedAtDepot → Sorted → Staged → Loaded
+        var parcelId = await CreateParcelWithStatusAsync("RECEIVED_AT_DEPOT", "SORTED", "STAGED", "LOADED");
+
+        var mutation = $@"mutation {{
+            updateParcel(input: {{
+                id: ""{parcelId}"",
+                description: ""Should this work?"",
+                weight: 2.5,
+                length: 35,
+                width: 25,
+                height: 20,
+                parcelType: PACKAGE
+            }}) {{
+                id
+                description
+            }}
+        }}";
+
+        // Act
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
+
+        // Assert
+        jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue("Update should fail for Loaded status");
+        errors[0].GetProperty("message").GetString().Should().Contain("Cannot edit parcel in status");
     }
 
     [Fact]
     public async Task UpdateParcel_WithInvalidWeight_ShouldReturnValidationError()
     {
         // Arrange
-        var mutation = @"mutation {
-            updateParcel(input: {
-                id: ""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"",
+        var parcelId = await CreateTestParcelAsync();
+
+        var mutation = $@"mutation {{
+            updateParcel(input: {{
+                id: ""{parcelId}"",
                 weight: -1.5,
                 length: 35,
                 width: 25,
                 height: 20,
                 serviceType: STANDARD
-            }) {
+            }}) {{
                 id
-            }
-        }";
+            }}
+        }}";
 
         // Act
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
@@ -277,12 +313,12 @@ public class ParcelEditTests : IAsyncLifetime
 
     #region CancelParcel Tests
 
-    [Theory]
-    [InlineData("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Registered")]
-    [InlineData("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "Sorted")]
-    public async Task CancelParcel_WhenInAllowedStatus_ShouldCancel(string parcelId, string status)
+    [Fact]
+    public async Task CancelParcel_WhenRegistered_ShouldCancel()
     {
         // Arrange
+        var parcelId = await CreateTestParcelAsync();
+
         var mutation = $@"mutation {{
             cancelParcel(input: {{
                 id: ""{parcelId}"",
@@ -300,18 +336,49 @@ public class ParcelEditTests : IAsyncLifetime
         // Assert
         if (jsonResponse.TryGetProperty("errors", out var errors))
         {
-            throw new Exception($"Cancel failed for {status}: {errors.GetRawText()}");
+            throw new Exception($"Cancel failed for Registered: {errors.GetRawText()}");
         }
 
         var result = jsonResponse.GetProperty("data").GetProperty("cancelParcel");
         result.GetProperty("status").GetString().Should().Be("CANCELLED");
     }
 
-    [Theory]
-    [InlineData("cccccccc-cccc-cccc-cccc-cccccccccccc", "Loaded")]
-    public async Task CancelParcel_WhenInDisallowedStatus_ShouldReturnError(string parcelId, string status)
+    [Fact]
+    public async Task CancelParcel_WhenSorted_ShouldCancel()
     {
-        // Arrange
+        // Arrange - Registered → ReceivedAtDepot → Sorted
+        var parcelId = await CreateParcelWithStatusAsync("RECEIVED_AT_DEPOT", "SORTED");
+
+        var mutation = $@"mutation {{
+            cancelParcel(input: {{
+                id: ""{parcelId}"",
+                reason: ""Customer requested cancellation""
+            }}) {{
+                id
+                trackingNumber
+                status
+            }}
+        }}";
+
+        // Act
+        var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
+
+        // Assert
+        if (jsonResponse.TryGetProperty("errors", out var errors))
+        {
+            throw new Exception($"Cancel failed for Sorted: {errors.GetRawText()}");
+        }
+
+        var result = jsonResponse.GetProperty("data").GetProperty("cancelParcel");
+        result.GetProperty("status").GetString().Should().Be("CANCELLED");
+    }
+
+    [Fact]
+    public async Task CancelParcel_WhenLoaded_ShouldReturnError()
+    {
+        // Arrange - Registered → ReceivedAtDepot → Sorted → Staged → Loaded
+        var parcelId = await CreateParcelWithStatusAsync("RECEIVED_AT_DEPOT", "SORTED", "STAGED", "LOADED");
+
         var mutation = $@"mutation {{
             cancelParcel(input: {{
                 id: ""{parcelId}"",
@@ -326,7 +393,7 @@ public class ParcelEditTests : IAsyncLifetime
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
 
         // Assert
-        jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue($"Cancel should fail for {status} status");
+        jsonResponse.TryGetProperty("errors", out var errors).Should().BeTrue("Cancel should fail for Loaded status");
         errors[0].GetProperty("message").GetString().Should().Contain("Cannot cancel parcel");
     }
 
@@ -334,13 +401,15 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task CancelParcel_WithoutReason_ShouldReturnValidationError()
     {
         // Arrange
-        var mutation = @"mutation {
-            cancelParcel(input: {
-                id: ""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa""
-            }) {
+        var parcelId = await CreateTestParcelAsync();
+
+        var mutation = $@"mutation {{
+            cancelParcel(input: {{
+                id: ""{parcelId}""
+            }}) {{
                 id
-            }
-        }";
+            }}
+        }}";
 
         // Act
         var jsonResponse = await _fx.GraphQLRequestAsync(mutation);
@@ -355,7 +424,7 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task CancelParcel_ShouldCreateAuditLogWithReason()
     {
         // Arrange
-        var parcelId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        var parcelId = await CreateTestParcelAsync();
         var reason = "Customer requested cancellation";
         var mutation = $@"mutation {{
             cancelParcel(input: {{
@@ -411,7 +480,7 @@ public class ParcelEditTests : IAsyncLifetime
     public async Task UpdateParcel_ShouldCreateAuditLogEntries()
     {
         // Arrange
-        var parcelId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        var parcelId = await CreateTestParcelAsync();
         var mutation = $@"mutation {{
             updateParcel(input: {{
                 id: ""{parcelId}"",
