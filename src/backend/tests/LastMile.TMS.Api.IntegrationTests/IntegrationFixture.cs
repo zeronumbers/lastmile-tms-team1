@@ -20,6 +20,7 @@ public class IntegrationFixture : IAsyncLifetime
     public IntegrationTestWebApplicationFactory Factory { get; private set; } = null!;
     public HttpClient Client { get; private set; } = null!;
     public string AccessToken { get; private set; } = null!;
+    public string ConnectionString => _postgreSqlContainer.GetConnectionString();
 
     public async Task InitializeAsync()
     {

@@ -12,7 +12,9 @@ public interface IAppDbContext
     DbSet<Parcel> Parcels { get; }
     DbSet<Role> Roles { get; }
     DbSet<Route> Routes { get; }
+    DbSet<ParcelAuditLog> ParcelAuditLogs { get; }
     DbSet<ShiftSchedule> ShiftSchedules { get; }
+    DbSet<TrackingEvent> TrackingEvents { get; }
     DbSet<User> Users { get; }
     DbSet<Vehicle> Vehicles { get; }
     DbSet<VehicleJourney> VehicleJourneys { get; }

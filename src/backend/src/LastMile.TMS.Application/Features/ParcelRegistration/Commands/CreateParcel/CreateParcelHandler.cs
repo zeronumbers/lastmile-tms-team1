@@ -1,5 +1,6 @@
 using LastMile.TMS.Application.Common.Interfaces;
 using LastMile.TMS.Domain.Entities;
+using LastMile.TMS.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
@@ -9,10 +10,11 @@ namespace LastMile.TMS.Application.Features.ParcelRegistration.Commands.CreatePa
 public class CreateParcelHandler(
     IAppDbContext dbContext,
     IGeocodingService geocodingService,
-    Domain.Services.IDeliveryDateCalculator deliveryDateCalculator)
-    : IRequestHandler<CreateParcelCommand, ParcelResult>
+    Domain.Services.IDeliveryDateCalculator deliveryDateCalculator,
+    ICurrentUserService currentUserService)
+    : IRequestHandler<CreateParcelCommand, CreateParcelResult>
 {
-    public async Task<ParcelResult> Handle(CreateParcelCommand request, CancellationToken cancellationToken)
+    public async Task<CreateParcelResult> Handle(CreateParcelCommand request, CancellationToken cancellationToken)
     {
         // 1. Build full address strings for geocoding
         var shipperFullAddress = BuildFullAddress(request.ShipperAddress);
@@ -98,10 +100,18 @@ public class CreateParcelHandler(
         dbContext.Addresses.Add(shipperAddress);
         dbContext.Addresses.Add(recipientAddress);
         dbContext.Parcels.Add(parcel);
+        dbContext.TrackingEvents.Add(new TrackingEvent
+        {
+            ParcelId = parcel.Id,
+            Timestamp = DateTimeOffset.UtcNow,
+            EventType = EventType.LabelCreated,
+            Description = "Label created",
+            Operator = currentUserService.UserId
+        });
         await dbContext.SaveChangesAsync(cancellationToken);
 
         // 9. Return result
-        return new ParcelResult(
+        return new CreateParcelResult(
             parcel.Id,
             parcel.TrackingNumber,
             parcel.Status,

@@ -350,13 +350,17 @@ Infrastructure/
 
 | Layer | File | Purpose |
 |---|---|---|
-| **API** | `ParcelQueries.cs` | `GetParcels` (paginated, full-text search on recipient + address), `GetParcel` (by ID), `GetParcelByTrackingNumber` |
-| **API** | `ParcelMutations.cs` | `CreateParcel` |
+| **API** | `ParcelQueries.cs` | `GetParcels` (paginated, full-text search on recipient + address), `GetParcel` (by ID), `GetParcelByTrackingNumber`, `GetTrackingEvents` (paginated, by parcel ID) |
+| **API** | `ParcelMutations.cs` | `CreateParcel`, `UpdateParcel`, `CancelParcel`, `ChangeParcelStatus` |
 | **API** | `Inputs/ParcelInputs.cs` | `CreateParcelInput`, `ParcelAddressInput` |
-| **APP** | `Commands/CreateParcel/*` | Command + Handler (geocodes both addresses, auto-assigns zone via geocoding, calculates delivery date) + Validator |
+| **APP** | `Commands/CreateParcel/*` | Command + Handler (geocodes both addresses, auto-assigns zone via geocoding, calculates delivery date, creates `LabelCreated` tracking event) + Validator |
+| **APP** | `Commands/UpdateParcel/*` | Command + Handler (validates editable status, creates `ParcelAuditLog` entries for changed fields) + Validator |
+| **APP** | `Commands/CancelParcel/*` | Command + Handler (validates cancellable status, requires reason, creates `ParcelAuditLog` + `Exception` tracking event) + Validator |
+| **APP** | `Commands/ChangeParcelStatus/*` | Command + Handler (validates transition, creates `TrackingEvent` with mapped `EventType`, increments `DeliveryAttempts` on `FailedAttempt`) + Validator |
 | **DOM** | `Entities/Parcel.cs` | TrackingNumber (auto-generated `LM-yyMMdd-XXXXXX`), Status (state machine), ServiceType, ShipperAddress, RecipientAddress, Weight, Dimensions, ZoneId |
 | **DOM** | `Entities/ParcelContentItem.cs` | Description, Quantity, Value |
-| **DOM** | `Entities/TrackingEvent.cs` | EventType, Description, Location, Timestamp |
+| **DOM** | `Entities/TrackingEvent.cs` | EventType, Description, Location, Timestamp, Operator, DelayReason |
+| **DOM** | `Entities/ParcelAuditLog.cs` | PropertyName, OldValue, NewValue, ChangedBy (field-level change tracking) |
 | **DOM** | `Entities/DeliveryConfirmation.cs` | SignaturePhoto, ConfirmedBy, DeliveredAt |
 | **PERS** | `ParcelConfiguration.cs` | EF Core FluentAPI, tsvector columns for search |
 
@@ -371,6 +375,34 @@ Registered -> ReceivedAtDepot -> Sorted -> Staged -> Loaded -> OutForDelivery ->
                                                                       v
                                                               ReturnedToDepot
 ```
+
+**Cancellation**: Allowed from `Registered`, `ReceivedAtDepot`, `Sorted`, `Staged`. Uses a separate `CancelParcel` command (requires mandatory `Reason`, creates both `ParcelAuditLog` and `TrackingEvent`).
+
+**Exception**: Can be entered from any status except `Delivered`. Requires `ExceptionReason`.
+
+**ParcelStatus → EventType mapping**:
+
+| ParcelStatus | EventType |
+|---|---|
+| ReceivedAtDepot | ArrivedAtFacility |
+| Sorted | DepartedFacility |
+| Staged | HeldAtFacility |
+| Loaded | InTransit |
+| OutForDelivery | OutForDelivery |
+| Delivered | Delivered |
+| FailedAttempt | DeliveryAttempted |
+| ReturnedToDepot | Returned |
+| Exception | Exception |
+
+`EventType` is separate from `ParcelStatus` because tracking events are customer-facing timeline entries (e.g. `LabelCreated` has no matching `ParcelStatus`, and `ArrivedAtFacility` is a customer-friendly name for `ReceivedAtDepot`). The mapping is handled in `ChangeParcelStatusCommandHandler`.
+
+**ParcelAuditLog vs TrackingEvent**:
+
+| | ParcelAuditLog | TrackingEvent |
+|---|---|---|
+| Audience | Admins, ops managers | Customers, end users |
+| Tracks | Field-level changes (old value → new value) | Lifecycle events (what happened, when, where) |
+| Created by | UpdateParcel, CancelParcel | CreateParcel, CancelParcel, ChangeParcelStatus |
 
 #### Routes
 
@@ -600,7 +632,7 @@ src/components/<feature>/*.tsx             -- React components
 |---|---|---|
 | Depots | GetDepots, GetDepot | CreateDepot, UpdateDepot, DeleteDepot |
 | Drivers | GetDrivers, GetDriver | CreateDriver, UpdateDriver, DeleteDriver |
-| Parcels | GetParcels, GetParcel, GetParcelByTrackingNumber | CreateParcel |
+| Parcels | GetParcels, GetParcel, GetParcelByTrackingNumber, GetTrackingEvents | CreateParcel, UpdateParcel, CancelParcel, ChangeParcelStatus |
 | Routes | GetRoutes, GetRoute, GetAvailableDrivers | CreateRoute, UpdateRoute, DeleteRoute, ChangeRouteStatus, AssignDriverToRoute |
 | Users | GetUsers, GetUser, GetUserManagementLookups | CreateUser, UpdateUser, ActivateUser, DeactivateUser, ResetPassword, CompletePasswordReset |
 | Vehicles | GetVehicles, GetVehicle, GetVehicleHistory | CreateVehicle, UpdateVehicle, DeleteVehicle, ChangeVehicleStatus |
