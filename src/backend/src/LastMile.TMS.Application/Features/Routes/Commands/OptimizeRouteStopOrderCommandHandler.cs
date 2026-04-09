@@ -14,7 +14,6 @@ public class OptimizeRouteStopOrderCommandHandler(
 {
     public async Task<RouteDto> Handle(OptimizeRouteStopOrderCommand request, CancellationToken cancellationToken)
     {
-        // Load route with stops — avoid deep Zone.Depot.Address include to prevent circular dependency
         var route = await context.Routes
             .Include(r => r.RouteStops).ThenInclude(s => s.Parcels)
             .Include(r => r.Vehicle)
@@ -65,22 +64,13 @@ public class OptimizeRouteStopOrderCommandHandler(
 
         var optimizedIds = optimizer.OptimizeStopOrder(geoStops, depotLat, depotLon);
 
-        // Update sequence numbers in two phases to avoid unique index collision on (RouteId, SequenceNumber):
-        // Phase 1: Clear all sequence numbers to negative values
-        foreach (var stop in route.RouteStops)
-        {
-            stop.SequenceNumber = -stop.SequenceNumber - 1000;
-        }
-        await context.SaveChangesAsync(cancellationToken);
-
-        // Phase 2: Assign final optimized sequence numbers
+        // Update sequence numbers
         for (var i = 0; i < optimizedIds.Count; i++)
         {
             var stop = route.RouteStops.First(s => s.Id == optimizedIds[i]);
             stop.SequenceNumber = i + 1;
         }
 
-        // Recalculate distance with optimized stop order
         route.RecalculateDistance(depotGeo);
 
         await context.SaveChangesAsync(cancellationToken);

@@ -32,9 +32,6 @@ public class RouteStopConfiguration : IEntityTypeConfiguration<RouteStop>
         builder.Property(s => s.GeoLocation)
             .HasColumnType("geometry (point)");
 
-        // Unique composite index: one sequence number per route
-        builder.HasIndex(s => new { s.RouteId, s.SequenceNumber }).IsUnique();
-
         // Spatial index for proximity queries
         builder.HasIndex(s => s.GeoLocation);
 
