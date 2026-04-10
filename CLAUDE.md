@@ -22,6 +22,7 @@ npm ci
 npm run lint
 npm run build
 npm run dev    # dev server on port 3000
+NEXT_PUBLIC_API_URL=http://localhost npm run generate
 ```
 
 ### Full Stack (Docker)

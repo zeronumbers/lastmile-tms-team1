@@ -552,6 +552,9 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Property<Guid>("RecipientAddressId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("RouteStopId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ServiceType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -593,6 +596,8 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.HasIndex("EstimatedDeliveryDate");
 
                     b.HasIndex("RecipientAddressId");
+
+                    b.HasIndex("RouteStopId");
 
                     b.HasIndex("ShipperAddressId");
 
@@ -990,6 +995,9 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Property<Guid?>("VehicleId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ZoneId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DriverId");
@@ -1000,7 +1008,79 @@ namespace LastMile.TMS.Persistence.Migrations
 
                     b.HasIndex("VehicleId");
 
+                    b.HasIndex("ZoneId");
+
                     b.ToTable("Routes");
+                });
+
+            modelBuilder.Entity("LastMile.TMS.Domain.Entities.RouteStop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessInstructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ArrivalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DepartureTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EstimatedServiceMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<Point>("GeoLocation")
+                        .HasColumnType("geometry (point)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RouteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Street1")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GeoLocation");
+
+                    b.HasIndex("RouteId");
+
+                    b.ToTable("RouteStops", (string)null);
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.ShiftSchedule", b =>
@@ -1867,6 +1947,11 @@ namespace LastMile.TMS.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("LastMile.TMS.Domain.Entities.RouteStop", "RouteStop")
+                        .WithMany("Parcels")
+                        .HasForeignKey("RouteStopId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("LastMile.TMS.Domain.Entities.Address", "ShipperAddress")
                         .WithMany("ShipperParcels")
                         .HasForeignKey("ShipperAddressId")
@@ -1881,6 +1966,8 @@ namespace LastMile.TMS.Persistence.Migrations
                     b.Navigation("Bin");
 
                     b.Navigation("RecipientAddress");
+
+                    b.Navigation("RouteStop");
 
                     b.Navigation("ShipperAddress");
 
@@ -1940,9 +2027,27 @@ namespace LastMile.TMS.Persistence.Migrations
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("LastMile.TMS.Domain.Entities.Zone", "Zone")
+                        .WithMany()
+                        .HasForeignKey("ZoneId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Driver");
 
                     b.Navigation("Vehicle");
+
+                    b.Navigation("Zone");
+                });
+
+            modelBuilder.Entity("LastMile.TMS.Domain.Entities.RouteStop", b =>
+                {
+                    b.HasOne("LastMile.TMS.Domain.Entities.Route", "Route")
+                        .WithMany("RouteStops")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Route");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.ShiftSchedule", b =>
@@ -2180,7 +2285,14 @@ namespace LastMile.TMS.Persistence.Migrations
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Route", b =>
                 {
+                    b.Navigation("RouteStops");
+
                     b.Navigation("VehicleJourneys");
+                });
+
+            modelBuilder.Entity("LastMile.TMS.Domain.Entities.RouteStop", b =>
+                {
+                    b.Navigation("Parcels");
                 });
 
             modelBuilder.Entity("LastMile.TMS.Domain.Entities.Zone", b =>

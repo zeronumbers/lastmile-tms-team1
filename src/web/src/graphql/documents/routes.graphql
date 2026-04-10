@@ -5,6 +5,14 @@ query GetRoutes($where: RouteFilterInput, $order: [RouteSortInput!], $first: Int
       name
       status
       plannedStartTime
+      actualStartTime
+      actualEndTime
+      totalDistanceKm
+      totalParcelCount
+      zoneId
+      zone {
+        name
+      }
       vehicleId
       vehicle {
         registrationPlate
@@ -37,6 +45,10 @@ query GetRoute($id: UUID!) {
     actualEndTime
     totalDistanceKm
     totalParcelCount
+    zoneId
+    zone {
+      name
+    }
     vehicleId
     vehicle {
       registrationPlate
@@ -46,6 +58,21 @@ query GetRoute($id: UUID!) {
       user {
         firstName
         lastName
+      }
+    }
+    routeStops {
+      id
+      sequenceNumber
+      status
+      arrivalTime
+      departureTime
+      estimatedServiceMinutes
+      accessInstructions
+      street1
+      parcels {
+        id
+        trackingNumber
+        status
       }
     }
     createdAt
@@ -68,14 +95,40 @@ query GetAvailableDrivers($date: DateTime!) {
   }
 }
 
+query GetRoutesForMap($where: RouteFilterInput, $first: Int) {
+  routes(where: $where, first: $first) {
+    nodes {
+      id
+      name
+      status
+      zoneId
+      routeStops {
+        id
+        sequenceNumber
+        status
+        geoLocation {
+          coordinates
+        }
+        street1
+        parcels {
+          id
+          trackingNumber
+          status
+        }
+      }
+    }
+  }
+}
+
 mutation CreateRoute($input: CreateRouteCommandInput!) {
   createRoute(input: $input) {
     id
     name
     status
     plannedStartTime
-    totalDistanceKm
-    totalParcelCount
+    zoneId
+    zoneName
+    estimatedStopCount
     vehicleId
     vehiclePlate
     driverId
@@ -90,8 +143,9 @@ mutation UpdateRoute($input: UpdateRouteCommandInput!) {
     name
     status
     plannedStartTime
-    totalDistanceKm
-    totalParcelCount
+    zoneId
+    zoneName
+    estimatedStopCount
     vehicleId
     vehiclePlate
     driverId
@@ -131,5 +185,114 @@ mutation AssignDriverToRoute($routeId: UUID!, $driverId: UUID) {
     driverName
     vehicleId
     vehiclePlate
+  }
+}
+
+mutation AddParcelsToRoute($input: AddParcelsToRouteCommandInput!) {
+  addParcelsToRoute(input: $input) {
+    id
+    name
+    status
+    totalParcelCount
+    estimatedStopCount
+    stops {
+      id
+      sequenceNumber
+      street1
+      parcelCount
+      parcels {
+        id
+        trackingNumber
+        status
+      }
+    }
+  }
+}
+
+mutation AutoAssignParcelsByZone($input: AutoAssignParcelsByZoneCommandInput!) {
+  autoAssignParcelsByZone(input: $input) {
+    id
+    name
+    status
+    totalParcelCount
+    estimatedStopCount
+    stops {
+      id
+      sequenceNumber
+      street1
+      parcelCount
+      parcels {
+        id
+        trackingNumber
+        status
+      }
+    }
+  }
+}
+
+mutation RemoveParcelsFromRoute($input: RemoveParcelsFromRouteCommandInput!) {
+  removeParcelsFromRoute(input: $input) {
+    id
+    name
+    status
+    totalParcelCount
+    estimatedStopCount
+    stops {
+      id
+      sequenceNumber
+      street1
+      parcelCount
+      parcels {
+        id
+        trackingNumber
+        status
+      }
+    }
+  }
+}
+
+mutation ReorderRouteStops($input: ReorderRouteStopsCommandInput!) {
+  reorderRouteStops(input: $input) {
+    id
+    name
+    status
+    stops {
+      id
+      sequenceNumber
+      street1
+      parcelCount
+    }
+  }
+}
+
+mutation OptimizeRouteStopOrder($input: OptimizeRouteStopOrderCommandInput!) {
+  optimizeRouteStopOrder(input: $input) {
+    id
+    name
+    status
+    stops {
+      id
+      sequenceNumber
+      street1
+      parcelCount
+    }
+  }
+}
+
+mutation DispatchRoute($input: DispatchRouteCommandInput!) {
+  dispatchRoute(input: $input) {
+    id
+    name
+    status
+    plannedStartTime
+    actualStartTime
+    actualEndTime
+    totalDistanceKm
+    totalParcelCount
+    vehicleId
+    vehiclePlate
+    driverId
+    driverName
+    createdAt
   }
 }

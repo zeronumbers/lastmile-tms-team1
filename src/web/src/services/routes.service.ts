@@ -3,28 +3,50 @@ import { apiFetch } from "@/lib/api";
 import {
   GetRoutesDocument,
   GetRouteDocument,
+  GetRoutesForMapDocument,
   GetAvailableDriversDocument,
   CreateRouteDocument,
   UpdateRouteDocument,
   DeleteRouteDocument,
   ChangeRouteStatusDocument,
   AssignDriverToRouteDocument,
+  AddParcelsToRouteDocument,
+  AutoAssignParcelsByZoneDocument,
+  RemoveParcelsFromRouteDocument,
+  ReorderRouteStopsDocument,
+  OptimizeRouteStopOrderDocument,
+  DispatchRouteDocument,
   type GetRoutesQuery,
   type GetRouteQuery,
+  type GetRoutesForMapQuery,
   type GetAvailableDriversQuery,
   type CreateRouteMutation,
   type UpdateRouteMutation,
   type ChangeRouteStatusMutation,
   type AssignDriverToRouteMutation,
+  type AddParcelsToRouteMutation,
+  type AutoAssignParcelsByZoneMutation,
+  type RemoveParcelsFromRouteMutation,
+  type ReorderRouteStopsMutation,
+  type OptimizeRouteStopOrderMutation,
+  type DispatchRouteMutation,
   type CreateRouteCommandInput,
   type UpdateRouteCommandInput,
+  type AddParcelsToRouteCommandInput,
+  type AutoAssignParcelsByZoneCommandInput,
+  type RemoveParcelsFromRouteCommandInput,
+  type ReorderRouteStopsCommandInput,
+  type OptimizeRouteStopOrderCommandInput,
+  type DispatchRouteCommandInput,
   type RouteStatus,
 } from "@/graphql/generated/graphql";
 
 export interface FetchRoutesFilters {
   status?: RouteStatus;
+  date?: string;
   first?: number;
   after?: string;
+  order?: Record<string, string>[];
 }
 
 export type RouteListItem = NonNullable<NonNullable<GetRoutesQuery["routes"]>["nodes"]>[number];
@@ -33,15 +55,53 @@ export async function fetchRoutes(
   token: string,
   filters?: FetchRoutesFilters
 ): Promise<GetRoutesQuery["routes"]> {
+  const where: Record<string, unknown> = {};
+  if (filters?.status) {
+    where.status = { eq: filters.status };
+  }
+  if (filters?.date) {
+    const dayStart = new Date(filters.date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    where.plannedStartTime = { gte: dayStart.toISOString(), lt: dayEnd.toISOString() };
+  }
+
   const response = await apiFetch<{ data: GetRoutesQuery }>("/api/graphql", {
     method: "POST",
     token,
     body: JSON.stringify({
       query: print(GetRoutesDocument),
       variables: {
-        where: filters?.status ? { status: { eq: filters.status } } : undefined,
+        where: Object.keys(where).length > 0 ? where : undefined,
+        order: filters?.order,
         first: filters?.first ?? 25,
         after: filters?.after || null,
+      },
+    }),
+  });
+  return response.data.routes;
+}
+
+export async function fetchRoutesForMap(
+  token: string,
+  date: string
+): Promise<GetRoutesForMapQuery["routes"]> {
+  const dayStart = new Date(date);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const response = await apiFetch<{ data: GetRoutesForMapQuery }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(GetRoutesForMapDocument),
+      variables: {
+        where: {
+          plannedStartTime: { gte: dayStart.toISOString(), lt: dayEnd.toISOString() },
+        },
+        first: 100,
       },
     }),
   });
@@ -153,4 +213,94 @@ export async function assignDriverToRoute(
     }),
   });
   return response.data.assignDriverToRoute;
+}
+
+export async function addParcelsToRoute(
+  token: string,
+  input: AddParcelsToRouteCommandInput
+): Promise<AddParcelsToRouteMutation["addParcelsToRoute"]> {
+  const response = await apiFetch<{ data: AddParcelsToRouteMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(AddParcelsToRouteDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.addParcelsToRoute;
+}
+
+export async function autoAssignParcelsByZone(
+  token: string,
+  input: AutoAssignParcelsByZoneCommandInput
+): Promise<AutoAssignParcelsByZoneMutation["autoAssignParcelsByZone"]> {
+  const response = await apiFetch<{ data: AutoAssignParcelsByZoneMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(AutoAssignParcelsByZoneDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.autoAssignParcelsByZone;
+}
+
+export async function removeParcelsFromRoute(
+  token: string,
+  input: RemoveParcelsFromRouteCommandInput
+): Promise<RemoveParcelsFromRouteMutation["removeParcelsFromRoute"]> {
+  const response = await apiFetch<{ data: RemoveParcelsFromRouteMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(RemoveParcelsFromRouteDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.removeParcelsFromRoute;
+}
+
+export async function reorderRouteStops(
+  token: string,
+  input: ReorderRouteStopsCommandInput
+): Promise<ReorderRouteStopsMutation["reorderRouteStops"]> {
+  const response = await apiFetch<{ data: ReorderRouteStopsMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(ReorderRouteStopsDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.reorderRouteStops;
+}
+
+export async function optimizeRouteStopOrder(
+  token: string,
+  input: OptimizeRouteStopOrderCommandInput
+): Promise<OptimizeRouteStopOrderMutation["optimizeRouteStopOrder"]> {
+  const response = await apiFetch<{ data: OptimizeRouteStopOrderMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(OptimizeRouteStopOrderDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.optimizeRouteStopOrder;
+}
+
+export async function dispatchRoute(
+  token: string,
+  input: DispatchRouteCommandInput
+): Promise<DispatchRouteMutation["dispatchRoute"]> {
+  const response = await apiFetch<{ data: DispatchRouteMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(DispatchRouteDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.dispatchRoute;
 }

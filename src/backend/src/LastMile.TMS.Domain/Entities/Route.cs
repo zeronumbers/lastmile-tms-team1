@@ -1,5 +1,7 @@
 using LastMile.TMS.Domain.Common;
 using LastMile.TMS.Domain.Enums;
+using LastMile.TMS.Domain.Extensions;
+using NetTopologySuite.Geometries;
 
 namespace LastMile.TMS.Domain.Entities;
 
@@ -19,7 +21,11 @@ public class Route : BaseAuditableEntity
     public Guid? DriverId { get; set; }
     public Driver? Driver { get; set; }
 
+    public Guid? ZoneId { get; set; }
+    public Zone? Zone { get; set; }
+
     public ICollection<VehicleJourney> VehicleJourneys { get; set; } = [];
+    public ICollection<RouteStop> RouteStops { get; set; } = [];
 
     // Status transition validation
     public bool CanTransitionTo(RouteStatus newStatus)
@@ -61,5 +67,44 @@ public class Route : BaseAuditableEntity
         }
 
         DriverId = driverId;
+    }
+
+    public void RecalculateTotals()
+    {
+        TotalParcelCount = RouteStops.Sum(s => s.Parcels.Count(p => p.RouteStopId == s.Id));
+    }
+
+    public void RecalculateDistance(Point? depotGeoLocation)
+    {
+        if (depotGeoLocation is null || RouteStops.Count == 0)
+        {
+            TotalDistanceKm = 0;
+            return;
+        }
+
+        var orderedStops = RouteStops
+            .OrderBy(s => s.SequenceNumber)
+            .Where(s => s.GeoLocation is not null)
+            .Select(s => s.GeoLocation!)
+            .ToList();
+
+        if (orderedStops.Count == 0)
+        {
+            TotalDistanceKm = 0;
+            return;
+        }
+
+        var totalMeters = 0.0;
+
+        // Depot to first stop
+        totalMeters += depotGeoLocation.HaversineDistanceMeters(orderedStops[0]);
+
+        // Between consecutive stops
+        for (var i = 1; i < orderedStops.Count; i++)
+        {
+            totalMeters += orderedStops[i - 1].HaversineDistanceMeters(orderedStops[i]);
+        }
+
+        TotalDistanceKm = (decimal)Math.Round(totalMeters / 1000.0, 2);
     }
 }

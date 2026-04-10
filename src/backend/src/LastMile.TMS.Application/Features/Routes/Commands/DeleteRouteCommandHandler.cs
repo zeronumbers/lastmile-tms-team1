@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using LastMile.TMS.Application.Common.Interfaces;
 using LastMile.TMS.Domain.Enums;
 
+using ParcelStatus = LastMile.TMS.Domain.Enums.ParcelStatus;
+
 namespace LastMile.TMS.Application.Features.Routes.Commands;
 
 public class DeleteRouteCommandHandler(IAppDbContext context) : IRequestHandler<DeleteRouteCommand, bool>
@@ -11,6 +13,7 @@ public class DeleteRouteCommandHandler(IAppDbContext context) : IRequestHandler<
     {
         var route = await context.Routes
             .Include(r => r.Vehicle)
+            .Include(r => r.RouteStops).ThenInclude(s => s.Parcels)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
         if (route is null)
@@ -19,6 +22,19 @@ public class DeleteRouteCommandHandler(IAppDbContext context) : IRequestHandler<
         }
 
         var oldVehicleId = route.VehicleId;
+
+        // Clear parcel RouteStopIds and transition back to Sorted before cascade delete removes the stops
+        foreach (var stop in route.RouteStops)
+        {
+            foreach (var parcel in stop.Parcels)
+            {
+                parcel.RouteStopId = null;
+                if (parcel.Status == ParcelStatus.Staged)
+                {
+                    parcel.Status = ParcelStatus.Sorted;
+                }
+            }
+        }
 
         context.Routes.Remove(route);
 
