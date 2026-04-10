@@ -2,7 +2,7 @@
 
 > GraphQL | Clean Architecture | .NET 10
 >
-> April 6, 2026
+> April 10, 2026
 
 ---
 
@@ -238,15 +238,18 @@ Domain/
     Depot.cs, Address.cs, Zone.cs
     Driver.cs, ShiftSchedule.cs, DayOff.cs
     Vehicle.cs, VehicleJourney.cs
-    Route.cs
+    Route.cs, RouteStop.cs
     Parcel.cs, ParcelContentItem.cs, ParcelWatcher.cs
     DeliveryConfirmation.cs, TrackingEvent.cs
+    Bin.cs, Aisle.cs
   Enums/
-    ParcelStatus, RouteStatus, VehicleStatus, VehicleType
+    ParcelStatus, RouteStatus, RouteStopStatus, VehicleStatus, VehicleType
     ServiceType, ParcelType
     WeightUnit, DimensionUnit
     UserStatus, EventType, ExceptionReason
     PermissionModule, PermissionScope
+  Extensions/
+    GeoExtensions.cs            -- Haversine distance calculation
   Services/
     DeliveryDateCalculator.cs   -- IDeliveryDateCalculator singleton
 ```
@@ -256,10 +259,11 @@ Domain/
 ```
 BaseEntity
   └── BaseAuditableEntity
-        ├── Depot, Zone, Vehicle, Route, Parcel, Driver
+        ├── Depot, Zone, Vehicle, Route, RouteStop, Parcel, Driver
         ├── ShiftSchedule, DayOff, VehicleJourney
         ├── Address, DeliveryConfirmation, TrackingEvent
-        └── ParcelContentItem, ParcelWatcher
+        ├── ParcelContentItem, ParcelWatcher
+        ├── Bin, Aisle
 
 IdentityUser<Guid> + IBaseAuditableEntity
   └── User
@@ -270,7 +274,11 @@ IdentityRole<Guid> + IBaseAuditableEntity
 
 **Domain behavior:**
 - `Parcel` -- state machine (`CanTransitionTo`/`TransitionTo`), factory method `Create()`, tracking number generation (`LM-yyMMdd-XXXXXX`)
-- `Route` -- state machine (Draft -> InProgress -> Completed), timestamps `ActualStartTime`/`ActualEndTime`, `AssignDriver(driverId)` (Draft only)
+- `Route` -- state machine (Draft -> InProgress -> Completed), timestamps `ActualStartTime`/`ActualEndTime`, `AssignDriver(driverId)` (Draft only), `RecalculateTotals()` (recounts parcels across stops), `RecalculateDistance(depotGeoLocation)` (Haversine via `GeoExtensions`), `ZoneId` for territory assignment, `RouteStops` ordered collection
+- `RouteStop` -- state machine (Pending -> Arrived -> Completed; Pending -> Skipped), auto-timestamps on `ArrivalTime`/`DepartureTime`, `GeoLocation` for spatial queries, `SequenceNumber` for ordering, `Parcels` collection
+- `GeoExtensions` -- `HaversineDistanceMeters` static method for Point-to-Point and coordinate-based distance calculation
+- `Bin` -- auto-generated unique label (`{aisleLabel}-{slot:D2}`), FK to Aisle and Zone, capacity tracking, `IsActive` flag
+- `Aisle` -- auto-generated label (`D{depotFirstChar}-{zoneFirstChar}-A{order}`), FK to Zone, ordered collection of Bins
 - `Vehicle` -- state machine (Available -> InUse/Maintenance/Retired), `AssignToRoute(parcelCount)`, `ReleaseFromRoute()`, `Update()` factory
 - `User` -- `Activate()`/`Deactivate()`/`Suspend()`, `Create()` factory with email validation, `UpdateName/Phone/Email`, `IsSystemAdmin` protection
 - `Zone` -- `SetBoundaryFromGeoJson()` parses GeoJSON Polygon via NetTopologySuite
@@ -357,7 +365,7 @@ Infrastructure/
 | **APP** | `Commands/UpdateParcel/*` | Command + Handler (validates editable status, creates `ParcelAuditLog` entries for changed fields) + Validator |
 | **APP** | `Commands/CancelParcel/*` | Command + Handler (validates cancellable status, requires reason, creates `ParcelAuditLog` + `Exception` tracking event) + Validator |
 | **APP** | `Commands/ChangeParcelStatus/*` | Command + Handler (validates transition, creates `TrackingEvent` with mapped `EventType`, increments `DeliveryAttempts` on `FailedAttempt`) + Validator |
-| **DOM** | `Entities/Parcel.cs` | TrackingNumber (auto-generated `LM-yyMMdd-XXXXXX`), Status (state machine), ServiceType, ShipperAddress, RecipientAddress, Weight, Dimensions, ZoneId |
+| **DOM** | `Entities/Parcel.cs` | TrackingNumber (auto-generated `LM-yyMMdd-XXXXXX`), Status (state machine), ServiceType, ShipperAddress, RecipientAddress, Weight, Dimensions, ZoneId, BinId (FK to Bin, nullable), RouteStopId (FK to RouteStop, nullable) |
 | **DOM** | `Entities/ParcelContentItem.cs` | Description, Quantity, Value |
 | **DOM** | `Entities/TrackingEvent.cs` | EventType, Description, Location, Timestamp, Operator, DelayReason |
 | **DOM** | `Entities/ParcelAuditLog.cs` | PropertyName, OldValue, NewValue, ChangedBy (field-level change tracking) |
@@ -408,26 +416,63 @@ Registered -> ReceivedAtDepot -> Sorted -> Staged -> Loaded -> OutForDelivery ->
 
 | Layer | File | Purpose |
 |---|---|---|
-| **API** | `RouteQueries.cs` | `GetRoutes` (paginated list), `GetRoute` (by ID), `GetAvailableDrivers` (by date) via AppDbContext |
-| **API** | `RouteMutations.cs` | `CreateRoute`, `UpdateRoute`, `DeleteRoute`, `ChangeRouteStatus`, `AssignDriverToRoute` |
+| **API** | `RouteQueries.cs` | `GetRoutes` (paginated list), `GetRoute` (by ID with stops), `GetRoutesForMap` (optimized for map view), `GetAvailableDrivers` (by date) via AppDbContext |
+| **API** | `RouteMutations.cs` | `CreateRoute`, `UpdateRoute`, `DeleteRoute`, `ChangeRouteStatus`, `AssignDriverToRoute`, `OptimizeRouteStopOrder`, `DispatchRoute`, `AddParcelsToRoute`, `RemoveParcelsFromRoute`, `AutoAssignParcelsByZone`, `ReorderRouteStops` |
 | **API** | `Inputs/CreateRouteInput.cs` | Input type for CreateRoute |
 | **API** | `Inputs/UpdateRouteInput.cs` | Input type for UpdateRoute |
+| **API** | `Inputs/AddParcelsToRouteInput.cs` | Input type for parcel assignment |
+| **API** | `Inputs/RemoveParcelsFromRouteInput.cs` | Input type for parcel removal |
+| **API** | `Inputs/OptimizeRouteStopOrderInput.cs` | Input type for stop optimization |
+| **API** | `Inputs/ReorderRouteStopsInput.cs` | Input type for manual stop reordering |
 | **APP** | `Commands/CreateRoute/*` | Command + Handler (validates vehicle not retired) + Validator |
 | **APP** | `Commands/UpdateRoute/*` | Command + Handler (vehicle + driver assignment, day-off conflict validation) + Validator |
 | **APP** | `Commands/DeleteRoute/*` | Command + Handler |
 | **APP** | `Commands/ChangeRouteStatus/*` | Command + Handler (manages VehicleJourney, assigns/releases vehicle) |
 | **APP** | `Commands/AssignDriverToRoute/*` | Command + Handler (validates Draft status, day-off conflict) |
-| **APP** | `Routes/DriverDayOffValidator.cs` | Shared day-off conflict validation (used by UpdateDriver and AssignDriverToRoute) |
-| **APP** | `Routes/AvailableDriverDto.cs` | DTO for available drivers query (shift info, assigned routes) |
-| **DOM** | `Entities/Route.cs` | Name, Status (state machine), PlannedStartTime, ActualStartTime/EndTime, TotalDistanceKm, TotalParcelCount, VehicleId, DriverId |
+| **APP** | `Commands/OptimizeRouteStopOrder/*` | Command + Handler (NN+2-opt TSP optimization via RouteStopOptimizer) + Validator |
+| **APP** | `Commands/DispatchRoute/*` | Command + Handler (validates driver/vehicle, checks parcels Loaded, creates VehicleJourney, transitions parcels to OutForDelivery, creates tracking events) + Validator |
+| **APP** | `Commands/AddParcelsToRoute/*` | Command + Handler (bulk parcel assignment) + Validator |
+| **APP** | `Commands/RemoveParcelsFromRoute/*` | Command + Handler (parcel removal) + Validator |
+| **APP** | `Commands/AutoAssignParcelsByZone/*` | Command + Handler (auto-assigns all Sorted parcels in zone to route) + Validator |
+| **APP** | `Commands/ReorderRouteStops/*` | Command + Handler (manual stop reordering) + Validator |
+| **APP** | `Services/RouteStopOptimizer.cs` | NN + 2-opt TSP algorithm, Haversine distance matrix |
+| **APP** | `Services/RouteStopGeoInfo.cs` | Record for stop geospatial data (StopId, Lat, Lon, OriginalIndex) |
+| **APP** | `RouteDto.cs` | Result DTOs |
+| **APP** | `RouteMapping.cs` | Entity-to-DTO mapping |
+| **APP** | `DriverDayOffValidator.cs` | Shared day-off conflict validation (used by UpdateDriver and AssignDriverToRoute) |
+| **APP** | `AvailableDriverDto.cs` | DTO for available drivers query (shift info, assigned routes) |
+| **DOM** | `Entities/Route.cs` | Name, Status (state machine), PlannedStartTime, ActualStartTime/EndTime, TotalDistanceKm, TotalParcelCount, VehicleId, DriverId, ZoneId, RouteStops collection |
+| **DOM** | `Entities/RouteStop.cs` | SequenceNumber, Status (state machine), ArrivalTime, DepartureTime, EstimatedServiceMinutes, AccessInstructions, Street1, GeoLocation, RouteId FK, Parcels collection |
 | **DOM** | `Entities/VehicleJourney.cs` | VehicleId, RouteId, StartMileageKm, EndMileageKm, DistanceKm (computed) |
+| **DOM** | `Extensions/GeoExtensions.cs` | Haversine distance calculation (static, Point-to-Point and coordinate-based) |
 | **PERS** | `RouteConfiguration.cs` | EF Core FluentAPI |
+| **PERS** | `RouteStopConfiguration.cs` | EF Core FluentAPI, spatial index on GeoLocation |
 
 **Route status state machine:**
 
 ```
 Draft -> InProgress -> Completed
 ```
+
+**RouteStop status state machine:**
+
+```
+Pending -> Arrived -> Completed
+   |
+   +-------> Skipped
+```
+
+**Route optimization:**
+- `RouteStopOptimizer` uses Nearest Neighbor (start from closest stop to depot) + 2-opt refinement
+- Distance calculated via Haversine formula (`GeoExtensions.HaversineDistanceMeters`)
+- Only operates on Draft routes with 2+ stops
+
+**Route dispatch workflow:**
+1. Validates driver and vehicle are assigned
+2. Validates all parcels are in `Loaded` status
+3. Creates `VehicleJourney` record
+4. Transitions parcels to `OutForDelivery`
+5. Creates `TrackingEvent` entries for each parcel
 
 #### Users
 
@@ -496,6 +541,50 @@ Maintenance    Retired
 | **APP** | `Commands/DeleteZone/*` | Command + Handler (hard delete) |
 | **DOM** | `Entities/Zone.cs` | Name, BoundaryGeometry (PostGIS Polygon), IsActive, DepotId |
 | **PERS** | `ZoneConfiguration.cs` | EF Core FluentAPI, spatial index |
+
+#### Bins
+
+| Layer | File | Purpose |
+|---|---|---|
+| **API** | `BinQuery.cs` | `GetBins` (paginated list), `GetBin` (by ID), `GetBinUtilizations` (utilization metrics) via AppDbContext |
+| **API** | `BinMutation.cs` | `CreateBin`, `UpdateBin`, `DeleteBin` |
+| **API** | `Inputs/CreateBinInput.cs` | Input type for CreateBin |
+| **API** | `Inputs/UpdateBinInput.cs` | Input type for UpdateBin |
+| **APP** | `Commands/CreateBin/*` | Command + Handler (validates zone-aisle relationship, generates label) + Validator |
+| **APP** | `Commands/UpdateBin/*` | Command + Handler + Validator |
+| **APP** | `Commands/DeleteBin/*` | Command + Handler |
+| **APP** | `Queries/BinDto.cs` | BinResult, BinDto, BinUtilizationDto, BinSummaryDto |
+| **DOM** | `Entities/Bin.cs` | Label (auto-generated, unique), Description, Slot, Capacity, IsActive, ZoneId FK, AisleId FK |
+| **PERS** | `BinConfiguration.cs` | EF Core FluentAPI, unique index on Label |
+
+**Bin label format:** `{aisleLabel}-{slot:D2}` (e.g., `D1-B-A3-02`)
+
+**Bin utilization:** Counts parcels with `Sorted`/`Staged` status assigned to each bin, calculates `(currentParcels / capacity) * 100`.
+
+**Business rules:**
+- Bin labels are auto-generated and must be unique
+- Bins must belong to an Aisle that belongs to their Zone
+- Capacity validation: 1--10,000
+- Cascade delete from Aisle to Bins
+
+#### Aisles
+
+| Layer | File | Purpose |
+|---|---|---|
+| **API** | `AisleQuery.cs` | `GetAisles` (paginated list), `GetAisle` (by ID) via AppDbContext |
+| **API** | `AisleMutation.cs` | `CreateAisle`, `UpdateAisle`, `DeleteAisle` |
+| **API** | `Inputs/CreateAisleInput.cs` | Input type for CreateAisle |
+| **API** | `Inputs/UpdateAisleInput.cs` | Input type for UpdateAisle |
+| **APP** | `Commands/CreateAisle/*` | Command + Handler (generates label) + Validator |
+| **APP** | `Commands/UpdateAisle/*` | Command + Handler + Validator |
+| **APP** | `Commands/DeleteAisle/*` | Command + Handler |
+| **APP** | `Queries/AisleResult.cs` | AisleResult, AisleDto |
+| **DOM** | `Entities/Aisle.cs` | Name, Label (auto-generated), Order, IsActive, ZoneId FK, Bins collection |
+| **PERS** | `AisleConfiguration.cs` | EF Core FluentAPI |
+
+**Aisle label format:** `D{depotFirstChar}-{zoneFirstChar}-A{order}` (e.g., `D1-B-A3`)
+
+**Hierarchy:** Zone -> Aisle -> Bin. Bins are addressable via the compound label path.
 
 ### 2.7 Dependency Injection
 
@@ -633,7 +722,9 @@ src/components/<feature>/*.tsx             -- React components
 | Depots | GetDepots, GetDepot | CreateDepot, UpdateDepot, DeleteDepot |
 | Drivers | GetDrivers, GetDriver | CreateDriver, UpdateDriver, DeleteDriver |
 | Parcels | GetParcels, GetParcel, GetParcelByTrackingNumber, GetTrackingEvents | CreateParcel, UpdateParcel, CancelParcel, ChangeParcelStatus |
-| Routes | GetRoutes, GetRoute, GetAvailableDrivers | CreateRoute, UpdateRoute, DeleteRoute, ChangeRouteStatus, AssignDriverToRoute |
+| Routes | GetRoutes, GetRoute, GetRoutesForMap, GetAvailableDrivers | CreateRoute, UpdateRoute, DeleteRoute, ChangeRouteStatus, AssignDriverToRoute, OptimizeRouteStopOrder, DispatchRoute, AddParcelsToRoute, RemoveParcelsFromRoute, AutoAssignParcelsByZone, ReorderRouteStops |
+| Bins | GetBins, GetBin, GetBinUtilizations | CreateBin, UpdateBin, DeleteBin |
+| Aisles | GetAisles, GetAisle | CreateAisle, UpdateAisle, DeleteAisle |
 | Users | GetUsers, GetUser, GetUserManagementLookups | CreateUser, UpdateUser, ActivateUser, DeactivateUser, ResetPassword, CompletePasswordReset |
 | Vehicles | GetVehicles, GetVehicle, GetVehicleHistory | CreateVehicle, UpdateVehicle, DeleteVehicle, ChangeVehicleStatus |
 | Zones | GetZones, GetZone | CreateZone, UpdateZone, DeleteZone |
@@ -649,6 +740,10 @@ app/
   (protected)/
     layout.tsx                       -- Auth-guarded layout with sidebar
     dashboard/page.tsx               -- Dashboard
+    bins/
+      page.tsx                       -- Bin list
+      new/page.tsx                   -- Create bin
+      [id]/page.tsx                  -- Bin detail
     depots/
       page.tsx                       -- Depot list
       new/page.tsx                   -- Create depot
@@ -689,7 +784,7 @@ app/
 - **Mock data** via `NEXT_PUBLIC_USE_MOCK_DATA=true` -- lazy-loaded, operation-name-based response mapping
 - **Components never call services directly** -- always through TanStack Query hooks
 - **Forms**: react-hook-form + zod validation
-- **Maps**: Mapbox GL + `@mapbox/mapbox-gl-draw` for zone boundary editing
+- **Maps**: Mapbox GL + `@mapbox/mapbox-gl-draw` for zone boundary editing; route map view with color-coded stops, zone boundaries, and depot markers
 - **Real-time**: SignalR via `@microsoft/signalr`
 - **Tables**: `@tanstack/react-table` headless components
 - **Charts**: recharts for dashboard
@@ -839,7 +934,7 @@ The following configurations do not call `builder.ToTable(...)`:
 - `ParcelWatcherConfiguration.cs`
 - `TrackingEventConfiguration.cs`
 
-EF Core defaults to the DbSet property name (pluralized), which is correct, but inconsistent with 11 other configurations that explicitly call `ToTable()`. This makes the convention ambiguous for future developers.
+EF Core defaults to the DbSet property name (pluralized), which is correct, but inconsistent with the rest of the configurations that explicitly call `ToTable()`. This makes the convention ambiguous for future developers.
 
 **Fix**: Add explicit `ToTable()` calls to all 7 configurations to match the established pattern.
 
@@ -895,9 +990,9 @@ Both approaches work and HotChocolate handles them correctly, but the inconsiste
 
 **Location**: `src/backend/src/LastMile.TMS.Api/GraphQL/Extensions/Route/`, `Vehicle/`
 
-Depots, Zones, and Drivers define explicit `EntityObjectType<T>` subclasses (e.g., `DepotType`, `ZoneType`, `DriverType`) for fine-grained control over field exposure, filtering, and sorting. Routes and Vehicles have no `*Type.cs` files -- they rely entirely on HotChocolate schema inference from their DTO classes.
+Depots, Zones, and Drivers define explicit `EntityObjectType<T>` subclasses (e.g., `DepotType`, `ZoneType`, `DriverType`) for fine-grained control over field exposure, filtering, and sorting. Routes, Vehicles, Bins, and Aisles have no `*Type.cs` files -- they rely entirely on HotChocolate schema inference from their DTO classes.
 
-**Fix**: Add `RouteType.cs` and `VehicleType.cs` with explicit field configurations, filter types, and sort types. Lower priority since schema inference works correctly for simple DTOs.
+**Fix**: Add `RouteType.cs`, `VehicleType.cs`, `BinType.cs`, and `AisleType.cs` with explicit field configurations, filter types, and sort types. Lower priority since schema inference works correctly for simple DTOs.
 
 ---
 
@@ -907,14 +1002,14 @@ Depots, Zones, and Drivers define explicit `EntityObjectType<T>` subclasses (e.g
 
 The project has a full GraphQL code-generation pipeline (`@graphql-codegen/cli` + `client-preset`) configured to produce TypeScript types from `.graphql` documents. Routes now imports from generated types -- services use `TypedDocumentNode`-based queries and generated input types. Other domains still use hand-written types:
 
-- `src/web/src/lib/graphql/types.ts` -- Depots, Zones, Drivers (DTOs, enums, inputs)
+- `src/web/src/lib/graphql/types.ts` -- Depots, Zones, Drivers, Bins, Aisles (DTOs, enums, inputs)
 - `src/web/src/types/vehicle.ts` -- Vehicles
 - `src/web/src/types/user.ts` -- Users
 - `src/web/src/types/parcel.ts` -- Parcels
 
 These services still use raw template-string queries (not the `gql` tag or `TypedDocumentNode`) and call `apiFetch` directly rather than a generated GraphQL client.
 
-**Fix**: Migrate remaining domains (Depots, Zones, Drivers, Vehicles, Users) to use the codegen pipeline, following the Routes pattern. Each domain needs: `.graphql` documents with operations, `npm run codegen`, then update services to import generated types.
+**Fix**: Migrate remaining domains (Depots, Zones, Drivers, Vehicles, Users, Bins, Aisles) to use the codegen pipeline, following the Routes pattern. Each domain needs: `.graphql` documents with operations, `npm run codegen`, then update services to import generated types.
 
 **Note on dynamic queries (parcels list)**: The parcels page has a column picker that lets users toggle ~28 columns on/off, producing a dynamic GraphQL selection set at runtime. This is handled by `build-parcels-query.ts` + `column-registry.ts`, which construct the query string from the selected column's `graphqlFields` mappings.
 
