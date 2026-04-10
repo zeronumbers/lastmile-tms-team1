@@ -68,4 +68,8 @@ public class RouteMutation
     [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
     public async Task<RouteDto> OptimizeRouteStopOrder(OptimizeRouteStopOrderCommand input, [Service] IMediator mediator)
         => await mediator.Send(input);
+
+    [Authorize(Roles = [Role.RoleNames.Admin, Role.RoleNames.OperationsManager, Role.RoleNames.Dispatcher])]
+    public async Task<RouteDto> DispatchRoute(DispatchRouteCommand input, [Service] IMediator mediator)
+        => await mediator.Send(input);
 }

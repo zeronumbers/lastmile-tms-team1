@@ -253,3 +253,21 @@ mutation OptimizeRouteStopOrder($input: OptimizeRouteStopOrderCommandInput!) {
     }
   }
 }
+
+mutation DispatchRoute($input: DispatchRouteCommandInput!) {
+  dispatchRoute(input: $input) {
+    id
+    name
+    status
+    plannedStartTime
+    actualStartTime
+    actualEndTime
+    totalDistanceKm
+    totalParcelCount
+    vehicleId
+    vehiclePlate
+    driverId
+    driverName
+    createdAt
+  }
+}

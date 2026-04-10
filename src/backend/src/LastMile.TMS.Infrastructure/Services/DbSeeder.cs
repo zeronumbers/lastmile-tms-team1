@@ -581,14 +581,17 @@ public class DbSeeder : IDbSeeder
             UserId = driverUser.Id
         };
 
-        // Add a workday shift schedule (Monday, 8:00–17:00)
-        driver.ShiftSchedules.Add(new ShiftSchedule
+        // Add shift schedules (Mon–Sun, 8:00–18:00)
+        foreach (var day in Enum.GetValues<DayOfWeek>())
         {
-            DayOfWeek = DayOfWeek.Monday,
-            OpenTime = new TimeOnly(8, 0),
-            CloseTime = new TimeOnly(17, 0),
-            Driver = driver
-        });
+            driver.ShiftSchedules.Add(new ShiftSchedule
+            {
+                DayOfWeek = day,
+                OpenTime = new TimeOnly(8, 0),
+                CloseTime = new TimeOnly(18, 0),
+                Driver = driver
+            });
+        }
 
         // Add a day off (next Sunday)
         var nextSunday = DateTimeOffset.UtcNow.AddDays(DayOfWeek.Sunday - DateTimeOffset.UtcNow.DayOfWeek);
@@ -601,7 +604,7 @@ public class DbSeeder : IDbSeeder
         _context.Drivers.Add(driver);
         await _context.SaveChangesAsync(CancellationToken.None);
 
-        _logger.LogInformation("Seeded driver {LicenseNumber} for user {Email} with 1 shift schedule and 1 day off",
+        _logger.LogInformation("Seeded driver {LicenseNumber} for user {Email} with 7 shift schedules and 1 day off",
             driverLicenseNumber, driverEmail);
     }
 }

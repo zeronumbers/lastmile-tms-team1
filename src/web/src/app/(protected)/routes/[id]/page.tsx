@@ -11,6 +11,7 @@ import {
   useAutoAssignParcelsByZone,
   useRemoveParcelsFromRoute,
   useOptimizeRouteStopOrder,
+  useDispatchRoute,
 } from "@/hooks/use-routes";
 import { RouteStatus, RouteStopStatus } from "@/graphql/generated/graphql";
 import { useParams, useRouter } from "next/navigation";
@@ -53,6 +54,7 @@ export default function RouteDetailPage() {
 
   const { data: route, isLoading } = useRoute(id);
   const changeStatus = useChangeRouteStatus();
+  const dispatchRoute = useDispatchRoute();
   const autoAssign = useAutoAssignParcelsByZone();
   const removeParcels = useRemoveParcelsFromRoute();
   const optimizeStops = useOptimizeRouteStopOrder();
@@ -62,7 +64,11 @@ export default function RouteDetailPage() {
     if (!newStatus || newStatus === route?.status) return;
 
     try {
-      await changeStatus.mutateAsync({ id, newStatus: newStatus as RouteStatus });
+      if (newStatus === RouteStatus.InProgress) {
+        await dispatchRoute.mutateAsync({ routeId: id });
+      } else {
+        await changeStatus.mutateAsync({ id, newStatus: newStatus as RouteStatus });
+      }
       setNewStatus("");
       router.refresh();
     } catch {
@@ -157,9 +163,9 @@ export default function RouteDetailPage() {
                   <button
                     type="submit"
                     className="px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50"
-                    disabled={!newStatus || changeStatus.isPending}
+                    disabled={!newStatus || changeStatus.isPending || dispatchRoute.isPending}
                   >
-                    {changeStatus.isPending ? "..." : "Update"}
+                    {changeStatus.isPending || dispatchRoute.isPending ? "..." : "Update"}
                   </button>
                 </form>
               </div>

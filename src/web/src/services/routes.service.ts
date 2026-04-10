@@ -14,6 +14,7 @@ import {
   RemoveParcelsFromRouteDocument,
   ReorderRouteStopsDocument,
   OptimizeRouteStopOrderDocument,
+  DispatchRouteDocument,
   type GetRoutesQuery,
   type GetRouteQuery,
   type GetAvailableDriversQuery,
@@ -26,6 +27,7 @@ import {
   type RemoveParcelsFromRouteMutation,
   type ReorderRouteStopsMutation,
   type OptimizeRouteStopOrderMutation,
+  type DispatchRouteMutation,
   type CreateRouteCommandInput,
   type UpdateRouteCommandInput,
   type AddParcelsToRouteCommandInput,
@@ -33,6 +35,7 @@ import {
   type RemoveParcelsFromRouteCommandInput,
   type ReorderRouteStopsCommandInput,
   type OptimizeRouteStopOrderCommandInput,
+  type DispatchRouteCommandInput,
   type RouteStatus,
 } from "@/graphql/generated/graphql";
 
@@ -258,4 +261,19 @@ export async function optimizeRouteStopOrder(
     }),
   });
   return response.data.optimizeRouteStopOrder;
+}
+
+export async function dispatchRoute(
+  token: string,
+  input: DispatchRouteCommandInput
+): Promise<DispatchRouteMutation["dispatchRoute"]> {
+  const response = await apiFetch<{ data: DispatchRouteMutation }>("/api/graphql", {
+    method: "POST",
+    token,
+    body: JSON.stringify({
+      query: print(DispatchRouteDocument),
+      variables: { input },
+    }),
+  });
+  return response.data.dispatchRoute;
 }

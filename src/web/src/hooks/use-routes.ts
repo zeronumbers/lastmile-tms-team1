@@ -12,6 +12,7 @@ import {
   type AutoAssignParcelsByZoneCommandInput,
   type RemoveParcelsFromRouteCommandInput,
   type ReorderRouteStopsCommandInput,
+  type DispatchRouteCommandInput,
 } from "@/graphql/generated/graphql";
 import { toast } from "sonner";
 
@@ -231,6 +232,26 @@ export function useOptimizeRouteStopOrder() {
     },
     onError: () => {
       toast.error("Failed to optimize stop order");
+    },
+  });
+}
+
+export function useDispatchRoute() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: DispatchRouteCommandInput) =>
+      routesService.dispatchRoute(session!.user.accessToken, input),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: routeKeys.all });
+      queryClient.invalidateQueries({ queryKey: routeKeys.detail(variables.routeId) });
+      queryClient.invalidateQueries({ queryKey: vehicleKeys.all });
+      queryClient.invalidateQueries({ queryKey: parcelKeys.all });
+      toast.success("Route dispatched successfully");
+    },
+    onError: () => {
+      toast.error("Failed to dispatch route");
     },
   });
 }
