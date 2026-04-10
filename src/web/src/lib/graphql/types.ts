@@ -371,3 +371,123 @@ export interface UpdateDriverInput {
   shiftSchedules?: ShiftScheduleInput[];
   daysOff?: DayOffInput[];
 }
+
+// ============================================
+// Bin
+// ============================================
+
+export interface BinDto {
+  id: string;
+  label: string;
+  description?: string;
+  aisleId: string;
+  aisle: {
+    label: string;
+    name: string;
+  };
+  slot: number;
+  capacity: number;
+  currentParcelCount: number;
+  utilizationPercent: number;
+  isActive: boolean;
+  zoneId: string;
+  zone: {
+    name: string;
+    depot: {
+      name: string;
+    };
+  };
+  createdAt: string;
+  lastModifiedAt?: string;
+}
+
+export interface BinSummaryDto {
+  id: string;
+  label: string;
+  aisleId: string;
+  aisle: {
+    label: string;
+  };
+  slot: number;
+  capacity: number;
+  isActive: boolean;
+  zoneId: string;
+  zone: {
+    name: string;
+  };
+}
+
+export interface BinsResponse {
+  bins: {
+    nodes: BinSummaryDto[];
+  };
+}
+
+export interface BinResult {
+  id: string;
+  label: string;
+  description?: string;
+  aisleLabel: string;
+  slot: number;
+  capacity: number;
+  isActive: boolean;
+  zoneId: string;
+  zoneName: string;
+  createdAt: string;
+}
+
+export interface BinUtilizationDto {
+  id: string;
+  label: string;
+  aisleLabel: string;
+  slot: number;
+  capacity: number;
+  utilizationPercent: number;
+  currentParcelCount: number;
+  isActive: boolean;
+  zoneId: string;
+  zoneName: string;
+}
+
+export interface CreateBinInput {
+  description?: string;
+  aisleId: string;
+  slot: number;
+  capacity: number;
+  zoneId: string;
+  isActive?: boolean;
+}
+
+export interface UpdateBinInput {
+  id: string;
+  description?: string;
+  aisleId: string;
+  slot: number;
+  capacity: number;
+  zoneId: string;
+  isActive: boolean;
+}
+
+// ============================================
+// Aisle
+// ============================================
+
+export interface AisleDto {
+  id: string;
+  name: string;
+  label: string;
+  order: number;
+  isActive: boolean;
+  zoneId: string;
+}
+
+export interface AisleResult {
+  id: string;
+  name: string;
+  label: string;
+  order: number;
+  isActive: boolean;
+  zoneId: string;
+  zoneName: string;
+  createdAt: string;
+}

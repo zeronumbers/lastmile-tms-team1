@@ -6,6 +6,8 @@ namespace LastMile.TMS.Application.Common.Interfaces;
 public interface IAppDbContext
 {
     DbSet<Address> Addresses { get; }
+    DbSet<Aisle> Aisles { get; }
+    DbSet<Bin> Bins { get; }
     DbSet<Depot> Depots { get; }
     DbSet<DayOff> DaysOff { get; }
     DbSet<Driver> Drivers { get; }

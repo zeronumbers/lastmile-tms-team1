@@ -1,11 +1,22 @@
 import { auth } from "@/auth";
 import Link from "next/link";
-import { Truck, Route, Building2, MapPin, CircleUser } from "lucide-react";
+import { Truck, Route, Building2, MapPin, Box, CircleUser } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { fetchBins } from "@/services/bins.service";
 
 export default async function DashboardPage() {
   const session = await auth();
+  
+  let binCount: number | string = "-";
+  if (session?.user?.accessToken) {
+    try {
+      const bins = await fetchBins(session.user.accessToken);
+      binCount = bins.length;
+    } catch (err) {
+      console.error("Failed to fetch bins for dashboard", err);
+    }
+  }
 
   return (
     <div className="p-6">
@@ -86,6 +97,20 @@ export default async function DashboardPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Bins</CardTitle>
+            <Box className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{binCount}</div>
+            <p className="text-xs text-muted-foreground">Bin locations</p>
+            <Button variant="link" className="p-0 h-auto mt-2" asChild>
+              <Link href="/bins">View bins</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -120,6 +145,12 @@ export default async function DashboardPage() {
                 Manage Zones
               </Link>{" "}
               - Define delivery zones and their boundaries
+            </li>
+            <li>
+              <Link href="/bins" className="text-primary hover:underline">
+                Manage Bins
+              </Link>{" "}
+              - Manage bin locations within zones
             </li>
           </ul>
         </CardContent>

@@ -42,6 +42,10 @@ public class Parcel : BaseAuditableEntity
     public Guid? ZoneId { get; set; }
     public Zone? Zone { get; set; }
 
+    // Bin (auto-assigned or manually assigned)
+    public Guid? BinId { get; set; }
+    public Bin? Bin { get; set; }
+
     // Navigation properties
     public DeliveryConfirmation? DeliveryConfirmation { get; set; }
     public ICollection<ParcelContentItem> ContentItems { get; set; } = new List<ParcelContentItem>();
