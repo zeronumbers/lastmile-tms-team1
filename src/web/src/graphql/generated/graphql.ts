@@ -101,6 +101,21 @@ export type AddressInput = {
   street2?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type AddressResult = {
+  __typename?: 'AddressResult';
+  city: Scalars['String']['output'];
+  companyName?: Maybe<Scalars['String']['output']>;
+  contactName?: Maybe<Scalars['String']['output']>;
+  countryCode: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  postalCode: Scalars['String']['output'];
+  state: Scalars['String']['output'];
+  street1: Scalars['String']['output'];
+  street2?: Maybe<Scalars['String']['output']>;
+};
+
 export type AddressSortInput = {
   city?: InputMaybe<SortEnumType>;
   companyName?: InputMaybe<SortEnumType>;
@@ -264,6 +279,36 @@ export type BooleanOperationFilterInput = {
   neq?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type CancelParcelCommandInput = {
+  id: Scalars['UUID']['input'];
+  reason: Scalars['String']['input'];
+};
+
+export type CancelParcelResult = {
+  __typename?: 'CancelParcelResult';
+  id: Scalars['UUID']['output'];
+  status: ParcelStatus;
+  trackingNumber: Scalars['String']['output'];
+};
+
+export type ChangeParcelStatusCommandInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  exceptionReason?: InputMaybe<ExceptionReason>;
+  id: Scalars['UUID']['input'];
+  locationCity?: InputMaybe<Scalars['String']['input']>;
+  locationCountry?: InputMaybe<Scalars['String']['input']>;
+  locationState?: InputMaybe<Scalars['String']['input']>;
+  newStatus: ParcelStatus;
+};
+
+export type ChangeParcelStatusResult = {
+  __typename?: 'ChangeParcelStatusResult';
+  deliveryAttempts: Scalars['Int']['output'];
+  id: Scalars['UUID']['output'];
+  status: ParcelStatus;
+  trackingNumber: Scalars['String']['output'];
+};
+
 export type CoordinateEqualityComparerFilterInput = {
   and?: InputMaybe<Array<CoordinateEqualityComparerFilterInput>>;
   or?: InputMaybe<Array<CoordinateEqualityComparerFilterInput>>;
@@ -369,6 +414,16 @@ export type CreateParcelCommandInput = {
   weight: Scalars['Decimal']['input'];
   weightUnit: Scalars['String']['input'];
   width: Scalars['Decimal']['input'];
+};
+
+export type CreateParcelResult = {
+  __typename?: 'CreateParcelResult';
+  createdAt: Scalars['DateTime']['output'];
+  estimatedDeliveryDate: Scalars['DateTime']['output'];
+  id: Scalars['UUID']['output'];
+  serviceType: ServiceType;
+  status: ParcelStatus;
+  trackingNumber: Scalars['String']['output'];
 };
 
 export type CreateRouteCommandInput = {
@@ -1122,6 +1177,13 @@ export type ListFilterInputTypeOfDayOffFilterInput = {
   some?: InputMaybe<DayOffFilterInput>;
 };
 
+export type ListFilterInputTypeOfParcelAuditLogFilterInput = {
+  all?: InputMaybe<ParcelAuditLogFilterInput>;
+  any?: InputMaybe<Scalars['Boolean']['input']>;
+  none?: InputMaybe<ParcelAuditLogFilterInput>;
+  some?: InputMaybe<ParcelAuditLogFilterInput>;
+};
+
 export type ListFilterInputTypeOfParcelContentItemFilterInput = {
   all?: InputMaybe<ParcelContentItemFilterInput>;
   any?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1220,13 +1282,15 @@ export type Mutation = {
   addParcelsToRoute: RouteDto;
   assignDriverToRoute: RouteDto;
   autoAssignParcelsByZone: RouteDto;
+  cancelParcel: CancelParcelResult;
+  changeParcelStatus: ChangeParcelStatusResult;
   changeRouteStatus: RouteDto;
   changeVehicleStatus: VehicleDto;
   completePasswordReset: Scalars['Boolean']['output'];
   createBin: BinResult;
   createDepot: DepotResult;
   createDriver: DriverResult;
-  createParcel: ParcelResult;
+  createParcel: CreateParcelResult;
   createRoute: RouteDto;
   createUser: UserDto;
   createVehicle: VehicleDto;
@@ -1246,6 +1310,7 @@ export type Mutation = {
   updateBin: BinResult;
   updateDepot: DepotResult;
   updateDriver: DriverResult;
+  updateParcel: UpdateParcelResult;
   updateRoute: RouteDto;
   updateUser: UserDto;
   updateVehicle: VehicleDto;
@@ -1271,6 +1336,16 @@ export type MutationAssignDriverToRouteArgs = {
 
 export type MutationAutoAssignParcelsByZoneArgs = {
   input: AutoAssignParcelsByZoneCommandInput;
+};
+
+
+export type MutationCancelParcelArgs = {
+  input: CancelParcelCommandInput;
+};
+
+
+export type MutationChangeParcelStatusArgs = {
+  input: ChangeParcelStatusCommandInput;
 };
 
 
@@ -1411,6 +1486,11 @@ export type MutationUpdateDepotArgs = {
 
 export type MutationUpdateDriverArgs = {
   input: UpdateDriverCommandInput;
+};
+
+
+export type MutationUpdateParcelArgs = {
+  input: UpdateParcelCommandInput;
 };
 
 
@@ -1574,6 +1654,7 @@ export type PageInfo = {
 export type Parcel = {
   __typename?: 'Parcel';
   actualDeliveryDate?: Maybe<Scalars['DateTime']['output']>;
+  auditLogs: Array<ParcelAuditLog>;
   canTransitionTo: Scalars['Boolean']['output'];
   contentItems: Array<ParcelContentItem>;
   createdAt: Scalars['DateTime']['output'];
@@ -1632,6 +1713,80 @@ export type ParcelAddressInput = {
   street2?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type ParcelAuditLog = {
+  __typename?: 'ParcelAuditLog';
+  changedBy: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
+  deletedAt?: Maybe<Scalars['DateTime']['output']>;
+  deletedBy?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  lastModifiedAt?: Maybe<Scalars['DateTime']['output']>;
+  lastModifiedBy?: Maybe<Scalars['String']['output']>;
+  newValue?: Maybe<Scalars['String']['output']>;
+  oldValue?: Maybe<Scalars['String']['output']>;
+  parcel: Parcel;
+  parcelId: Scalars['UUID']['output'];
+  propertyName: Scalars['String']['output'];
+};
+
+export type ParcelAuditLogFilterInput = {
+  and?: InputMaybe<Array<ParcelAuditLogFilterInput>>;
+  changedBy?: InputMaybe<StringOperationFilterInput>;
+  createdAt?: InputMaybe<DateTimeOperationFilterInput>;
+  createdBy?: InputMaybe<StringOperationFilterInput>;
+  deletedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  deletedBy?: InputMaybe<StringOperationFilterInput>;
+  id?: InputMaybe<UuidOperationFilterInput>;
+  isDeleted?: InputMaybe<BooleanOperationFilterInput>;
+  lastModifiedAt?: InputMaybe<DateTimeOperationFilterInput>;
+  lastModifiedBy?: InputMaybe<StringOperationFilterInput>;
+  newValue?: InputMaybe<StringOperationFilterInput>;
+  oldValue?: InputMaybe<StringOperationFilterInput>;
+  or?: InputMaybe<Array<ParcelAuditLogFilterInput>>;
+  parcel?: InputMaybe<ParcelFilterInput>;
+  parcelId?: InputMaybe<UuidOperationFilterInput>;
+  propertyName?: InputMaybe<StringOperationFilterInput>;
+};
+
+export type ParcelAuditLogSortInput = {
+  changedBy?: InputMaybe<SortEnumType>;
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  newValue?: InputMaybe<SortEnumType>;
+  oldValue?: InputMaybe<SortEnumType>;
+  parcel?: InputMaybe<ParcelSortInput>;
+  parcelId?: InputMaybe<SortEnumType>;
+  propertyName?: InputMaybe<SortEnumType>;
+};
+
+/** A connection to a list of items. */
+export type ParcelAuditLogsConnection = {
+  __typename?: 'ParcelAuditLogsConnection';
+  /** A list of edges. */
+  edges?: Maybe<Array<ParcelAuditLogsEdge>>;
+  /** A flattened list of the nodes. */
+  nodes?: Maybe<Array<ParcelAuditLog>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+};
+
+/** An edge in a connection. */
+export type ParcelAuditLogsEdge = {
+  __typename?: 'ParcelAuditLogsEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge. */
+  node: ParcelAuditLog;
+};
+
 export type ParcelContentItem = {
   __typename?: 'ParcelContentItem';
   countryOfOrigin: Scalars['String']['output'];
@@ -1680,6 +1835,7 @@ export type ParcelContentItemFilterInput = {
 export type ParcelFilterInput = {
   actualDeliveryDate?: InputMaybe<DateTimeOperationFilterInput>;
   and?: InputMaybe<Array<ParcelFilterInput>>;
+  auditLogs?: InputMaybe<ListFilterInputTypeOfParcelAuditLogFilterInput>;
   contentItems?: InputMaybe<ListFilterInputTypeOfParcelContentItemFilterInput>;
   createdAt?: InputMaybe<DateTimeOperationFilterInput>;
   createdBy?: InputMaybe<StringOperationFilterInput>;
@@ -1717,16 +1873,6 @@ export type ParcelFilterInput = {
   width?: InputMaybe<DecimalOperationFilterInput>;
   zone?: InputMaybe<ZoneFilterInput>;
   zoneId?: InputMaybe<UuidOperationFilterInput>;
-};
-
-export type ParcelResult = {
-  __typename?: 'ParcelResult';
-  createdAt: Scalars['DateTime']['output'];
-  estimatedDeliveryDate: Scalars['DateTime']['output'];
-  id: Scalars['UUID']['output'];
-  serviceType: ServiceType;
-  status: ParcelStatus;
-  trackingNumber: Scalars['String']['output'];
 };
 
 export type ParcelSortInput = {
@@ -2021,11 +2167,13 @@ export type Query = {
   driver?: Maybe<Driver>;
   drivers?: Maybe<DriversConnection>;
   parcel?: Maybe<Parcel>;
+  parcelAuditLogs?: Maybe<ParcelAuditLogsConnection>;
   parcelByTrackingNumber?: Maybe<Parcel>;
   parcels?: Maybe<ParcelsConnection>;
   route?: Maybe<Route>;
   routes?: Maybe<RoutesConnection>;
   sentinel?: Maybe<Scalars['String']['output']>;
+  trackingEvents?: Maybe<TrackingEventsConnection>;
   user?: Maybe<User>;
   userManagementLookups: UserManagementLookupsDto;
   users?: Maybe<UsersConnection>;
@@ -2097,6 +2245,17 @@ export type QueryParcelArgs = {
 };
 
 
+export type QueryParcelAuditLogsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<Array<ParcelAuditLogSortInput>>;
+  parcelId: Scalars['UUID']['input'];
+  where?: InputMaybe<ParcelAuditLogFilterInput>;
+};
+
+
 export type QueryParcelByTrackingNumberArgs = {
   trackingNumber: Scalars['String']['input'];
 };
@@ -2126,6 +2285,17 @@ export type QueryRoutesArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   order?: InputMaybe<Array<RouteSortInput>>;
   where?: InputMaybe<RouteFilterInput>;
+};
+
+
+export type QueryTrackingEventsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<Array<TrackingEventSortInput>>;
+  parcelId: Scalars['UUID']['input'];
+  where?: InputMaybe<TrackingEventFilterInput>;
 };
 
 
@@ -2658,6 +2828,49 @@ export type TrackingEventFilterInput = {
   timestamp?: InputMaybe<DateTimeOperationFilterInput>;
 };
 
+export type TrackingEventSortInput = {
+  createdAt?: InputMaybe<SortEnumType>;
+  createdBy?: InputMaybe<SortEnumType>;
+  delayReason?: InputMaybe<SortEnumType>;
+  deletedAt?: InputMaybe<SortEnumType>;
+  deletedBy?: InputMaybe<SortEnumType>;
+  description?: InputMaybe<SortEnumType>;
+  eventType?: InputMaybe<SortEnumType>;
+  id?: InputMaybe<SortEnumType>;
+  isDeleted?: InputMaybe<SortEnumType>;
+  lastModifiedAt?: InputMaybe<SortEnumType>;
+  lastModifiedBy?: InputMaybe<SortEnumType>;
+  locationCity?: InputMaybe<SortEnumType>;
+  locationCountry?: InputMaybe<SortEnumType>;
+  locationState?: InputMaybe<SortEnumType>;
+  operator?: InputMaybe<SortEnumType>;
+  parcel?: InputMaybe<ParcelSortInput>;
+  parcelId?: InputMaybe<SortEnumType>;
+  timestamp?: InputMaybe<SortEnumType>;
+};
+
+/** A connection to a list of items. */
+export type TrackingEventsConnection = {
+  __typename?: 'TrackingEventsConnection';
+  /** A list of edges. */
+  edges?: Maybe<Array<TrackingEventsEdge>>;
+  /** A flattened list of the nodes. */
+  nodes?: Maybe<Array<TrackingEvent>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** An edge in a connection. */
+export type TrackingEventsEdge = {
+  __typename?: 'TrackingEventsEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge. */
+  node: TrackingEvent;
+};
+
 export type UpdateAddressInput = {
   city: Scalars['String']['input'];
   companyName?: InputMaybe<Scalars['String']['input']>;
@@ -2697,6 +2910,31 @@ export type UpdateDriverCommandInput = {
   licenseNumber: Scalars['String']['input'];
   photo?: InputMaybe<Scalars['String']['input']>;
   shiftSchedules?: InputMaybe<Array<InputMaybe<ShiftScheduleInput>>>;
+};
+
+export type UpdateParcelCommandInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  height?: InputMaybe<Scalars['Decimal']['input']>;
+  id: Scalars['UUID']['input'];
+  length?: InputMaybe<Scalars['Decimal']['input']>;
+  parcelType?: InputMaybe<ParcelType>;
+  recipientAddress?: InputMaybe<AddressInput>;
+  serviceType?: InputMaybe<ServiceType>;
+  shipperAddress?: InputMaybe<AddressInput>;
+  weight?: InputMaybe<Scalars['Decimal']['input']>;
+  width?: InputMaybe<Scalars['Decimal']['input']>;
+};
+
+export type UpdateParcelResult = {
+  __typename?: 'UpdateParcelResult';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  lastModifiedAt: Scalars['DateTime']['output'];
+  recipientAddress?: Maybe<AddressResult>;
+  shipperAddress?: Maybe<AddressResult>;
+  status: ParcelStatus;
+  trackingNumber: Scalars['String']['output'];
+  weight: Scalars['Decimal']['output'];
 };
 
 export type UpdateRouteCommandInput = {

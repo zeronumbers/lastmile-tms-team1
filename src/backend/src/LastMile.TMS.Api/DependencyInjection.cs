@@ -70,6 +70,7 @@ public static class DependencyInjection
             .AddType<AutoAssignParcelsByZoneInput>()
             .AddType<RemoveParcelsFromRouteInput>()
             .AddType<ReorderRouteStopsInput>()
+            .AddType<OptimizeRouteStopOrderInput>()
             .AddErrorFilter<DomainExceptionErrorFilter>()
             .AddErrorFilter<ErrorFilter>()
             .AddType<ShiftScheduleInputType>()
