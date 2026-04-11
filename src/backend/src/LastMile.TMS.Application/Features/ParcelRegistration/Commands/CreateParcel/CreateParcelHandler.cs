@@ -106,7 +106,7 @@ public class CreateParcelHandler(
             Timestamp = DateTimeOffset.UtcNow,
             EventType = EventType.LabelCreated,
             Description = "Label created",
-            Operator = currentUserService.UserId
+            Operator = currentUserService.UserName ?? currentUserService.UserId
         });
         await dbContext.SaveChangesAsync(cancellationToken);
 
