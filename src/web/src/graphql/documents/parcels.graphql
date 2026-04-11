@@ -70,6 +70,15 @@ query GetParcelByTrackingNumber($trackingNumber: String!) {
         name
         status
         plannedStartTime
+        driver {
+          user {
+            firstName
+            lastName
+          }
+        }
+        vehicle {
+          registrationPlate
+        }
       }
     }
     bin {

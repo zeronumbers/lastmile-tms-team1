@@ -2,16 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParcel, useTrackingEvents } from "@/hooks/use-parcels";
+import { useParcel, useTrackingEvents, useChangeParcelStatus } from "@/hooks/use-parcels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ParcelStatus } from "@/graphql/generated/graphql";
-import { Printer, Plus, Pencil, XCircle, ChevronRight } from "lucide-react";
+import { Printer, Plus, Pencil, XCircle, ChevronRight, ArrowRight } from "lucide-react";
 import { ParcelStatusTimeline } from "./parcel-status-timeline";
 import { ParcelAuditLogTable } from "./parcel-audit-log-table";
 import { EditParcelDialog } from "./edit-parcel-dialog";
 import { CancelParcelDialog } from "./cancel-parcel-dialog";
+
+const NEXT_STATUSES: Record<ParcelStatus, ParcelStatus[]> = {
+  [ParcelStatus.Registered]: [ParcelStatus.ReceivedAtDepot],
+  [ParcelStatus.ReceivedAtDepot]: [ParcelStatus.Sorted],
+  [ParcelStatus.Sorted]: [ParcelStatus.Staged],
+  [ParcelStatus.Staged]: [ParcelStatus.Loaded],
+  [ParcelStatus.Loaded]: [ParcelStatus.OutForDelivery],
+  [ParcelStatus.OutForDelivery]: [ParcelStatus.Delivered, ParcelStatus.FailedAttempt],
+  [ParcelStatus.FailedAttempt]: [ParcelStatus.OutForDelivery, ParcelStatus.ReturnedToDepot],
+  [ParcelStatus.ReturnedToDepot]: [],
+  [ParcelStatus.Delivered]: [],
+  [ParcelStatus.Cancelled]: [],
+  [ParcelStatus.Exception]: [ParcelStatus.ReturnedToDepot],
+};
 
 function formatStatus(status: ParcelStatus): string {
   return status.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
@@ -51,6 +65,7 @@ export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
   const { data: trackingEventsData } = useTrackingEvents(parcel?.id ? String(parcel.id) : "");
   const [editOpen, setEditOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const changeStatus = useChangeParcelStatus();
 
   const events = trackingEventsData?.pages.flatMap((page) => page?.nodes ?? []) ?? [];
 
@@ -81,6 +96,11 @@ export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
   }
 
   const canEditOrCancel = CANCELLABLE_STATUSES.has(parcel.status);
+  const nextStatuses = NEXT_STATUSES[parcel.status] ?? [];
+
+  function handleStatusChange(newStatus: ParcelStatus) {
+    changeStatus.mutate({ id: parcel!.id, newStatus });
+  }
 
   function reprintLabel() {
     window.open(`/api/labels/${parcel!.id}/pdf`, "_blank");
@@ -119,6 +139,26 @@ export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
                 Cancel
               </Button>
             </>
+          )}
+          {nextStatuses.length > 0 && (
+            <div className="relative inline-flex items-center">
+              <ArrowRight className="h-4 w-4 absolute left-2.5 pointer-events-none" />
+              <select
+                className="flex h-8 items-center gap-1 rounded-md border border-input bg-background px-3 pl-8 text-sm font-medium ring-offset-background hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                value=""
+                onChange={(e) => e.target.value && handleStatusChange(e.target.value as ParcelStatus)}
+                disabled={changeStatus.isPending}
+              >
+                <option value="" disabled>
+                  {changeStatus.isPending ? "Changing..." : "Change Status"}
+                </option>
+                {nextStatuses.map((s) => (
+                  <option key={s} value={s}>
+                    {formatStatus(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           <Button variant="outline" size="sm" onClick={reprintLabel}>
             <Printer className="h-4 w-4 mr-1" />
@@ -283,6 +323,18 @@ export function ParcelDetail({ trackingNumber }: ParcelDetailProps) {
                 <div>
                   <span className="text-muted-foreground">Planned Start</span>
                   <p>{new Date(parcel.routeStop.route.plannedStartTime).toLocaleString()}</p>
+                </div>
+              )}
+              {parcel.routeStop.route?.driver && (
+                <div>
+                  <span className="text-muted-foreground">Driver</span>
+                  <p>{parcel.routeStop.route.driver.user.firstName} {parcel.routeStop.route.driver.user.lastName}</p>
+                </div>
+              )}
+              {parcel.routeStop.route?.vehicle && (
+                <div>
+                  <span className="text-muted-foreground">Vehicle</span>
+                  <p>{parcel.routeStop.route.vehicle.registrationPlate}</p>
                 </div>
               )}
               <div>
