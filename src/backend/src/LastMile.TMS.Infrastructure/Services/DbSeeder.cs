@@ -542,6 +542,7 @@ public class DbSeeder : IDbSeeder
             }
 
             parcel.Zone = zone;
+            parcel.DepotId = depot.Id;
             parcels.Add(parcel);
         }
 
