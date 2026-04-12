@@ -48,11 +48,11 @@ public class DbSeeder : IDbSeeder
         // Seed depot and zone for Empire State Building
         await SeedDepotAndZoneAsync();
 
+        // Seed aisles and bins (must run before parcels so sorted parcels can be assigned to bins)
+        await SeedAislesAndBinsAsync();
+
         // Seed parcels
         await SeedParcelsAsync();
-
-        // Seed aisles and bins, assign sorted parcels to bins
-        await SeedAislesAndBinsAsync();
 
         // Seed driver profile — must run after SeedTestUsersAsync (depends on driver user)
         await SeedDriverAsync();
@@ -392,6 +392,7 @@ public class DbSeeder : IDbSeeder
         // Get the existing depot and zone
         var depot = _context.Depots.FirstOrDefault(d => d.Name == "Empire State Building Depot");
         var zone = _context.Zones.FirstOrDefault(z => z.Name == "Manhattan Zone");
+        var bins = _context.Bins.ToList();
 
         if (depot == null)
         {
@@ -539,6 +540,11 @@ public class DbSeeder : IDbSeeder
             };
             parcel.Status = statuses[statusIndex];
 
+            if (parcel.Status == ParcelStatus.Sorted && bins.Count > 0)
+            {
+                parcel.BinId = bins[random.Next(bins.Count)].Id;
+            }
+
             if (parcel.Status == ParcelStatus.Delivered)
             {
                 parcel.ActualDeliveryDate = DateTimeOffset.UtcNow.AddDays(-random.Next(0, 5));
@@ -622,28 +628,6 @@ public class DbSeeder : IDbSeeder
         _context.Bins.AddRange(bins);
         await _context.SaveChangesAsync(CancellationToken.None);
         _logger.LogInformation("Seeded {Count} bins", bins.Count);
-
-        // Assign existing parcels with ReceivedAtDepot status to bins as Sorted
-        var receivedParcels = _context.Parcels
-            .Where(p => p.Status == ParcelStatus.ReceivedAtDepot)
-            .ToList();
-
-        if (receivedParcels.Count == 0)
-        {
-            _logger.LogDebug("No ReceivedAtDepot parcels found to sort into bins");
-            return;
-        }
-
-        var random = new Random(42);
-        foreach (var parcel in receivedParcels)
-        {
-            var bin = bins[random.Next(bins.Count)];
-            parcel.Status = ParcelStatus.Sorted;
-            parcel.BinId = bin.Id;
-        }
-
-        await _context.SaveChangesAsync(CancellationToken.None);
-        _logger.LogInformation("Sorted {Count} parcels into bins", receivedParcels.Count);
     }
 
     private async Task SeedDriverAsync()
