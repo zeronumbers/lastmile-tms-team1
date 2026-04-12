@@ -51,6 +51,9 @@ public class DbSeeder : IDbSeeder
         // Seed parcels
         await SeedParcelsAsync();
 
+        // Seed aisles and bins, assign sorted parcels to bins
+        await SeedAislesAndBinsAsync();
+
         // Seed driver profile — must run after SeedTestUsersAsync (depends on driver user)
         await SeedDriverAsync();
 
@@ -550,6 +553,97 @@ public class DbSeeder : IDbSeeder
         await _context.SaveChangesAsync(CancellationToken.None);
 
         _logger.LogInformation("Seeded {Count} parcels", parcels.Count);
+    }
+
+    private async Task SeedAislesAndBinsAsync()
+    {
+        // Skip if bins already exist
+        if (_context.Bins.Any())
+        {
+            _logger.LogDebug("Bins already exist, skipping seed");
+            return;
+        }
+
+        var zone = _context.Zones.FirstOrDefault(z => z.Name == "Manhattan Zone");
+        if (zone == null)
+        {
+            _logger.LogWarning("Manhattan Zone not found, skipping aisle/bin seeding");
+            return;
+        }
+
+        var depot = _context.Depots.FirstOrDefault(d => d.Name == "Empire State Building Depot");
+        if (depot == null)
+        {
+            _logger.LogWarning("Empire State Building Depot not found, skipping aisle/bin seeding");
+            return;
+        }
+
+        var depotFirstChar = depot.Name[0];
+        var zoneFirstChar = zone.Name[0];
+
+        // Create 3 aisles
+        var aisles = new List<Aisle>();
+        for (int i = 1; i <= 3; i++)
+        {
+            var aisle = new Aisle
+            {
+                Name = $"Aisle {i}",
+                Order = i,
+                IsActive = true,
+                ZoneId = zone.Id
+            };
+            aisle.SetLabel(depotFirstChar.ToString(), zoneFirstChar.ToString());
+            aisles.Add(aisle);
+        }
+
+        _context.Aisles.AddRange(aisles);
+        await _context.SaveChangesAsync(CancellationToken.None);
+        _logger.LogInformation("Seeded {Count} aisles", aisles.Count);
+
+        // Create bins: 5 bins per aisle, capacity 20 each
+        var bins = new List<Bin>();
+        foreach (var aisle in aisles)
+        {
+            for (int slot = 1; slot <= 5; slot++)
+            {
+                var bin = new Bin
+                {
+                    Slot = slot,
+                    Capacity = 20,
+                    IsActive = true,
+                    ZoneId = zone.Id,
+                    AisleId = aisle.Id
+                };
+                bin.SetLabel(aisle.Label);
+                bins.Add(bin);
+            }
+        }
+
+        _context.Bins.AddRange(bins);
+        await _context.SaveChangesAsync(CancellationToken.None);
+        _logger.LogInformation("Seeded {Count} bins", bins.Count);
+
+        // Assign existing parcels with ReceivedAtDepot status to bins as Sorted
+        var receivedParcels = _context.Parcels
+            .Where(p => p.Status == ParcelStatus.ReceivedAtDepot)
+            .ToList();
+
+        if (receivedParcels.Count == 0)
+        {
+            _logger.LogDebug("No ReceivedAtDepot parcels found to sort into bins");
+            return;
+        }
+
+        var random = new Random(42);
+        foreach (var parcel in receivedParcels)
+        {
+            var bin = bins[random.Next(bins.Count)];
+            parcel.Status = ParcelStatus.Sorted;
+            parcel.BinId = bin.Id;
+        }
+
+        await _context.SaveChangesAsync(CancellationToken.None);
+        _logger.LogInformation("Sorted {Count} parcels into bins", receivedParcels.Count);
     }
 
     private async Task SeedDriverAsync()
